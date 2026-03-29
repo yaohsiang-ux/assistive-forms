@@ -22,7 +22,7 @@ body{font-family:-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;ba
 .field{margin-bottom:16px}.field:last-child{margin-bottom:0}
 .field-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
 .field-hint{font-size:12px;color:var(--text3);margin-top:2px}
-input[type="text"],input[type="text" inputmode="decimal"],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
+input[type="text"],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(214,90,49,.12)}
 textarea{resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -950,7 +950,7 @@ document.querySelectorAll('input[name="pressure_sore"]').forEach(r => r.addEvent
 // Progress bar
 function updateProgress(){
   const checked = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked').length;
-  const filled = Array.from(document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea')).filter(el => el.value.trim()).length;
+  const filled = Array.from(document.querySelectorAll('input[type="text"],  textarea')).filter(el => el.value.trim()).length;
   const total = 60;
   const pct = Math.min(100, Math.round((checked + filled) / total * 100));
   document.getElementById('progressFill').style.width = pct + '%';
@@ -960,7 +960,7 @@ document.addEventListener('input', updateProgress);
 
 function collectData(){
   const data = {};
-  document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea').forEach(el => {
+  document.querySelectorAll('input[type="text"],  textarea').forEach(el => {
     if (el.id && el.value.trim()) data[el.id] = el.value.trim();
   });
   document.querySelectorAll('input[type="radio"]:checked').forEach(el => { data[el.name] = el.value; });
@@ -1010,7 +1010,7 @@ function fallbackCopy(text){
 function showCopyModal(text){
   const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
   const b=document.createElement('div');b.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';
-  b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字全選→複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;
+  b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字全選→複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.split('<').join('&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;
   o.appendChild(b);document.body.appendChild(o);b.querySelector('textarea').focus();b.querySelector('textarea').select();
 }
 

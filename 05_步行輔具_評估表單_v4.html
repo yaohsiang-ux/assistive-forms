@@ -50,7 +50,7 @@ body { font-family: -apple-system, "Noto Sans TC", "Microsoft JhengHei", sans-se
 .field-hint { font-size:12px; color:var(--text3); margin-top:2px; }
 
 /* Text inputs */
-input[type="text"], input[type="text" inputmode="decimal"], textarea {
+input[type="text"],  textarea {
   width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
   font-size:15px; background:#fff; color:var(--text); outline:none; transition:border .2s;
   font-family:inherit;
@@ -131,7 +131,7 @@ hr.divider { border:none; border-top:1px dashed var(--border); margin:16px 0; }
     --bg:#1a1a18; --card:#2c2c2a; --border:#444441; --text:#e8e6de;
     --text2:#b4b2a9; --text3:#888780; --brand-light:#3a2218;
   }
-  input[type="text"], input[type="text" inputmode="decimal"], textarea { background:#333; color:var(--text); border-color:var(--border); }
+  input[type="text"],  textarea { background:#333; color:var(--text); border-color:var(--border); }
   .check-item label, .radio-item label { background:var(--card); color:var(--text); }
   .radio-item input:checked + label { background:var(--brand-light); color:var(--brand); }
   .assess-grid .cell { background:var(--card); }
@@ -927,7 +927,7 @@ function showSpec(type) {
 // Progress bar
 function updateProgress() {
   const all = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
-  const textFilled = Array.from(document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea')).filter(el => el.value.trim()).length;
+  const textFilled = Array.from(document.querySelectorAll('input[type="text"],  textarea')).filter(el => el.value.trim()).length;
   const total = document.querySelectorAll('input[type="radio"], input[type="checkbox"]').length / 3 + 20;
   const pct = Math.min(100, Math.round((all.length + textFilled) / total * 100));
   document.getElementById('progressFill').style.width = pct + '%';
@@ -939,7 +939,7 @@ document.addEventListener('input', updateProgress);
 function collectData() {
   const data = {};
   // Text inputs
-  document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea').forEach(el => {
+  document.querySelectorAll('input[type="text"],  textarea').forEach(el => {
     if (el.id && el.value.trim()) data[el.id] = el.value.trim();
   });
   // Selects
@@ -1021,7 +1021,7 @@ function showCopyModal(text) {
   const box = document.createElement('div');
   box.style.cssText = 'background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';
   box.innerHTML = `<div style="font-weight:600;font-size:15px">長按下方文字全選→複製</div>
-    <textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea>
+    <textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.split('<').join('&lt;')}</textarea>
     <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;
   overlay.appendChild(box);
   document.body.appendChild(overlay);
