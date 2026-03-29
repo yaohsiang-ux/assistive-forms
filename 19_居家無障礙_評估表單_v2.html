@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>編號19 居家無障礙修繕及輔具 評估報告書</title>
+<style>
+:root{--brand:#D65A31;--brand-light:#fef0eb;--brand-dark:#a84520;--amber:#E6AF2E;--brown:#4B3621;--bg:#fafaf8;--card:#fff;--border:#e2e0d8;--text:#2c2c2a;--text2:#6b6a65;--text3:#9c9a92;--success:#1d9e75;--danger:#d32f2f;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:120px}
+.header{background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;padding:16px 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(214,90,49,.3)}
+.header h1{font-size:17px;font-weight:700}.header .sub{font-size:12px;opacity:.85;margin-top:2px}
+.progress-bar{height:3px;background:var(--border);position:sticky;top:58px;z-index:99}
+.progress-fill{height:100%;background:var(--amber);transition:width .3s;width:0%}
+.section{background:var(--card);margin:12px;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border)}
+.section-header{padding:14px 16px;background:linear-gradient(135deg,var(--brand-light),#fff);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.section-header .num{background:var(--brand);color:#fff;min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.section-header .title{font-size:15px;font-weight:600;color:var(--brown)}
+.section-header .chevron{margin-left:auto;font-size:18px;color:var(--text3);transition:transform .2s}
+.section-header.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px}.section-body.hidden{display:none}
+.field{margin-bottom:16px}.field:last-child{margin-bottom:0}
+.field-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.field-hint{font-size:12px;color:var(--text3);margin-top:2px}
+input[type="text"],input[type="text" inputmode="decimal"],input[type="date"],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(214,90,49,.12)}
+textarea{resize:vertical;min-height:60px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+.check-grid{display:flex;flex-wrap:wrap;gap:8px}
+.check-item input{display:none}.check-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap}
+.check-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}
+.radio-inline{display:flex;flex-wrap:wrap;gap:8px}
+.radio-item input{display:none}.radio-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap}
+.radio-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+.sub-label{font-size:14px;font-weight:600;color:var(--brown);margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--amber)}
+.sub-label2{font-size:13px;font-weight:600;color:var(--brand);margin:12px 0 6px}
+.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100}
+.btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--brand);color:#fff}.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Motor table */
+.motor-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.motor-table th,.motor-table td{border:1px solid var(--border);padding:6px 4px;text-align:center}
+.motor-table th{background:var(--brand-light);color:var(--brown);font-weight:600;font-size:12px}
+.motor-table td:first-child{text-align:left;font-weight:600;white-space:nowrap;padding-left:8px}
+.motor-table input[type="radio"]{width:18px;height:18px;accent-color:var(--brand)}
+.motor-table input[type="text"]{border:none;padding:4px;font-size:12px;width:100%;min-width:60px}
+/* Space barrier */
+.space-block{border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.space-block-header{padding:10px 14px;background:var(--brand-light);font-weight:600;font-size:14px;color:var(--brown);cursor:pointer;display:flex;align-items:center;gap:8px}
+.space-block-header .chevron{margin-left:auto;font-size:16px;color:var(--text3);transition:transform .2s}
+.space-block-header.collapsed .chevron{transform:rotate(-90deg)}
+.space-block-body{padding:12px}.space-block-body.hidden{display:none}
+/* Item table */
+.item-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 8px;border-radius:8px;background:var(--bg)}
+.item-row .check-item label{font-size:12px;padding:5px 8px}
+.item-row input[type="text" inputmode="decimal"]{width:70px;padding:6px 8px;font-size:13px;flex-shrink:0}
+.item-row .unit{font-size:12px;color:var(--text3);flex-shrink:0;min-width:30px}
+.item-group-label{font-size:13px;font-weight:600;color:var(--brand-dark);margin:12px 0 6px;padding:4px 0;border-bottom:1px dashed var(--amber)}
+/* Stair record table */
+.stair-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.stair-table th,.stair-table td{border:1px solid var(--border);padding:6px;text-align:center}
+.stair-table th{background:var(--brand-light);color:var(--brown);font-weight:600;font-size:12px}
+.stair-table input[type="text"],.stair-table input[type="text" inputmode="decimal"]{border:none;padding:4px;font-size:13px;width:100%;text-align:center}
+/* Spec section layout template */
+.spec-area{border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.spec-area-header{padding:10px 14px;background:linear-gradient(135deg,#f5f0eb,#fff);font-weight:600;font-size:14px;color:var(--brown);display:flex;align-items:center;justify-content:space-between}
+.spec-area-body{padding:12px}
+.spec-remove{background:none;border:none;color:var(--danger);font-size:20px;cursor:pointer;padding:0 4px}
+@media(max-width:400px){.row{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr}.check-item label,.radio-item label{padding:6px 10px;font-size:13px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>輔具評估報告書 — 編號19</h1>
+  <div class="sub">居家無障礙修繕及輔具</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div id="toast" class="toast"></div>
+
+<!-- ============ Section 1: 活動需求與情境評估 ============ -->
+<div class="section">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="num">1</div><div class="title">二、活動需求與情境評估</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body">
+    <div class="sub-label">1. 預計使用的場合</div>
+    <div class="field"><label class="field-label">(1) 目前居家生活環境所遭遇之困難簡述</label>
+      <textarea id="difficulty" rows="3" placeholder="請描述目前居家生活環境遭遇之困難"></textarea>
+    </div>
+    <div class="field"><label class="field-label">(2) 修繕及輔具使用目的（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="purpose_safety" id="ap1" value="安全防護目的之空間"><label for="ap1">安全防護</label></div>
+        <div class="check-item"><input type="checkbox" name="purpose_vertical" id="ap2" value="改善垂直通路障礙之場合"><label for="ap2">改善垂直通路</label></div>
+        <div class="check-item"><input type="checkbox" name="purpose_horizontal" id="ap3" value="改善水平通路障礙之場合"><label for="ap3">改善水平通路</label></div>
+        <div class="check-item"><input type="checkbox" name="purpose_layout" id="ap4" value="空間配置調整"><label for="ap4">空間配置調整</label></div>
+        <div class="check-item"><input type="checkbox" name="purpose_remind" id="ap5" value="環境提醒與動線調整"><label for="ap5">環境提醒動線</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="purpose_other" placeholder="其他目的"></div>
+    </div>
+
+    <div class="sub-label">2. 活動需求</div>
+    <div class="field"><label class="field-label">(1) 居家生活角色（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="role_care" id="ar1" value="受照顧者"><label for="ar1">受照顧者</label></div>
+        <div class="check-item"><input type="checkbox" name="role_rest" id="ar2" value="在家休養"><label for="ar2">在家休養</label></div>
+        <div class="check-item"><input type="checkbox" name="role_wfh" id="ar3" value="居家工作者"><label for="ar3">居家工作</label></div>
+        <div class="check-item"><input type="checkbox" name="role_out" id="ar4" value="外出工作者"><label for="ar4">外出工作</label></div>
+        <div class="check-item"><input type="checkbox" name="role_house" id="ar5" value="家務執行"><label for="ar5">家務執行</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="role_other" placeholder="其他角色"></div>
+    </div>
+    <div class="field"><label class="field-label">(2) 執行日常活動</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="adl" value="獨立完成" id="adl1"><label for="adl1">獨立完成</label></div>
+        <div class="radio-item"><input type="radio" name="adl" value="部分依賴" id="adl2"><label for="adl2">部分依賴</label></div>
+        <div class="radio-item"><input type="radio" name="adl" value="完全依賴" id="adl3"><label for="adl3">完全依賴</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="adl_other" placeholder="其他/說明"></div>
+    </div>
+    <div class="field"><label class="field-label">(3) 生活起居活動範圍</label>
+      <div class="radio-inline" style="margin-bottom:8px">
+        <div class="radio-item"><input type="radio" name="floor_type" value="僅為出入層1層" id="aft1"><label for="aft1">僅出入層1層</label></div>
+        <div class="radio-item"><input type="radio" name="floor_type" value="包含出入層多層" id="aft2"><label for="aft2">包含出入層多層</label></div>
+      </div>
+      <div class="row3">
+        <div class="field"><input type="text" id="floor_count" placeholder="共幾層"></div>
+        <div class="field"><input type="text" id="floor_from" placeholder="從第幾層"></div>
+        <div class="field"><input type="text" id="floor_to" placeholder="到第幾層"></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="field-label">目前升降設備</label>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" name="lift_none" id="al_n" value="無"><label for="al_n">無</label></div>
+          <div class="check-item"><input type="checkbox" name="lift_elev" id="al_e" value="電梯"><label for="al_e">電梯</label></div>
+          <div class="check-item"><input type="checkbox" name="lift_stair" id="al_s" value="軌道式樓梯升降機"><label for="al_s">樓梯升降機</label></div>
+        </div>
+        <div class="field" style="margin-top:6px"><input type="text" id="lift_other" placeholder="其他升降設備"></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">(4) 人力支持情況（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="sup_alone" id="as1" value="獨居"><label for="as1">獨居</label></div>
+        <div class="check-item"><input type="checkbox" name="sup_cohabit" id="as2" value="有同住者"><label for="as2">有同住者</label></div>
+        <div class="check-item"><input type="checkbox" name="sup_pro" id="as3" value="有專業人力協助"><label for="as3">有專業人力</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><input type="text" id="support_pro_detail" placeholder="專業人力說明"></div>
+        <div class="field"><input type="text" id="support_other" placeholder="其他"></div>
+      </div>
+      <div class="field" style="margin-top:6px"><label class="field-label">目前主要照顧者與使用者關係</label><input type="text" id="carer_relation" placeholder="例：配偶、子女"></div>
+    </div>
+    <div class="field"><label class="field-label">(5) 有無特殊活動需求</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="special" value="無" id="asp_n"><label for="asp_n">無</label></div>
+        <div class="radio-item"><input type="radio" name="special" value="有" id="asp_y"><label for="asp_y">有</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="special_detail" placeholder="特殊活動需求說明"></div>
+    </div>
+
+    <div class="sub-label">3. 使用環境特性</div>
+    <div class="field"><label class="field-label">(1) 房屋型式</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="house_type" value="平房" id="ah1"><label for="ah1">平房</label></div>
+        <div class="radio-item"><input type="radio" name="house_type" value="透天厝" id="ah2"><label for="ah2">透天厝</label></div>
+        <div class="radio-item"><input type="radio" name="house_type" value="公寓" id="ah3"><label for="ah3">公寓</label></div>
+        <div class="radio-item"><input type="radio" name="house_type" value="大廈" id="ah4"><label for="ah4">大廈</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><input type="text" id="house_floors" placeholder="地上幾層"></div>
+        <div class="field"><input type="text" id="house_living_floor" placeholder="居住樓層"></div>
+      </div>
+      <div class="field" style="margin-top:6px"><input type="text" id="house_other" placeholder="其他房屋型式"></div>
+    </div>
+    <div class="field"><label class="field-label">(2) 目前使用的輔具</label>
+      <div class="sub-label2">A. 水平移行（含跨越門檻，可複選）</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="hmove_none" id="hm0" value="不需要輔具"><label for="hm0">不需要</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_rail" id="hm1" value="扶手"><label for="hm1">扶手</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_cane" id="hm2" value="拐杖"><label for="hm2">拐杖</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_walker" id="hm3" value="助行器"><label for="hm3">助行器</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_wc" id="hm4" value="輪椅"><label for="hm4">輪椅</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_ewc" id="hm5" value="電動輪椅"><label for="hm5">電動輪椅</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_escooter" id="hm6" value="電動代步車"><label for="hm6">電動代步車</label></div>
+        <div class="check-item"><input type="checkbox" name="hmove_transfer" id="hm7" value="移位機"><label for="hm7">移位機</label></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div class="field"><input type="text" id="hmove_cane_type" placeholder="拐杖類型"></div>
+        <div class="field"><input type="text" id="hmove_other" placeholder="其他"></div>
+      </div>
+
+      <div class="sub-label2">B. 垂直移行（可複選）</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="vmove_none" id="vm0" value="不需要垂直移行"><label for="vm0">不需要</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_none_equip" id="vm1" value="不需要輔具"><label for="vm1">不需輔具</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_rail" id="vm2" value="扶手"><label for="vm2">扶手</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_cane" id="vm3" value="拐杖"><label for="vm3">拐杖</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_walker" id="vm4" value="助行器"><label for="vm4">助行器</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_wc" id="vm5" value="輪椅"><label for="vm5">輪椅</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_climb" id="vm6" value="爬梯機"><label for="vm6">爬梯機</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_elev" id="vm7" value="電梯"><label for="vm7">電梯</label></div>
+        <div class="check-item"><input type="checkbox" name="vmove_stairlift" id="vm8" value="軌道式樓梯升降機"><label for="vm8">樓梯升降機</label></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div class="field"><input type="text" id="vmove_cane_type" placeholder="拐杖類型"></div>
+        <div class="field"><input type="text" id="vmove_other" placeholder="其他"></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">B. 已修繕之設備或環境說明</label>
+      <textarea id="existing_mod" rows="3" placeholder="說明已修繕項目或輔具項目之位置與規格內容（尚未使用者免填）"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 3: 身體功能與構造 ============ -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">2</div><div class="title">三、身體功能與構造評估</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+    <div class="sub-label">1. 相關診斷（可複選）</div>
+    <div class="check-grid" id="dxGrid"></div>
+    <div class="row" style="margin-top:8px">
+      <div class="field"><input type="text" id="dx_stroke_side" placeholder="中風偏癱(左/右)"></div>
+      <div class="field"><input type="text" id="dx_sci_level" placeholder="脊損位(頸/胸/腰/薦)"></div>
+    </div>
+    <div class="row">
+      <div class="field"><input type="text" id="dx_tbi_side" placeholder="腦外傷(左/右)"></div>
+      <div class="field"><input type="text" id="dx_amputation_part" placeholder="截肢影響部位"></div>
+    </div>
+    <div class="row">
+      <div class="field"><input type="text" id="dx_rare_name" placeholder="罕見疾病名"></div>
+      <div class="field"><input type="text" id="dx_cancer_part" placeholder="癌症影響部位"></div>
+    </div>
+    <div class="field"><input type="text" id="dx_other" placeholder="其他診斷"></div>
+
+    <div class="sub-label">2. 身體功能與構造評估</div>
+    <div class="row">
+      <div class="field"><label class="field-label">(1) 身高(cm)</label><input type="text" inputmode="decimal" id="f_height"></div>
+      <div class="field"><label class="field-label">體重(kg)</label><input type="text" inputmode="decimal" id="f_weight"></div>
+    </div>
+    <div class="field"><label class="field-label">(2) 視覺</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="visual" value="正常" id="fv1"><label for="fv1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="visual" value="低視能" id="fv2"><label for="fv2">低視能</label></div>
+        <div class="radio-item"><input type="radio" name="visual" value="全盲" id="fv3"><label for="fv3">全盲</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">(3) 視知覺</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="perception" value="正常" id="fp1"><label for="fp1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="perception" value="尚可" id="fp2"><label for="fp2">尚可</label></div>
+        <div class="radio-item"><input type="radio" name="perception" value="差(影響操作之安全性)" id="fp3"><label for="fp3">差</label></div>
+      </div>
+      <div class="field" style="margin-top:6px"><input type="text" id="perception_other" placeholder="其他"></div>
+    </div>
+    <div class="field"><label class="field-label">(4) 視力可見之最佳天候</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="f_weather" id="fw0" value="無差別"><label for="fw0">無差別</label></div>
+        <div class="check-item"><input type="checkbox" name="f_weather" id="fw1" value="大晴天"><label for="fw1">大晴天</label></div>
+        <div class="check-item"><input type="checkbox" name="f_weather" id="fw2" value="晴天"><label for="fw2">晴天</label></div>
+        <div class="check-item"><input type="checkbox" name="f_weather" id="fw3" value="陰天"><label for="fw3">陰天</label></div>
+        <div class="check-item"><input type="checkbox" name="f_weather" id="fw4" value="雨天"><label for="fw4">雨天</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">最佳時段</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft0" value="無差別"><label for="ft0">無差別</label></div>
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft1" value="清晨"><label for="ft1">清晨</label></div>
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft2" value="上午"><label for="ft2">上午</label></div>
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft3" value="下午"><label for="ft3">下午</label></div>
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft4" value="黃昏"><label for="ft4">黃昏</label></div>
+        <div class="check-item"><input type="checkbox" name="f_time" id="ft5" value="晚上"><label for="ft5">晚上</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">(5) 明暗適應能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="light_adapt" value="可" id="fla1"><label for="fla1">可</label></div>
+        <div class="radio-item"><input type="radio" name="light_adapt" value="不佳" id="fla2"><label for="fla2">不佳</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">(6) 聽覺</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="hearing" value="正常" id="fh1"><label for="fh1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="hearing" value="異常" id="fh2"><label for="fh2">異常</label></div>
+        <div class="radio-item"><input type="radio" name="hearing" value="喪失" id="fh3"><label for="fh3">喪失</label></div>
+      </div>
+      <div class="field" style="margin-top:6px"><input type="text" id="hearing_other" placeholder="其他"></div>
+    </div>
+
+    <div class="field"><label class="field-label">(7) 執行粗大動作能力</label>
+      <div style="overflow-x:auto">
+        <table class="motor-table" id="grossMotorTable">
+          <thead>
+            <tr><th>動作</th><th>獨立完成</th><th>部份協助</th><th>大量協助</th><th>無法執行</th><th>不須評估</th><th>補充說明</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">(8) 執行精細動作能力</label>
+      <div style="overflow-x:auto">
+        <table class="motor-table" id="fineMotorTable">
+          <thead>
+            <tr><th>等級</th><th colspan="2">個別手指動作</th><th colspan="2">抓握能力</th><th colspan="2">功能操作</th></tr>
+            <tr><th></th><th>右手</th><th>左手</th><th>右手</th><th>左手</th><th>右手</th><th>左手</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="fine_motor_note" placeholder="補充說明"></div>
+    </div>
+
+    <div class="sub-label">3. 建議改善空間（可複選）</div>
+    <div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="space_entry" id="is1" value="主要出入口"><label for="is1">主要出入口</label></div>
+      <div class="check-item"><input type="checkbox" name="space_horiz" id="is2" value="水平通路"><label for="is2">水平通路</label></div>
+      <div class="check-item"><input type="checkbox" name="space_vert" id="is3" value="垂直通路"><label for="is3">垂直通路</label></div>
+      <div class="check-item"><input type="checkbox" name="space_bath" id="is4" value="浴廁空間"><label for="is4">浴廁空間</label></div>
+      <div class="check-item"><input type="checkbox" name="space_bed" id="is5" value="臥房空間"><label for="is5">臥房空間</label></div>
+      <div class="check-item"><input type="checkbox" name="space_kitchen" id="is6" value="廚房空間"><label for="is6">廚房空間</label></div>
+    </div>
+    <div class="field" style="margin-top:8px"><input type="text" id="space_other" placeholder="其他空間"></div>
+
+    <div class="sub-label">4. 各主要生活空間環境障礙現況問題</div>
+    <div class="field-hint" style="margin-bottom:12px">僅需列出障礙空間，點選展開填寫</div>
+    <div id="spaceBarriers"></div>
+
+    <!-- 其他空間 -->
+    <div class="field" style="margin-top:12px"><label class="field-label">其他空間障礙說明</label>
+      <textarea id="space_other_barrier" rows="3" placeholder="其他空間障礙問題描述"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 4: 評估結果 ============ -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">3</div><div class="title">四、評估結果</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+    <div class="field-hint" style="margin-bottom:12px">本評估報告書建議之輔具需經主管機關核定通過後方可購置</div>
+
+    <div class="sub-label">1. 評估結果</div>
+    <div class="field">
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="result" value="不建議使用" id="rr_n"><label for="rr_n">不建議</label></div>
+        <div class="radio-item"><input type="radio" name="result" value="建議使用" id="rr_y"><label for="rr_y">建議使用</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="result_no_reason" placeholder="不建議理由"></div>
+      <div class="field"><input type="text" id="result_yes_detail" placeholder="建議使用項目"></div>
+    </div>
+    <div class="field"><label class="field-label">是否已檢附自宅證明</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="home_cert" value="是" id="rhc_y"><label for="rhc_y">是</label></div>
+        <div class="radio-item"><input type="radio" name="home_cert" value="否" id="rhc_n"><label for="rhc_n">否</label></div>
+        <div class="radio-item"><input type="radio" name="home_cert" value="不需要" id="rhc_na"><label for="rhc_na">不需要</label></div>
+      </div>
+    </div>
+
+    <div class="sub-label">2. 補助項目對照（勾選並填寫數量）</div>
+    <div class="field-hint" style="margin-bottom:8px">身心障礙者輔具費用補助 ↔ 長照給付項目</div>
+    <div id="itemGrid"></div>
+
+    <hr class="divider">
+    <div class="field"><label class="field-label">3. 是否需要接受使用訓練</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="training" value="需要" id="rt_y"><label for="rt_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="training" value="不需要" id="rt_n"><label for="rt_n">不需要</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">4. 是否需要安排追蹤時間</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="followup" value="需要" id="rf_y"><label for="rf_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="followup" value="不需要" id="rf_n"><label for="rf_n">不需要</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">5. 是否一併核發免評項目核可編號</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="exempt" value="需要" id="re_y"><label for="re_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="exempt" value="不需要" id="re_n"><label for="re_n">不需要</label></div>
+      </div>
+      <div id="exemptDetail" style="display:none;margin-top:8px">
+        <div class="row">
+          <div class="field">
+            <div class="check-grid" style="margin-bottom:4px"><div class="check-item"><input type="checkbox" id="re_ltc_check" value="長照"><label for="re_ltc_check">長照</label></div></div>
+            <input type="text" id="exempt_ltc" placeholder="長照項目">
+          </div>
+          <div class="field">
+            <div class="check-grid" style="margin-bottom:4px"><div class="check-item"><input type="checkbox" id="re_dis_check" value="身障"><label for="re_dis_check">身障</label></div></div>
+            <input type="text" id="exempt_disability" placeholder="身障項目">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">6. 其他備註或建議</label><textarea id="other_notes" rows="3" placeholder="其他備註"></textarea></div>
+  </div>
+</div>
+
+<!-- ============ Section 5: 規格配置建議 ============ -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">4</div><div class="title">五、規格配置建議</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+    <div class="sub-label">1. 居家環境現況/改善建議平面圖</div>
+    <div class="field"><label class="field-label">現況平面圖或空間全景照片說明</label>
+      <textarea id="s_current_plan" rows="3" placeholder="描述現況平面圖或全景照片（經評估人員判定不需平面圖者，請放全景照片）"></textarea>
+    </div>
+    <div class="field"><label class="field-label">改善建議簡易平面圖說明</label>
+      <textarea id="s_improve_plan" rows="3" placeholder="描述改善建議後之平面圖"></textarea>
+    </div>
+
+    <div class="sub-label">2. 各空間使用問題及改善建議</div>
+    <div class="field-hint" style="margin-bottom:8px">建議標示出各空間位置、個案動線、空間尺寸、改善項目相關數據</div>
+
+    <!-- 樓梯現況 -->
+    <div class="spec-area">
+      <div class="spec-area-header">樓梯現況問題與改善建議</div>
+      <div class="spec-area-body">
+        <div class="field"><label class="field-label">樓梯紀錄表</label>
+          <div style="overflow-x:auto">
+            <table class="stair-table" id="stairTable">
+              <thead>
+                <tr><th>段</th><th>階數</th><th>級高(cm)</th><th>級深(cm)</th><th>踏面寬(cm)</th><th>扶手</th><th>備註</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button onclick="addStairRow()" style="margin-top:8px;padding:6px 12px;background:var(--brand-light);border:1px solid var(--brand);border-radius:6px;color:var(--brand);font-size:13px;cursor:pointer">+ 新增段</button>
+        </div>
+        <div class="field"><label class="field-label">樓梯類型</label>
+          <div class="radio-inline">
+            <div class="radio-item"><input type="radio" name="s_stair_type" value="直通型" id="sst1"><label for="sst1">直通型</label></div>
+            <div class="radio-item"><input type="radio" name="s_stair_type" value="轉折型" id="sst2"><label for="sst2">轉折型</label></div>
+            <div class="radio-item"><input type="radio" name="s_stair_type" value="L型" id="sst3"><label for="sst3">L型</label></div>
+            <div class="radio-item"><input type="radio" name="s_stair_type" value="旋轉梯" id="sst4"><label for="sst4">旋轉梯</label></div>
+          </div>
+          <div class="field" style="margin-top:6px"><input type="text" id="s_stair_type_other" placeholder="其他型式"></div>
+        </div>
+        <div class="field"><label class="field-label">樓梯及平台圖片說明</label>
+          <textarea id="s_stair_photo_note" rows="2" placeholder="樓梯及平台圖片描述"></textarea>
+        </div>
+        <hr class="divider">
+        <div class="field"><label class="field-label">改善建議</label>
+          <textarea id="s_stair_improve" rows="3" placeholder="改善建議說明文字"></textarea>
+        </div>
+        <div class="field"><label class="field-label">爬梯機建議</label>
+          <div class="check-grid">
+            <div class="check-item"><input type="checkbox" name="s_climber_mode" id="scm1" value="單趟租賃"><label for="scm1">單趟租賃</label></div>
+            <div class="check-item"><input type="checkbox" name="s_climber_mode" id="scm2" value="月租"><label for="scm2">月租</label></div>
+            <div class="check-item"><input type="checkbox" name="s_climber_mode" id="scm3" value="購買"><label for="scm3">購買</label></div>
+            <div class="check-item"><input type="checkbox" name="s_climber_mode" id="scm4" value="中心借用"><label for="scm4">中心借用</label></div>
+          </div>
+          <div class="field" style="margin-top:6px"><input type="text" id="s_climber_model" placeholder="建議爬梯機款式/機型名稱"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 動態空間改善區塊 -->
+    <div id="specBlocks"></div>
+    <button onclick="addSpecBlock()" style="width:100%;padding:12px;background:var(--brand-light);border:1px dashed var(--brand);border-radius:10px;color:var(--brand);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px">+ 新增空間改善區塊</button>
+
+    <hr class="divider">
+    <div class="field"><label class="field-label">3. 適配服務提醒</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" id="s_remind_fit" value="建議聯繫適配服務" checked><label for="s_remind_fit">建議聯繫輔具中心預約適配服務 (02)2523-7902</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">4. 其他備註或建議</label><textarea id="s_other_notes" rows="2" placeholder="其他備註或建議"></textarea></div>
+  </div>
+</div>
+
+<!-- ============ Section 6: 評估資訊 ============ -->
+<div class="section">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="num">5</div><div class="title">評估資訊</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body">
+    <div class="field"><label class="field-label">評估單位</label><input type="text" id="f_eval_unit" value="臺北市西區輔具資源中心"></div>
+    <div class="row">
+      <div class="field"><label class="field-label">評估人員</label><input type="text" id="f_evaluator" value="莊博文"></div>
+      <div class="field"><label class="field-label">職稱</label><input type="text" id="f_eval_title" value="甲類輔具評估人員"></div>
+    </div>
+    <div class="field"><label class="field-label">評估日期</label><input type="text" id="f_eval_date" placeholder="YYYY/MM/DD"></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="saveLocal()">暫存</button>
+  <button class="btn btn-secondary" onclick="copyJSON()">複製 JSON</button>
+  <button class="btn btn-primary" onclick="exportJSON()">匯出 JSON</button>
+</div>
+
+<script>
+// ===== Section toggle =====
+function toggleSection(el){el.classList.toggle('collapsed');el.nextElementSibling.classList.toggle('hidden');}
+
+// ===== Exempt toggle =====
+document.querySelectorAll('input[name="exempt"]').forEach(r=>r.addEventListener('change',function(){
+  document.getElementById('exemptDetail').style.display=this.value==='需要'?'block':'none';
+}));
+
+// ===== Diagnosis grid =====
+(function(){
+  const items=[
+    ['dx_veg','植物人'],['dx_dementia','失智症'],['dx_stroke','中風偏癱'],['dx_sci','脊髓損傷'],
+    ['dx_tbi','腦外傷'],['dx_cerebellar','小腦萎縮症'],['dx_cp','腦性麻痺'],['dx_delay','發展遲緩'],
+    ['dx_mnd','運動神經元疾病'],['dx_parkinson','巴金森氏症'],['dx_muscular','肌肉萎縮症'],
+    ['dx_polio','小兒麻痺'],['dx_fracture','骨折'],['dx_amputation','截肢'],['dx_arthritis','關節炎'],
+    ['dx_intellectual','智能障礙'],['dx_cardio','心肺功能疾病'],['dx_liver_kidney','肝腎疾病'],
+    ['dx_visual','視覺障礙'],['dx_rare','罕見疾病'],['dx_cancer','癌症']
+  ];
+  const c=document.getElementById('dxGrid');
+  items.forEach(([id,label])=>{
+    c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+})();
+
+// ===== Gross motor table =====
+(function(){
+  const actions=['坐','坐站','站','平地行走','斜坡行走','樓梯行走','跨越門檻'];
+  const levels=['獨立完成','部份協助','大量協助','無法執行','不須評估'];
+  const tbody=document.querySelector('#grossMotorTable tbody');
+  actions.forEach((a,i)=>{
+    let row=`<tr><td>${a}</td>`;
+    levels.forEach((l,j)=>{row+=`<td><input type="radio" name="gm_${i}" value="${l}"></td>`;});
+    row+=`<td><input type="text" name="gm_${i}_note" placeholder="說明"></td></tr>`;
+    tbody.innerHTML+=row;
+  });
+})();
+
+// ===== Fine motor table =====
+(function(){
+  const grades=['良好','尚可','不好','極差','無法執行'];
+  const cols=['finger_r','finger_l','grip_r','grip_l','func_r','func_l'];
+  const tbody=document.querySelector('#fineMotorTable tbody');
+  grades.forEach((g,i)=>{
+    let row=`<tr><td>${g}</td>`;
+    cols.forEach((c,j)=>{row+=`<td><input type="radio" name="fm_${c}" value="${g}"></td>`;});
+    row+='</tr>';
+    tbody.innerHTML+=row;
+  });
+})();
+
+// ===== Space barriers =====
+(function(){
+  const spaces=[
+    {id:'entry',name:'主要出入口',items:[
+      {type:'check',items:['門片：寬度不足','門片：高度不足','門片：類型不當','門片：過重','門片：裝設位置不當','門片：門把類型不當']},
+      {type:'check',items:['門前平台材質易滑或止滑效果不佳']},
+      {type:'check',items:['門檻或高低差：門檻過高','門檻或高低差：有高低差']},
+      {type:'check',items:['斜坡：坡度過陡','斜坡：材質不當','斜坡：無防滑措施']},
+      {type:'check',items:['無扶手設置或扶手設置不當','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'horizontal',name:'水平通路',items:[
+      {type:'check',items:['無扶手設置','扶手設置不當','地面高低差或不平整','地面止滑效果不佳']},
+      {type:'check',items:['走道寬度不足：牆面間距離不足','走道寬度不足：物品堆放導致','走道寬度不足：其他']},
+      {type:'check',items:['對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']},
+    ]},
+    {id:'vertical',name:'垂直通路',items:[
+      {type:'check',items:['斜坡：坡度過陡','斜坡：材質不當','斜坡：無防滑措施']},
+      {type:'check',items:['樓梯：無扶手-缺單側','樓梯：無扶手-缺雙側','樓梯：缺乏電動移位裝置']},
+      {type:'check',items:['電梯：電梯外有階梯','電梯：尺寸不符使用']},
+    ]},
+    {id:'bath_door',name:'浴廁門口',items:[
+      {type:'check',items:['門片：寬度不足','門片：高度不足','門片：類型不當','門片：過重','門片：裝設位置不當','門片：門把類型不當']},
+      {type:'check',items:['門前平台材質易滑或止滑效果不佳']},
+      {type:'check',items:['門檻或高低差：門檻過高','門檻或高低差：有高低差']},
+      {type:'check',items:['斜坡：坡度過陡','斜坡：材質不當','斜坡：無防滑措施']},
+      {type:'check',items:['無扶手設置或扶手設置不當','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'bath_inner',name:'浴廁內部',items:[
+      {type:'check',items:['內部空間不足','無扶手設置或扶手設置不當','地板濕滑或地板材質不防滑','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'bath_shower',name:'沐浴與浴缸',items:[
+      {type:'check',items:['水龍頭型式不當','水龍頭位置不當','無浴缸但有使用需求','有裝設浴缸但無使用需求','有裝設浴缸但型式不當','有裝設浴缸但位置不當','無扶手設置或扶手設置不當','地板材質防滑程度不足','需使用其他替代輔具']}
+    ]},
+    {id:'bath_toilet',name:'馬桶',items:[
+      {type:'check',items:['無馬桶但有使用需求','有裝設馬桶但無使用需求','有裝設馬桶但型式或位置不當','馬桶座面高度不當','沖水裝置型式或位置不當','無扶手設置/扶手設置不當','需使用其他替代輔具']}
+    ]},
+    {id:'bath_sink',name:'洗臉台',items:[
+      {type:'check',items:['無洗臉台(槽)但有使用需求','有裝設洗臉台(槽)但無使用需求','有裝設洗臉台(槽)但型式不當','有裝設洗臉台(槽)但位置不當','有裝設洗臉台(槽)但高度不當','洗臉台(槽)下方淨空間不足','水龍頭型式不當','水龍頭位置不當','無扶手設置','扶手設置不當','需使用其他替代輔具']}
+    ]},
+    {id:'bed_door',name:'臥室門口',items:[
+      {type:'check',items:['門片：寬度不足','門片：高度不足','門片：類型不當','門片：過重','門片：裝設位置不當','門片：門把類型不當']},
+      {type:'check',items:['門前平台材質易滑或止滑效果不佳']},
+      {type:'check',items:['門檻或高低差：門檻過高','門檻或高低差：有高低差']},
+      {type:'check',items:['斜坡：坡度過陡','斜坡：材質不當','斜坡：無防滑措施']},
+      {type:'check',items:['無扶手設置或扶手設置不當','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'bed_inner',name:'臥室內部',items:[
+      {type:'check',items:['臥房目前位置不利使用','內部空間不足','架高式和式地板不利個案使用','地板材質易滑或止滑效果不佳','櫥櫃位置影響個案活動','無扶手設置或扶手設置不當','床鋪型式不合適','床鋪位置或高度不當','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'kitchen_door',name:'廚房門口',items:[
+      {type:'check',items:['門片：寬度不足','門片：高度不足','門片：類型不當','門片：過重','門片：裝設位置不當','門片：門把類型不當']},
+      {type:'check',items:['門前平台材質易滑或止滑效果不佳']},
+      {type:'check',items:['門檻或高低差：門檻過高','門檻或高低差：有高低差']},
+      {type:'check',items:['斜坡：坡度過陡','斜坡：材質不當','斜坡：無防滑措施']},
+      {type:'check',items:['無扶手設置或扶手設置不當','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]},
+    {id:'kitchen_inner',name:'廚房內部',items:[
+      {type:'check',items:['內部空間不足','無扶手設置或扶手設置不當','地板材質易滑或止滑效果不佳','地板容易因烹煮容易潮濕','水龍頭型式或位置不當','有使用需求但無流理台','流理台型式或高度不適用','流理台下淨空間不足','抽油煙機型式或位置不當','爐具無法安全開關與使用','對比不當']},
+      {type:'check',items:['明暗度：照明不足','明暗度：照明過度','明暗度：反光干擾']}
+    ]}
+  ];
+
+  const container=document.getElementById('spaceBarriers');
+  spaces.forEach(space=>{
+    let checksHtml='';
+    space.items.forEach(group=>{
+      checksHtml+=`<div class="check-grid" style="margin-bottom:6px">`;
+      group.items.forEach((item,idx)=>{
+        const uid=`sb_${space.id}_${idx}_${Math.random().toString(36).substr(2,4)}`;
+        checksHtml+=`<div class="check-item"><input type="checkbox" name="sb_${space.id}" id="${uid}" value="${item}"><label for="${uid}">${item}</label></div>`;
+      });
+      checksHtml+=`</div>`;
+    });
+    container.innerHTML+=`
+    <div class="space-block">
+      <div class="space-block-header collapsed" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">
+        <span>${space.name}</span><div class="chevron">›</div>
+      </div>
+      <div class="space-block-body hidden">
+        ${checksHtml}
+        <div class="field" style="margin-top:8px"><input type="text" id="sb_${space.id}_other" placeholder="其他障礙"></div>
+        <div class="field"><label class="field-label">障礙原因或尺寸說明</label>
+          <textarea id="sb_${space.id}_note" rows="2" placeholder="障礙原因或尺寸說明"></textarea>
+        </div>
+      </div>
+    </div>`;
+  });
+})();
+
+// ===== Item grid (補助項目對照) =====
+(function(){
+  const groups=[
+    {label:'爬梯機/升降設備',items:[
+      ['i132','項次132 居家無障礙輔具-爬梯機','EH04 爬梯機(單趟)','台'],
+      ['i132b','','EH05 爬梯機(月)','台'],
+      ['i132c','','台北市自辦項目-爬梯機','台'],
+      ['i133','項次133 軌道式樓梯升降機','台北市自辦項目-爬梯機','台'],
+      ['i133b','項次133 軌道式樓梯升降機','無此給付項目','處'],
+      ['i134','項次134 固定式動力垂直升降平台','無此給付項目','處'],
+    ]},
+    {label:'門/扶手/截水槽',items:[
+      ['i135','項次135 門簡易型(單處)','FA11 門A款','處'],
+      ['i136','項次136 門進階型(單處)','FA12 門B款','處'],
+      ['i137','項次137 固定式扶手(每10cm)','FA01 扶手','公分'],
+      ['i138','項次138 可動式扶手(單支)','FA02 可動式扶手','支'],
+      ['i139','項次139 截水槽(單處)','FA11 門A款','處'],
+    ]},
+    {label:'改善高低差',items:[
+      ['i140','項次140 高低差≤10cm','FA06 固定式斜坡道 / FA07 和式地板拆除 / FA11 門A款','處'],
+      ['i141','項次141 高低差≤20cm','FA06 / FA07 / FA11','處'],
+      ['i142','項次142 高低差≤30cm','FA06 / FA07 / FA11','處'],
+      ['i143','項次143 高低差>30cm','FA06 / FA07 / FA11','處'],
+    ]},
+    {label:'衛浴設備',items:[
+      ['i144','項次144 水龍頭','FA13 水龍頭','處'],
+      ['i145','項次145 防滑地磚','FA10 防滑措施','處'],
+      ['i146','項次146 改善浴缸','FA14 改善浴缸','處'],
+      ['i147','項次147 改善洗臉台(槽)','FA15 改善洗臉台(槽)','處'],
+      ['i148','項次148 改善馬桶','FA16 改善馬桶','處'],
+      ['i149','項次149 馬桶背靠','無此給付項目','處'],
+      ['i153','項次153 壁掛式淋浴台','FA17 壁掛式淋浴椅(床)','處'],
+    ]},
+    {label:'廚房設備',items:[
+      ['i150','項次150 改善流理台','FA18 改善流理台','處'],
+      ['i151','項次151 改善抽油煙機','FA19 改善抽油煙機','處'],
+      ['i152','項次152 隔間(每m²)','FA09 隔間','m²'],
+    ]},
+    {label:'斜坡板/防滑/其他',items:[
+      ['i154','項次154 門檻斜角(單側)','FA03 斜坡板A款','塊'],
+      ['i155','項次155 斜坡板<90cm','FA03 斜坡板A款','塊'],
+      ['i156','項次156 斜坡板≥90cm','FA04 斜坡板B款','塊'],
+      ['i157','項次157 斜坡板≥120cm','FA05 斜坡板C款','塊'],
+      ['i158','項次158 斜坡板≥150cm','FA05 斜坡板C款','塊'],
+      ['i159','項次159 防滑措施','FA10 防滑措施','處'],
+      ['i160','項次160 反光貼條/消光','FA08 反光貼條或消光','處'],
+      ['i161','項次161 馬桶扶手','無此給付項目','處'],
+      ['i162','項次162 床邊扶手','無此給付項目','處'],
+    ]}
+  ];
+
+  const container=document.getElementById('itemGrid');
+  groups.forEach(g=>{
+    container.innerHTML+=`<div class="item-group-label">${g.label}</div>`;
+    g.items.forEach(([id,disLabel,ltcLabel,unit])=>{
+      const showLabel=disLabel||ltcLabel;
+      container.innerHTML+=`<div class="item-row">
+        <div class="check-item" style="flex-shrink:0"><input type="checkbox" name="${id}" id="${id}" value="${showLabel}"><label for="${id}" style="font-size:12px;padding:5px 8px">${showLabel}</label></div>
+        <input type="text" inputmode="decimal" id="${id}_qty" placeholder="數量" style="width:70px;padding:6px 8px;font-size:13px;flex-shrink:0">
+        <span class="unit">${unit}</span>
+      </div>`;
+      if(disLabel&&ltcLabel&&ltcLabel!=='無此給付項目'){
+        // show LTC label as hint
+        container.innerHTML+=`<div style="font-size:11px;color:var(--text3);margin:-4px 0 4px 12px">↔ ${ltcLabel}</div>`;
+      }
+    });
+  });
+})();
+
+// ===== Stair table =====
+let stairRowCount=0;
+function addStairRow(){
+  stairRowCount++;
+  const tbody=document.querySelector('#stairTable tbody');
+  const row=document.createElement('tr');
+  row.innerHTML=`<td>${stairRowCount}</td><td><input type="text" inputmode="decimal" id="stair_${stairRowCount}_steps"></td><td><input type="text" inputmode="decimal" id="stair_${stairRowCount}_rise" step="0.1"></td><td><input type="text" inputmode="decimal" id="stair_${stairRowCount}_depth" step="0.1"></td><td><input type="text" inputmode="decimal" id="stair_${stairRowCount}_width" step="0.1"></td><td><input type="text" id="stair_${stairRowCount}_rail" placeholder="有/無"></td><td><input type="text" id="stair_${stairRowCount}_note"></td>`;
+  tbody.appendChild(row);
+}
+// Initialize 3 rows
+for(let i=0;i<3;i++) addStairRow();
+
+// ===== Dynamic spec blocks =====
+let specBlockCount=0;
+function addSpecBlock(){
+  specBlockCount++;
+  const container=document.getElementById('specBlocks');
+  const div=document.createElement('div');
+  div.className='spec-area';
+  div.id=`specBlock_${specBlockCount}`;
+  div.innerHTML=`
+    <div class="spec-area-header">
+      空間改善區塊 #${specBlockCount}
+      <button class="spec-remove" onclick="this.closest('.spec-area').remove()">×</button>
+    </div>
+    <div class="spec-area-body">
+      <div class="field"><label class="field-label">空間位置</label>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_1" value="主要出入口"><label for="sp${specBlockCount}_1">主要出入口</label></div>
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_2" value="水平通路"><label for="sp${specBlockCount}_2">水平通路</label></div>
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_3" value="垂直通路"><label for="sp${specBlockCount}_3">垂直通路</label></div>
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_4" value="浴廁"><label for="sp${specBlockCount}_4">浴廁</label></div>
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_5" value="臥房"><label for="sp${specBlockCount}_5">臥房</label></div>
+          <div class="check-item"><input type="checkbox" name="spec${specBlockCount}_loc" id="sp${specBlockCount}_6" value="廚房"><label for="sp${specBlockCount}_6">廚房</label></div>
+        </div>
+        <div class="field" style="margin-top:6px"><input type="text" id="spec${specBlockCount}_loc_other" placeholder="其他空間"></div>
+      </div>
+      <div class="field"><label class="field-label">居家空間現況問題</label>
+        <textarea id="spec${specBlockCount}_problem" rows="3" placeholder="說明文字"></textarea>
+      </div>
+      <div class="field"><label class="field-label">改善建議</label>
+        <textarea id="spec${specBlockCount}_improve" rows="3" placeholder="說明文字、產品主要規格說明"></textarea>
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+// ===== Progress =====
+function updateProgress(){
+  const checked=document.querySelectorAll('input[type="radio"]:checked,input[type="checkbox"]:checked').length;
+  const filled=Array.from(document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea')).filter(el=>el.value.trim()).length;
+  document.getElementById('progressFill').style.width=Math.min(100,Math.round((checked+filled)/50*100))+'%';
+}
+document.addEventListener('change',updateProgress);
+document.addEventListener('input',updateProgress);
+
+// ===== Collect data =====
+function collectData(){
+  const data={};
+  // Text, number, textarea
+  document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea').forEach(el=>{
+    if(el.id&&el.value.trim()) data[el.id]=el.value.trim();
+  });
+  // Radios
+  document.querySelectorAll('input[type="radio"]:checked').forEach(el=>{data[el.name]=el.value;});
+  // Checkboxes
+  const checks={};
+  document.querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{
+    const key=el.name||el.id;
+    if(!checks[key])checks[key]=[];
+    checks[key].push(el.value);
+  });
+  data._checks=checks;
+  // Gross motor
+  const grossMotor={};
+  const gmActions=['坐','坐站','站','平地行走','斜坡行走','樓梯行走','跨越門檻'];
+  gmActions.forEach((a,i)=>{
+    const sel=document.querySelector(`input[name="gm_${i}"]:checked`);
+    const note=document.querySelector(`input[name="gm_${i}_note"]`);
+    if(sel) grossMotor[a]={level:sel.value,note:note?note.value:''};
+  });
+  if(Object.keys(grossMotor).length) data._grossMotor=grossMotor;
+  // Fine motor
+  const fineMotor={};
+  ['finger_r','finger_l','grip_r','grip_l','func_r','func_l'].forEach(c=>{
+    const sel=document.querySelector(`input[name="fm_${c}"]:checked`);
+    if(sel) fineMotor[c]=sel.value;
+  });
+  if(Object.keys(fineMotor).length) data._fineMotor=fineMotor;
+  // Stair table
+  const stairs=[];
+  for(let i=1;i<=stairRowCount;i++){
+    const steps=document.getElementById(`stair_${i}_steps`);
+    if(steps&&steps.value){
+      stairs.push({
+        段:i,階數:steps.value,
+        級高:document.getElementById(`stair_${i}_rise`)?.value||'',
+        級深:document.getElementById(`stair_${i}_depth`)?.value||'',
+        踏面寬:document.getElementById(`stair_${i}_width`)?.value||'',
+        扶手:document.getElementById(`stair_${i}_rail`)?.value||'',
+        備註:document.getElementById(`stair_${i}_note`)?.value||''
+      });
+    }
+  }
+  if(stairs.length) data._stairs=stairs;
+  // Spec blocks
+  const specs=[];
+  document.querySelectorAll('[id^="specBlock_"]').forEach(block=>{
+    const num=block.id.split('_')[1];
+    const locs=[];
+    block.querySelectorAll(`input[name="spec${num}_loc"]:checked`).forEach(c=>locs.push(c.value));
+    const locOther=document.getElementById(`spec${num}_loc_other`)?.value||'';
+    const problem=document.getElementById(`spec${num}_problem`)?.value||'';
+    const improve=document.getElementById(`spec${num}_improve`)?.value||'';
+    if(locs.length||locOther||problem||improve){
+      specs.push({位置:locs,位置其他:locOther,現況問題:problem,改善建議:improve});
+    }
+  });
+  if(specs.length) data._specBlocks=specs;
+
+  data._timestamp=new Date().toISOString();
+  data._report='編號19-居家無障礙修繕及輔具';
+  return data;
+}
+
+// ===== Save/Export =====
+function saveLocal(){localStorage.setItem('form19_draft',JSON.stringify(collectData()));showToast('已暫存至本機');}
+
+function exportJSON(){
+  const data=collectData();const json=JSON.stringify(data,null,2);
+  try{
+    const b=new Blob([json],{type:'application/json'});
+    const u=URL.createObjectURL(b);
+    const a=document.createElement('a');
+    a.href=u;
+    a.download=`19_居家無障礙_${data.f_evaluator||'草稿'}_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();URL.revokeObjectURL(u);
+  }catch(e){}
+  copyJSON();
+}
+
+function copyJSON(){
+  const json=JSON.stringify(collectData(),null,2);
+  showCopyModal(json);
+}
+
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;
+  ta.style.cssText='position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('已複製到剪貼簿');}catch(e){showCopyModal(text);}
+  document.body.removeChild(ta);
+}
+
+function showCopyModal(text){
+  const o=document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  const b=document.createElement('div');
+  b.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';
+  b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字全選→複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;
+  o.appendChild(b);document.body.appendChild(o);
+  b.querySelector('textarea').focus();b.querySelector('textarea').select();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+// ===== Init =====
+window.addEventListener('load',function(){
+  updateProgress();
+  // Auto fill today's date
+  if(!document.getElementById('f_eval_date').value){
+    const d=new Date();
+    document.getElementById('f_eval_date').value=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  }
+  // Restore draft
+  try{
+    const draft=JSON.parse(localStorage.getItem('form19_draft'));
+    if(draft){
+      // Restore text/number/textarea
+      Object.keys(draft).forEach(k=>{
+        if(k.startsWith('_'))return;
+        const el=document.getElementById(k);
+        if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'))el.value=draft[k];
+      });
+      // Restore radios
+      Object.keys(draft).forEach(k=>{
+        if(k.startsWith('_'))return;
+        const radio=document.querySelector(`input[name="${k}"][value="${draft[k]}"]`);
+        if(radio)radio.checked=true;
+      });
+      // Restore checks
+      if(draft._checks){
+        Object.entries(draft._checks).forEach(([name,vals])=>{
+          vals.forEach(v=>{
+            const cb=document.querySelector(`input[name="${name}"][value="${v}"],input[id="${name}"][value="${v}"]`);
+            if(cb)cb.checked=true;
+          });
+        });
+      }
+      // Trigger visibility toggles
+      document.querySelectorAll('input[name="exempt"]:checked').forEach(r=>r.dispatchEvent(new Event('change')));
+      updateProgress();
+    }
+  }catch(e){}
+});
+</script>
+</body>
+</html>

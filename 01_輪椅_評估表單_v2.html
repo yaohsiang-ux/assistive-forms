@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>編號01 輪椅評估表</title>
+<style>
+:root{--brand:#D65A31;--brand-light:#fef0eb;--brand-dark:#a84520;--amber:#E6AF2E;--brown:#4B3621;--bg:#fafaf8;--card:#fff;--border:#e2e0d8;--text:#2c2c2a;--text2:#6b6a65;--text3:#9c9a92;--success:#1d9e75;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:120px}
+.header{background:var(--brand);color:#fff;padding:16px 20px;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:600}.header .sub{font-size:13px;opacity:.85;margin-top:2px}
+.progress-bar{height:3px;background:var(--border);position:sticky;top:60px;z-index:99}
+.progress-fill{height:100%;background:var(--brand);transition:width .3s;width:0%}
+.section{background:var(--card);margin:12px;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border)}
+.section-header{padding:14px 16px;background:linear-gradient(135deg,var(--brand-light),#fff);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.section-header .num{background:var(--brand);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.section-header .title{font-size:15px;font-weight:600;color:var(--brown)}
+.section-header .chevron{margin-left:auto;font-size:18px;color:var(--text3);transition:transform .2s}
+.section-header.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px}.section-body.hidden{display:none}
+.field{margin-bottom:16px}.field:last-child{margin-bottom:0}
+.field-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.field-hint{font-size:12px;color:var(--text3);margin-top:2px}
+input[type="text"],input[type="text" inputmode="decimal"],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(214,90,49,.12)}
+textarea{resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.check-grid{display:flex;flex-wrap:wrap;gap:8px}
+.check-item input{display:none}.check-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}
+.check-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}
+.radio-inline{display:flex;flex-wrap:wrap;gap:8px}
+.radio-item input{display:none}.radio-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}
+.radio-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+.sub-label{font-size:14px;font-weight:600;color:var(--brown);margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--amber)}
+.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100}
+.btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--brand);color:#fff}.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.conditional{display:none}.conditional.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>編號01 輪椅評估表</h1>
+  <div class="sub">推車、輪椅、輪椅附加功能及配件</div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div id="toast" class="toast"></div>
+
+<!-- ==================== Section 1: 活動需求 ==================== -->
+<div class="section">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="num">1</div><div class="title">活動需求與情境</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body">
+
+    <div class="field"><label class="field-label">預計使用場合（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="place_home" id="pl_h" value="居家生活"><label for="pl_h">居家生活</label></div>
+        <div class="check-item"><input type="checkbox" name="place_inst" id="pl_i" value="照顧機構"><label for="pl_i">照顧機構</label></div>
+        <div class="check-item"><input type="checkbox" name="place_school" id="pl_s" value="校園學習"><label for="pl_s">校園學習</label></div>
+        <div class="check-item"><input type="checkbox" name="place_work" id="pl_w" value="職場就業"><label for="pl_w">職場就業</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="place_other" placeholder="其他場合"></div>
+    </div>
+
+    <div class="field"><label class="field-label">活動需求（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="need_static" id="nd_st" value="室內靜態活動為主"><label for="nd_st">室內靜態活動為主</label></div>
+        <div class="check-item"><input type="checkbox" name="need_short" id="nd_sh" value="短距離移動"><label for="nd_sh">社區/校園短距離移動</label></div>
+        <div class="check-item"><input type="checkbox" name="need_long" id="nd_lg" value="中長距離移動"><label for="nd_lg">中長距離移動(>1km)</label></div>
+        <div class="check-item"><input type="checkbox" name="need_sport" id="nd_sp" value="運動休閒"><label for="nd_sp">運動休閒</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><input type="text" id="need_short_freq" placeholder="短距離頻率"></div>
+        <div class="field"><input type="text" id="need_long_freq" placeholder="長距離頻率"></div>
+      </div>
+      <div class="field"><input type="text" id="need_sport_type" placeholder="運動休閒類型"></div>
+    </div>
+
+    <div class="field"><label class="field-label">使用環境特性（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="env_flat" id="env_f" value="大致平坦"><label for="env_f">大致平坦</label></div>
+        <div class="check-item"><input type="checkbox" name="env_rough" id="env_r" value="經常通過顛簸路面"><label for="env_r">顛簸路面</label></div>
+        <div class="check-item"><input type="checkbox" name="env_thresh" id="env_t" value="需跨越門檻"><label for="env_t">跨越門檻/線槽</label></div>
+        <div class="check-item"><input type="checkbox" name="env_gap" id="env_g" value="經常需跨越間隙"><label for="env_g">跨越間隙</label></div>
+        <div class="check-item"><input type="checkbox" name="env_ramp" id="env_rm" value="需在無障礙坡道推行"><label for="env_rm">無障礙坡道</label></div>
+        <div class="check-item"><input type="checkbox" name="env_steep" id="env_st" value="需在陡坡推行"><label for="env_st">陡坡推行</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><input type="text" id="env_thresh_h" placeholder="門檻高低差(cm)"></div>
+        <div class="field"><input type="text" id="env_gap_d" placeholder="間隙距離(cm)"></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">人力支持情況</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="support" value="無" id="sup_n"><label for="sup_n">無</label></div>
+        <div class="radio-item"><input type="radio" name="support" value="偶有協助人力" id="sup_o"><label for="sup_o">偶有協助</label></div>
+        <div class="radio-item"><input type="radio" name="support" value="經常有照顧者陪同" id="sup_c"><label for="sup_c">經常有照顧者</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="support_other" placeholder="其他"></div>
+    </div>
+
+    <div class="field"><label class="field-label">交通運輸方式（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="trans_none" id="tr_n" value="無"><label for="tr_n">無</label></div>
+        <div class="check-item"><input type="checkbox" name="trans_bus" id="tr_b" value="公車/復康巴士"><label for="tr_b">公車/復康巴士</label></div>
+        <div class="check-item"><input type="checkbox" name="trans_car" id="tr_c" value="需小客車載運"><label for="tr_c">小客車載運</label></div>
+        <div class="check-item"><input type="checkbox" name="trans_moto" id="tr_m" value="自駕改裝機車"><label for="tr_m">自駕改裝機車</label></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== Section 2: 目前輔具 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">2</div><div class="title">目前使用的輔具</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+
+    <div class="field"><label class="field-label">輔具種類</label>
+      <div class="sub-label">推車</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="cur_buggy_std" id="cb_s" value="一般型"><label for="cb_s">一般型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_buggy_hd" id="cb_h" value="荷重型"><label for="cb_h">荷重型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_buggy_pos" id="cb_p" value="擺位型"><label for="cb_p">擺位型</label></div>
+      </div>
+      <div class="sub-label">輪椅</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="cur_wc_std" id="cw_s" value="非輕量化量產型"><label for="cw_s">非輕量化量產型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_wc_light" id="cw_l" value="輕量化量產型"><label for="cw_l">輕量化量產型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_wc_custom" id="cw_c" value="客製型"><label for="cw_c">客製型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_wc_power" id="cw_p" value="手推圈啟動型"><label for="cw_p">手推圈啟動型動力輔助</label></div>
+      </div>
+      <div class="sub-label">輪椅附加功能（可複選）</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="cur_af_transfer" id="ca_t" value="利於移位"><label for="ca_t">利於移位</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_af_recline" id="ca_r" value="仰躺"><label for="ca_r">仰躺</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_af_tilt" id="ca_ti" value="空中傾倒"><label for="ca_ti">空中傾倒</label></div>
+      </div>
+      <div class="sub-label">高活動型輪椅</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="cur_ha_basic" id="ch_b" value="基礎型"><label for="ch_b">基礎型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_ha_adv" id="ch_a" value="進階型"><label for="ch_a">進階型</label></div>
+      </div>
+      <div class="sub-label">輪椅配件-動力套件</div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="cur_pk_rear" id="cp_r" value="後推式介護型"><label for="cp_r">後推式介護型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_pk_self" id="cp_s" value="後推式自駕型"><label for="cp_s">後推式自駕型</label></div>
+        <div class="check-item"><input type="checkbox" name="cur_pk_front" id="cp_f" value="前拉式自駕型"><label for="cp_f">前拉式自駕型</label></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="field"><label class="field-label">輔具來源</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="cur_source" value="政府補助" id="sr_gov"><label for="sr_gov">政府補助</label></div>
+        <div class="radio-item"><input type="radio" name="cur_source" value="二手輔具" id="sr_2nd"><label for="sr_2nd">二手輔具</label></div>
+        <div class="radio-item"><input type="radio" name="cur_source" value="自購" id="sr_self"><label for="sr_self">自購</label></div>
+        <div class="radio-item"><input type="radio" name="cur_source" value="其他" id="sr_oth"><label for="sr_oth">其他</label></div>
+      </div>
+      <div id="srcDetail" class="conditional">
+        <div class="field" style="margin-top:8px"><label class="field-label">政府補助類型（可複選）</label>
+          <div class="check-grid">
+            <div class="check-item"><input type="checkbox" name="src_disability" id="sr_d" value="身障"><label for="sr_d">身障</label></div>
+            <div class="check-item"><input type="checkbox" name="src_ltc" id="sr_l" value="長照"><label for="sr_l">長照</label></div>
+            <div class="check-item"><input type="checkbox" name="src_work" id="sr_w" value="職災"><label for="sr_w">職災</label></div>
+            <div class="check-item"><input type="checkbox" name="src_rehab" id="sr_r" value="職再"><label for="sr_r">職再</label></div>
+            <div class="check-item"><input type="checkbox" name="src_edu" id="sr_e" value="教育"><label for="sr_e">教育</label></div>
+            <div class="check-item"><input type="checkbox" name="src_vet" id="sr_v" value="榮民"><label for="sr_v">榮民</label></div>
+            <div class="check-item"><input type="checkbox" name="src_nhi" id="sr_n" value="健保"><label for="sr_n">健保</label></div>
+          </div>
+          <div class="field" style="margin-top:8px"><input type="text" id="src_gov_other" placeholder="其他補助來源"></div>
+        </div>
+        <div class="field"><label class="field-label">二手輔具方式</label>
+          <div class="radio-inline">
+            <div class="radio-item"><input type="radio" name="src_2nd_type" value="租借" id="s2_a"><label for="s2_a">租借</label></div>
+            <div class="radio-item"><input type="radio" name="src_2nd_type" value="媒合" id="s2_b"><label for="s2_b">媒合</label></div>
+          </div>
+        </div>
+        <div class="field"><input type="text" id="src_other_text" placeholder="其他來源說明"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field"><label class="field-label">已使用約（年）</label><input type="text" inputmode="decimal" id="cur_years" placeholder="年"></div>
+      <div class="field"><label class="field-label">使用年限</label>
+        <div class="check-grid"><div class="check-item"><input type="checkbox" name="cur_years_unknown" id="yr_u" value="不明"><label for="yr_u">使用年限不明</label></div></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">使用情形</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="cur_status" value="已損壞不堪修復，需更新" id="cs_1"><label for="cs_1">損壞需更新</label></div>
+        <div class="radio-item"><input type="radio" name="cur_status" value="規格或功能不符使用者現在的需求，需更換" id="cs_2"><label for="cs_2">規格不符需更換</label></div>
+        <div class="radio-item"><input type="radio" name="cur_status" value="適合繼續使用，但需要另行購置於不同場所使用" id="cs_3"><label for="cs_3">另購於不同場所</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="cur_status_other" placeholder="其他"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== Section 3: 身體評估 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">3</div><div class="title">身體功能評估</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+
+    <div class="sub-label">診斷（可複選）</div>
+    <div class="check-grid" id="dxGrid"></div>
+    <div class="row" style="margin-top:8px">
+      <div class="field"><input type="text" id="dx_stroke_side" placeholder="中風偏癱側(左/右)"></div>
+      <div class="field"><input type="text" id="dx_sci_level" placeholder="脊髓損傷位(頸/胸/腰/薦)"></div>
+    </div>
+    <div class="field"><input type="text" id="dx_tbi_side" placeholder="腦外傷(左/右)"></div>
+    <div class="field"><input type="text" id="dx_other_text" placeholder="其他診斷"></div>
+
+    <hr class="divider">
+    <div class="sub-label">身體尺寸</div>
+    <div class="row3">
+      <div class="field"><label class="field-label">身高(cm)</label><input type="text" inputmode="decimal" id="f_height"></div>
+      <div class="field"><label class="field-label">體重(kg)</label><input type="text" inputmode="decimal" id="f_weight"></div>
+      <div class="field"><label class="field-label">體型概述</label><input type="text" id="body_desc"></div>
+    </div>
+
+    <div class="sub-label">管路/造口（可複選）</div>
+    <div class="check-grid" id="tubeGrid"></div>
+
+    <hr class="divider">
+    <div class="sub-label">身體各部位姿態</div>
+
+    <div class="field"><label class="field-label">靜態坐姿維持能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="sit_bal" value="良好" id="sb_1"><label for="sb_1">良好</label></div>
+        <div class="radio-item"><input type="radio" name="sit_bal" value="雙手扶持尚可維持平衡" id="sb_2"><label for="sb_2">雙手扶持尚可</label></div>
+        <div class="radio-item"><input type="radio" name="sit_bal" value="雙手扶持難以維持平衡" id="sb_3"><label for="sb_3">雙手扶持難以</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="field-label">身體明顯會倒向（可複選）</label>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" name="fall_l" id="fl_l" value="左側"><label for="fl_l">左側</label></div>
+          <div class="check-item"><input type="checkbox" name="fall_r" id="fl_r" value="右側"><label for="fl_r">右側</label></div>
+          <div class="check-item"><input type="checkbox" name="fall_f" id="fl_f" value="前方"><label for="fl_f">前方</label></div>
+          <div class="check-item"><input type="checkbox" name="fall_b" id="fl_b" value="後方"><label for="fl_b">後方</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">輪椅移動時坐姿維持能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="move_bal" value="良好" id="mb_1"><label for="mb_1">良好</label></div>
+        <div class="radio-item"><input type="radio" name="move_bal" value="尚可維持平衡" id="mb_2"><label for="mb_2">尚可維持</label></div>
+        <div class="radio-item"><input type="radio" name="move_bal" value="需以輔具加強軀幹支撐" id="mb_3"><label for="mb_3">需輔具加強</label></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">骨盆（可複選）</label>
+      <div class="check-grid" id="pelvisGrid"></div>
+    </div>
+
+    <div class="field"><label class="field-label">脊柱（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="spine_normal" id="sp_n" value="無明顯變形"><label for="sp_n">無明顯變形</label></div>
+        <div class="check-item"><input type="checkbox" name="spine_scol" id="sp_s" value="脊柱側彎"><label for="sp_s">脊柱側彎</label></div>
+        <div class="check-item"><input type="checkbox" name="spine_lordosis" id="sp_l" value="過度前凸"><label for="sp_l">過度前凸</label></div>
+        <div class="check-item"><input type="checkbox" name="spine_kyphosis" id="sp_k" value="過度後凸"><label for="sp_k">過度後凸</label></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">頭部控制</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="head_ctrl" value="正常" id="hc_1"><label for="hc_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="head_ctrl" value="控制不佳" id="hc_2"><label for="hc_2">偶可維持但不佳</label></div>
+        <div class="radio-item"><input type="radio" name="head_ctrl" value="完全無法控制" id="hc_3"><label for="hc_3">完全無法</label></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">髖部</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="hip" value="正常" id="hip_1"><label for="hip_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="hip" value="內收變形" id="hip_2"><label for="hip_2">內收變形</label></div>
+        <div class="radio-item"><input type="radio" name="hip" value="外展變形" id="hip_3"><label for="hip_3">外展變形</label></div>
+        <div class="radio-item"><input type="radio" name="hip" value="風吹式變形" id="hip_4"><label for="hip_4">風吹式變形</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="hip_other" placeholder="其他"></div>
+    </div>
+
+    <div class="field"><label class="field-label">膝部</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="knee" value="正常" id="kn_1"><label for="kn_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="knee" value="屈曲變形" id="kn_2"><label for="kn_2">屈曲變形</label></div>
+        <div class="radio-item"><input type="radio" name="knee" value="伸直變形" id="kn_3"><label for="kn_3">伸直變形</label></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">踝部（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="ankle_normal" id="ak_n" value="正常"><label for="ak_n">正常</label></div>
+        <div class="check-item"><input type="checkbox" name="ankle_inversion" id="ak_i" value="內翻變形"><label for="ak_i">內翻</label></div>
+        <div class="check-item"><input type="checkbox" name="ankle_eversion" id="ak_e" value="外翻變形"><label for="ak_e">外翻</label></div>
+        <div class="check-item"><input type="checkbox" name="ankle_plantar" id="ak_p" value="蹠屈變形"><label for="ak_p">蹠屈</label></div>
+        <div class="check-item"><input type="checkbox" name="ankle_dorsi" id="ak_d" value="背屈變形"><label for="ak_d">背屈</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="ankle_other" placeholder="其他踝部"></div>
+    </div>
+
+    <div class="field"><label class="field-label">其他攣縮</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="contracture" value="無" id="ctr_n"><label for="ctr_n">無</label></div>
+        <div class="radio-item"><input type="radio" name="contracture" value="有" id="ctr_y"><label for="ctr_y">有</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="contracture_site" placeholder="攣縮部位"></div>
+      <div class="field"><input type="text" id="contracture_impact" placeholder="對坐姿擺位之影響"></div>
+    </div>
+
+    <div class="field"><label class="field-label">異常肌張力</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="tone_none" id="tn_n" value="無"><label for="tn_n">無</label></div>
+        <div class="check-item"><input type="checkbox" name="tone_low" id="tn_l" value="低張"><label for="tn_l">低張</label></div>
+        <div class="check-item"><input type="checkbox" name="tone_high" id="tn_h" value="高張"><label for="tn_h">高張</label></div>
+        <div class="check-item"><input type="checkbox" name="tone_athetoid" id="tn_a" value="徐動"><label for="tn_a">徐動</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="tone_impact" placeholder="對於坐姿的影響"></div>
+    </div>
+
+    <div class="field"><label class="field-label">認知/判斷能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="cognition" value="正常" id="cg_1"><label for="cg_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="cognition" value="尚可" id="cg_2"><label for="cg_2">尚可</label></div>
+        <div class="radio-item"><input type="radio" name="cognition" value="錯亂或遲鈍" id="cg_3"><label for="cg_3">錯亂或遲鈍</label></div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">視知覺能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="vision" value="正常" id="vi_1"><label for="vi_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="vision" value="尚可" id="vi_2"><label for="vi_2">尚可</label></div>
+        <div class="radio-item"><input type="radio" name="vision" value="差" id="vi_3"><label for="vi_3">差</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="vision_other" placeholder="其他視知覺"></div>
+    </div>
+
+    <div class="field"><label class="field-label">皮膚感覺</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="skin_sense" value="正常" id="ss_1"><label for="ss_1">正常</label></div>
+        <div class="radio-item"><input type="radio" name="skin_sense" value="異常" id="ss_2"><label for="ss_2">異常</label></div>
+        <div class="radio-item"><input type="radio" name="skin_sense" value="喪失" id="ss_3"><label for="ss_3">喪失</label></div>
+        <div class="radio-item"><input type="radio" name="skin_sense" value="無法施測" id="ss_4"><label for="ss_4">無法施測</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="skin_sense_detail" placeholder="異常/喪失說明"></div>
+    </div>
+
+    <div class="field"><label class="field-label">壓傷(褥瘡)</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="pressure_sore" value="未曾發生" id="ps_1"><label for="ps_1">未曾發生</label></div>
+        <div class="radio-item"><input type="radio" name="pressure_sore" value="過去有" id="ps_2"><label for="ps_2">過去有</label></div>
+        <div class="radio-item"><input type="radio" name="pressure_sore" value="目前有" id="ps_3"><label for="ps_3">目前有</label></div>
+      </div>
+      <div id="soreDetailBlock" class="conditional">
+        <div class="field" style="margin-top:8px"><input type="text" id="sore_past_site" placeholder="過去壓傷部位"></div>
+        <div class="sub-label" style="margin-top:8px">目前壓傷（第一處）</div>
+        <div class="field"><input type="text" id="sore_site1" placeholder="部位"></div>
+        <div class="row">
+          <div class="field"><input type="text" id="sore_size1" placeholder="尺寸(cm × cm)"></div>
+          <div class="field"><label class="field-label">分級</label>
+            <div class="radio-inline">
+              <div class="radio-item"><input type="radio" name="sore_grade1" value="I" id="sg1a"><label for="sg1a">I</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade1" value="II" id="sg1b"><label for="sg1b">II</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade1" value="III" id="sg1c"><label for="sg1c">III</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade1" value="IV" id="sg1d"><label for="sg1d">IV</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade1" value="無法分級" id="sg1e"><label for="sg1e">無法分級</label></div>
+            </div>
+          </div>
+        </div>
+        <div class="sub-label" style="margin-top:8px">目前壓傷（第二處）</div>
+        <div class="field"><input type="text" id="sore_site2" placeholder="部位"></div>
+        <div class="row">
+          <div class="field"><input type="text" id="sore_size2" placeholder="尺寸(cm × cm)"></div>
+          <div class="field"><label class="field-label">分級</label>
+            <div class="radio-inline">
+              <div class="radio-item"><input type="radio" name="sore_grade2" value="I" id="sg2a"><label for="sg2a">I</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade2" value="II" id="sg2b"><label for="sg2b">II</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade2" value="III" id="sg2c"><label for="sg2c">III</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade2" value="IV" id="sg2d"><label for="sg2d">IV</label></div>
+              <div class="radio-item"><input type="radio" name="sore_grade2" value="無法分級" id="sg2e"><label for="sg2e">無法分級</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">以下肢承重方式轉位能力</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="transfer" value="可" id="tf_1"><label for="tf_1">可</label></div>
+        <div class="radio-item"><input type="radio" name="transfer" value="否" id="tf_2"><label for="tf_2">否</label></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== Section 4: 身體量測 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">4</div><div class="title">身體量測數據</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+    <div class="field-hint" style="margin-bottom:12px">僅申請輪椅配件-後推式介護型動力套件者免填</div>
+    <div class="field"><label class="field-label">長度單位</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="unit" value="公分" id="u_cm" checked><label for="u_cm">公分</label></div>
+        <div class="radio-item"><input type="radio" name="unit" value="英吋" id="u_in"><label for="u_in">英吋</label></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">髖關節限制(左)</label><input type="text" id="hip_limit_l"></div>
+      <div class="field"><label class="field-label">髖關節限制(右)</label><input type="text" id="hip_limit_r"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">膝關節限制(左)</label><input type="text" id="knee_limit_l"></div>
+      <div class="field"><label class="field-label">膝關節限制(右)</label><input type="text" id="knee_limit_r"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">坐面最寬處</label><input type="text" id="seat_width">
+        <div class="check-grid" style="margin-top:4px"><div class="check-item"><input type="checkbox" name="seat_w_hip" id="sw_h" value="臀寬"><label for="sw_h">□臀寬</label></div></div>
+      </div>
+      <div class="field"><label class="field-label">臀至膝窩</label><input type="text" id="butt_knee"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">膝窩至腳底</label><input type="text" id="knee_foot"></div>
+      <div class="field"><label class="field-label">含鞋</label>
+        <div class="check-grid"><div class="check-item"><input type="checkbox" name="shoe" id="shoe_y" value="含鞋"><label for="shoe_y">含鞋</label></div></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">肩胛下角高</label><input type="text" id="scapula_h">
+        <div class="check-grid" style="margin-top:4px"><div class="check-item"><input type="checkbox" name="scap_axilla" id="sc_ax" value="腋窩高"><label for="sc_ax">□腋窩高</label></div></div>
+      </div>
+      <div class="field"><label class="field-label">肩峰高度</label><input type="text" id="acromion_h"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">枕骨中心高</label><input type="text" id="occiput_h">
+        <div class="check-grid" style="margin-top:4px"><div class="check-item"><input type="checkbox" name="occ_head" id="oc_hd" value="頭高"><label for="oc_hd">□頭高</label></div></div>
+      </div>
+      <div class="field"><label class="field-label">胸廓寬度</label><input type="text" id="thorax_w"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">肩峰距離</label><input type="text" id="shoulder_dist"></div>
+      <div class="field"><label class="field-label">上臂垂直高</label><input type="text" id="arm_h">
+        <div class="check-grid" style="margin-top:4px"><div class="check-item"><input type="checkbox" name="arm_len" id="ar_ln" value="上臂長"><label for="ar_ln">□上臂長</label></div></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">胸廓厚度</label><input type="text" id="thorax_d"></div>
+  </div>
+</div>
+
+<!-- ==================== Section 5: 輪椅操作技巧 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">5</div><div class="title">輪椅操作技巧</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+    <div class="field-hint" style="margin-bottom:12px">推車/後推式介護型動力套件使用者免填</div>
+    <div id="skillsCont"></div>
+  </div>
+</div>
+
+<!-- ==================== Section 6: 評估結果 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">6</div><div class="title">評估結果</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+
+    <div class="field"><label class="field-label">評估結果</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="result" value="不建議" id="res_n"><label for="res_n">不建議</label></div>
+        <div class="radio-item"><input type="radio" name="result" value="建議使用" id="res_y"><label for="res_y">建議使用</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="result_no_reason" placeholder="不建議理由"></div>
+    <div class="field" style="margin-top:8px"><input type="text" id="result_yes_detail" placeholder="建議使用項目說明"></div>
+    </div>
+
+    <div class="field"><label class="field-label">建議使用項目（可複選）</label>
+      <div class="check-grid" id="itemGrid"></div>
+    </div>
+
+    <div class="field"><label class="field-label">使用理由</label>
+      <div class="radio-inline" style="margin-bottom:8px">
+        <div class="radio-item"><input type="radio" name="reason_mode" value="unified" id="rm_u" checked><label for="rm_u">統一理由</label></div>
+        <div class="radio-item"><input type="radio" name="reason_mode" value="separate" id="rm_s"><label for="rm_s">個別理由</label></div>
+      </div>
+      <textarea id="use_reason" rows="3" placeholder="使用理由"></textarea>
+    </div>
+
+    <hr class="divider">
+    <div class="field"><label class="field-label">使用訓練</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="training" value="需要" id="trn_y"><label for="trn_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="training" value="不需要" id="trn_n"><label for="trn_n">不需要</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">追蹤時間</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="followup" value="需要" id="fu_y"><label for="fu_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="followup" value="不需要" id="fu_n"><label for="fu_n">不需要</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">免評項目</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="exempt" value="需要" id="ex_y"><label for="ex_y">需要</label></div>
+        <div class="radio-item"><input type="radio" name="exempt" value="不需要" id="ex_n"><label for="ex_n">不需要</label></div>
+      </div>
+      <div id="exemptDetail" style="display:none;margin-top:8px">
+        <div class="row">
+          <div class="field"><input type="text" id="exempt_ltc" placeholder="長照項目"></div>
+          <div class="field"><input type="text" id="exempt_disability" placeholder="身障項目"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field"><label class="field-label">其他</label><textarea id="result_other" rows="2" placeholder="其他評估結果備註"></textarea></div>
+
+  </div>
+</div>
+
+<!-- ==================== Section 7: 規格配置 ==================== -->
+<div class="section">
+  <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="num">7</div><div class="title">規格配置建議</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body hidden">
+
+    <div class="field"><label class="field-label">類型</label>
+      <div class="check-grid" id="specTypeGrid"></div>
+    </div>
+
+    <div class="field"><label class="field-label">操作者</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="operator" value="完全由照顧者操作" id="op_1"><label for="op_1">完全照顧者</label></div>
+        <div class="radio-item"><input type="radio" name="operator" value="主要由照顧者操作，個案偶會操作" id="op_2"><label for="op_2">主要照顧者</label></div>
+        <div class="radio-item"><input type="radio" name="operator" value="個案獨立操作" id="op_3"><label for="op_3">個案獨立</label></div>
+      </div>
+    </div>
+
+    <div class="sub-label">輪椅移動系統</div>
+    <div class="field"><label class="field-label">骨架形式</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="frame" value="固定式" id="fr_1"><label for="fr_1">固定式</label></div>
+        <div class="radio-item"><input type="radio" name="frame" value="折合式" id="fr_2"><label for="fr_2">折合式</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">前輪</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="front_wheel" value="硬膠胎" id="fw_1"><label for="fw_1">硬膠胎</label></div>
+        <div class="radio-item"><input type="radio" name="front_wheel" value="免充氣胎" id="fw_2"><label for="fw_2">免充氣胎</label></div>
+        <div class="radio-item"><input type="radio" name="front_wheel" value="充氣胎" id="fw_3"><label for="fw_3">充氣胎</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">前輪避震器</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="front_shock" value="建議" id="fs_1"><label for="fs_1">建議</label></div>
+        <div class="radio-item"><input type="radio" name="front_shock" value="不建議" id="fs_2"><label for="fs_2">不建議</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">後輪軸心</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="rear_axle" value="固定" id="ra_1"><label for="ra_1">固定</label></div>
+        <div class="radio-item"><input type="radio" name="rear_axle" value="快拆" id="ra_2"><label for="ra_2">快拆</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="rear_axle_camber" placeholder="外展角度(度)"></div>
+    </div>
+    <div class="field"><label class="field-label">後輪位置</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="rear_pos" value="標準" id="rp_1"><label for="rp_1">標準</label></div>
+        <div class="radio-item"><input type="radio" name="rear_pos" value="後置" id="rp_2"><label for="rp_2">後置</label></div>
+        <div class="radio-item"><input type="radio" name="rear_pos" value="前置" id="rp_3"><label for="rp_3">前置</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="rear_pos_forward_cm" placeholder="前置距離(cm)"></div>
+      <div class="check-grid" style="margin-top:8px">
+        <div class="check-item"><input type="checkbox" name="rear_adjust" id="rp_adj" value="可前後/高度調整"><label for="rp_adj">可前後/高度調整</label></div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="papaw" id="papaw_y" value="後輪配置PAPAW"><label for="papaw_y">後輪配置手推圈啟動型動力輔助系統(PAPAW)</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">後輪輪胎材質</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="rear_tire" value="實心胎" id="rt_1"><label for="rt_1">實心胎</label></div>
+        <div class="radio-item"><input type="radio" name="rear_tire" value="免充氣胎" id="rt_2"><label for="rt_2">免充氣</label></div>
+        <div class="radio-item"><input type="radio" name="rear_tire" value="低壓充氣胎" id="rt_3"><label for="rt_3">低壓充氣</label></div>
+        <div class="radio-item"><input type="radio" name="rear_tire" value="高壓充氣胎" id="rt_4"><label for="rt_4">高壓充氣</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="rear_tire_width" placeholder="建議胎寬(英吋)"></div>
+    </div>
+    <div class="field"><label class="field-label">手推圈形式</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="pushrim" value="無需求" id="pr_0"><label for="pr_0">無需求</label></div>
+        <div class="radio-item"><input type="radio" name="pushrim" value="金屬推圈" id="pr_1"><label for="pr_1">金屬</label></div>
+        <div class="radio-item"><input type="radio" name="pushrim" value="塑膠推圈" id="pr_2"><label for="pr_2">塑膠</label></div>
+        <div class="radio-item"><input type="radio" name="pushrim" value="披覆止滑材質" id="pr_3"><label for="pr_3">止滑材質</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="pushrim_other" placeholder="其他手推圈"></div>
+    </div>
+
+    <div class="sub-label">煞車/駐輪</div>
+    <div class="field"><label class="field-label">減速裝置</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="brake" value="無需求" id="bk_0"><label for="bk_0">無需求</label></div>
+        <div class="radio-item"><input type="radio" name="brake" value="鼓式煞車" id="bk_1"><label for="bk_1">鼓式</label></div>
+        <div class="radio-item"><input type="radio" name="brake" value="夾式煞車" id="bk_2"><label for="bk_2">夾式</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">駐輪裝置</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="wheel_lock" value="前推式駐輪" id="wl_1"><label for="wl_1">前推式</label></div>
+        <div class="radio-item"><input type="radio" name="wheel_lock" value="後拉式駐輪" id="wl_2"><label for="wl_2">後拉式</label></div>
+        <div class="radio-item"><input type="radio" name="wheel_lock" value="剪式駐輪" id="wl_3"><label for="wl_3">剪式</label></div>
+      </div>
+      <div class="check-grid" style="margin-top:8px">
+        <div class="check-item"><input type="checkbox" name="carer_lock" id="cl_y" value="照顧者駐輪介面"><label for="cl_y">照顧者駐輪介面(踏式/握把式)</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">其他裝置（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="ramp_retarder" id="rr_y" value="單向轉動切換裝置"><label for="rr_y">單向轉動切換裝置(ramp retarder)</label></div>
+        <div class="check-item"><input type="checkbox" name="power_rear_kit" id="prk_y" value="後推式介護型動力套件"><label for="prk_y">後推式介護型動力套件</label></div>
+      </div>
+    </div>
+
+    <div class="sub-label">座椅系統</div>
+    <div class="field"><label class="field-label">椅面</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="seat_surface" value="布質" id="sf_1"><label for="sf_1">布質</label></div>
+        <div class="radio-item"><input type="radio" name="seat_surface" value="平面式座板" id="sf_2"><label for="sf_2">平面式座板</label></div>
+        <div class="radio-item"><input type="radio" name="seat_surface" value="楔形座板" id="sf_3"><label for="sf_3">楔形座板</label></div>
+        <div class="radio-item"><input type="radio" name="seat_surface" value="沉入式座板" id="sf_4"><label for="sf_4">沉入式座板</label></div>
+      </div>
+      <div class="check-grid" style="margin-top:8px">
+        <div class="check-item"><input type="checkbox" name="seat_cushion" id="sc_y" value="建議使用輪椅座墊"><label for="sc_y">建議使用輪椅座墊</label></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><input type="text" id="seat_sink" placeholder="沉入量(cm)"></div>
+        <div class="field"><input type="text" id="cushion_h" placeholder="座墊厚度(cm)"></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">椅背</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="backrest" value="一般布質" id="bk_b1"><label for="bk_b1">一般布質</label></div>
+        <div class="radio-item"><input type="radio" name="backrest" value="輪椅背靠" id="bk_b2"><label for="bk_b2">輪椅背靠</label></div>
+        <div class="radio-item"><input type="radio" name="backrest" value="加裝輪椅擺位架" id="bk_b3"><label for="bk_b3">擺位架</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">扶手</label>
+      <div class="row">
+        <div class="field"><label class="field-label">長度</label>
+          <div class="radio-inline">
+            <div class="radio-item"><input type="radio" name="armrest_len" value="無需求" id="al_0"><label for="al_0">無需求</label></div>
+            <div class="radio-item"><input type="radio" name="armrest_len" value="全長式" id="al_1"><label for="al_1">全長式</label></div>
+            <div class="radio-item"><input type="radio" name="armrest_len" value="近桌型" id="al_2"><label for="al_2">近桌型</label></div>
+          </div>
+        </div>
+        <div class="field"><label class="field-label">固定方式</label>
+          <div class="radio-inline">
+            <div class="radio-item"><input type="radio" name="armrest_fix" value="固定式" id="af_1"><label for="af_1">固定式</label></div>
+            <div class="radio-item"><input type="radio" name="armrest_fix" value="後掀式" id="af_2"><label for="af_2">後掀式</label></div>
+            <div class="radio-item"><input type="radio" name="armrest_fix" value="全拆式" id="af_3"><label for="af_3">全拆式</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="check-grid" style="margin-top:8px">
+        <div class="check-item"><input type="checkbox" name="armrest_adj" id="ar_adj" value="高度可調整"><label for="ar_adj">高度可調整</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">頭靠</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="headrest" value="無需求" id="hr_0"><label for="hr_0">無需求</label></div>
+        <div class="radio-item"><input type="radio" name="headrest" value="簡易頭枕" id="hr_1"><label for="hr_1">簡易頭枕</label></div>
+        <div class="radio-item"><input type="radio" name="headrest" value="頭靠系統" id="hr_2"><label for="hr_2">頭靠系統(附3號報告)</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">腿靠形式</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="legrest_fixed" id="lr_1" value="固定式"><label for="lr_1">固定式</label></div>
+        <div class="check-item"><input type="checkbox" name="legrest_swing" id="lr_2" value="可旋開式"><label for="lr_2">可旋開式</label></div>
+        <div class="check-item"><input type="checkbox" name="legrest_detach" id="lr_3" value="可拆卸式"><label for="lr_3">可拆卸式</label></div>
+        <div class="check-item"><input type="checkbox" name="legrest_elev" id="lr_4" value="角度可抬高"><label for="lr_4">角度可抬高</label></div>
+        <div class="check-item"><input type="checkbox" name="legrest_ampu" id="lr_5" value="截肢式"><label for="lr_5">截肢式</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="field-label">腿靠配件</label>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" name="legrest_pad" id="lr_pad" value="小腿靠墊"><label for="lr_pad">小腿靠墊</label></div>
+          <div class="check-item"><input type="checkbox" name="legrest_strap" id="lr_str" value="小腿靠帶"><label for="lr_str">小腿靠帶</label></div>
+        </div>
+        <div class="field" style="margin-top:8px"><input type="text" id="legrest_other" placeholder="其他腿靠改裝"></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">踏板形式</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="footrest" value="單片式" id="fp_1"><label for="fp_1">單片式</label></div>
+        <div class="radio-item"><input type="radio" name="footrest" value="兩片式" id="fp_2"><label for="fp_2">兩片式</label></div>
+        <div class="radio-item"><input type="radio" name="footrest" value="旋轉式" id="fp_3"><label for="fp_3">旋轉式</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="field-label">踏板配件（可複選）</label>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" name="foot_heel" id="fh_y" value="腳跟帶"><label for="fh_y">腳跟帶</label></div>
+          <div class="check-item"><input type="checkbox" name="foot_toe" id="ft_y" value="腳掌帶"><label for="ft_y">腳掌帶</label></div>
+        </div>
+        <div class="field" style="margin-top:8px"><input type="text" id="foot_other" placeholder="其他踏板配件"></div>
+      </div>
+    </div>
+
+    <div class="sub-label">座椅尺寸</div>
+    <div class="field"><label class="field-label">右欄座椅長度單位</label>
+      <div class="radio-inline">
+        <div class="radio-item"><input type="radio" name="seat_unit" value="公分" id="su_cm" checked><label for="su_cm">公分</label></div>
+        <div class="radio-item"><input type="radio" name="seat_unit" value="英吋" id="su_in"><label for="su_in">英吋</label></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">(A)座背夾角(度)</label><input type="text" id="dim_A"></div>
+      <div class="field"><label class="field-label">(B)腿靠角度(度)</label><input type="text" id="dim_B"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">(C)座寬</label><input type="text" id="dim_C"></div>
+      <div class="field"><label class="field-label">(D)座深</label><input type="text" id="dim_D"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">(E)腿靠長度</label><input type="text" id="dim_E"></div>
+      <div class="field"><label class="field-label">(F)椅背高</label><input type="text" id="dim_F"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">(H)扶手高度</label><input type="text" id="dim_H"></div>
+      <div class="field"><label class="field-label">(K)座面高</label><input type="text" id="dim_K"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">(L)後輪</label>
+        <div class="radio-inline">
+          <div class="radio-item"><input type="radio" name="rear_wheel_type" value="介護輪" id="rwt_1"><label for="rwt_1">介護輪</label></div>
+          <div class="radio-item"><input type="radio" name="rear_wheel_type" value="自推輪" id="rwt_2"><label for="rwt_2">自推輪</label></div>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">(M)前輪尺寸(英吋)</label><input type="text" id="dim_M"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="field-label">前座高FSH(cm)</label><input type="text" id="fsh"></div>
+      <div class="field"><label class="field-label">後座高RSH(cm)</label><input type="text" id="rsh"></div>
+    </div>
+
+    <div class="sub-label">擺位配件</div>
+    <div class="field"><label class="field-label">固定帶（可複選）</label>
+      <div class="check-grid" id="beltGrid"></div>
+    </div>
+    <div class="field"><label class="field-label">輪椅擺位架（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="pos_trunk" id="pa_t" value="軀幹側支撐架"><label for="pa_t">軀幹側支撐架</label></div>
+        <div class="check-item"><input type="checkbox" name="pos_hip" id="pa_h" value="臀側支撐架"><label for="pa_h">臀側支撐架</label></div>
+        <div class="check-item"><input type="checkbox" name="pos_saddle" id="pa_s" value="內收鞍板"><label for="pa_s">內收鞍板</label></div>
+        <div class="check-item"><input type="checkbox" name="pos_splitter" id="pa_sp" value="分腿器"><label for="pa_sp">分腿器</label></div>
+        <div class="check-item"><input type="checkbox" name="pos_knee" id="pa_k" value="膝前擋板"><label for="pa_k">膝前擋板</label></div>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">其他配件（可複選）</label>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="acc_table" id="ac_t" value="桌板"><label for="ac_t">桌板</label></div>
+        <div class="check-item"><input type="checkbox" name="acc_anti" id="ac_a" value="防傾桿"><label for="ac_a">防傾桿</label></div>
+      </div>
+      <div class="field" style="margin-top:8px"><input type="text" id="acc_other" placeholder="其他配件"></div>
+    </div>
+
+    <div class="field">
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" name="crash_test" id="ct_y" value="建議選用通過衝擊測試之輪椅結構" checked><label for="ct_y">建議選用通過衝擊測試之輪椅結構(項次31)</label></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="sub-label">適配服務建議</div>
+    <div class="field"><textarea id="fitting_suggest" rows="2" placeholder="建議於取得輔具後，與輔具中心預約免費的適配服務，聯絡方式：(02)2523-7902"></textarea></div>
+
+    <div class="field"><label class="field-label">其他建議</label><textarea id="other_suggest" rows="2">無</textarea></div>
+
+  </div>
+</div>
+
+<!-- ==================== Section 8: 評估資訊 ==================== -->
+<div class="section">
+  <div class="section-header" onclick="toggleSection(this)">
+    <div class="num">8</div><div class="title">評估資訊</div><div class="chevron">›</div>
+  </div>
+  <div class="section-body">
+    <div class="field"><label class="field-label">評估單位</label><input type="text" id="f_eval_unit" value="臺北市西區輔具資源中心"></div>
+    <div class="row">
+      <div class="field"><label class="field-label">評估人員</label><input type="text" id="f_evaluator" value="莊博文"></div>
+      <div class="field"><label class="field-label">職稱</label><input type="text" id="f_eval_title" value="甲類輔具評估人員"></div>
+    </div>
+    <div class="field"><label class="field-label">評估日期</label><input type="text" id="f_eval_date" placeholder="YYYY/MM/DD"></div>
+  </div>
+</div>
+
+<!-- Bottom action bar -->
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="saveLocal()">暫存</button>
+  <button class="btn btn-secondary" onclick="copyJSON()">複製 JSON</button>
+  <button class="btn btn-primary" onclick="exportJSON()">匯出 JSON</button>
+</div>
+
+<script>
+function toggleSection(el){ el.classList.toggle('collapsed'); el.nextElementSibling.classList.toggle('hidden'); }
+
+// Generate diagnosis checkboxes
+(function(){
+  const items = [
+    ['dx_veg','植物人'],['dx_dementia','失智症'],['dx_stroke','中風偏癱'],['dx_sci','脊髓損傷'],
+    ['dx_tbi','腦外傷'],['dx_cerebellar','小腦萎縮症'],['dx_cp','腦性麻痺'],['dx_delay','發展遲緩'],
+    ['dx_mnd','運動神經元疾病'],['dx_parkinson','巴金森氏症'],['dx_muscular','肌肉萎縮症'],
+    ['dx_polio','小兒麻痺'],['dx_fracture','骨折'],['dx_amputation','截肢'],['dx_arthritis','關節炎'],
+    ['dx_cardio','心肺功能疾病']
+  ];
+  const c = document.getElementById('dxGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+})();
+
+// Generate tube checkboxes
+(function(){
+  const items = [['tube_none','無'],['tube_trach','氣切管'],['tube_ng','鼻胃管'],['tube_foley','尿管'],['tube_gastro','胃造口'],['tube_colost','腸造口'],['tube_cystost','膀胱造口']];
+  const c = document.getElementById('tubeGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+  c.innerHTML += '<div class="field" style="width:100%;margin-top:8px"><input type="text" id="tube_other" placeholder="其他管路/造口"></div>';
+})();
+
+// Generate pelvis checkboxes
+(function(){
+  const items = [
+    ['pelvis_normal','正常'],['pelvis_ant','向前/後傾'],['pelvis_lat','向左/右傾斜'],['pelvis_rot','向左/右旋轉'],
+    ['pelvis_ant_slide','向前滑動'],['pelvis_post_slide','向後滑動'],['pelvis_l_slide','向左滑動'],['pelvis_r_slide','向右滑動'],['pelvis_no_slide','無明顯滑動']
+  ];
+  const c = document.getElementById('pelvisGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+})();
+
+// Generate wheelchair skills
+(function(){
+  const skills = [
+    ['skill_lock','1. 啟動/解除駐輪裝置'],
+    ['skill_flat','2. 平地前進、後退、轉向及停止'],
+    ['skill_ramp','3. 無障礙坡道上自推上坡、轉向及停止'],
+    ['skill_door','4. 在開門時限內進出電梯門或捷運門'],
+    ['skill_narrow','5. 於較窄的通道中穩定向前推行5公尺'],
+    ['skill_transfer','6. 進出小轎車或馬桶、床鋪間的轉位'],
+    ['skill_curb','7. 上下5公分的台階或門檻'],
+    ['skill_wheelie','8. 前輪翹起技巧(Wheelie)'],
+    ['skill_relieve','9. 執行座面減壓方式']
+  ];
+  const opts_default = ['獨立完成','可訓練或需改裝','需要他人協助'];
+  const opts_assist = ['獨立完成','可訓練或使用輔具','需要他人協助'];
+  const opts_relieve = ['獨立將身體撐起','獨立以重心偏移','需要他人協助'];
+  const c = document.getElementById('skillsCont');
+  skills.forEach(([id,label]) => {
+    let opts = opts_default;
+    if(id === 'skill_transfer' || id === 'skill_curb') opts = opts_assist;
+    if(id === 'skill_relieve') opts = opts_relieve;
+    c.innerHTML += `<div class="field"><label class="field-label">${label}</label><div class="radio-inline">${
+      opts.map((o,i) => `<div class="radio-item"><input type="radio" name="${id}" value="${o}" id="${id}_${i}"><label for="${id}_${i}">${o}</label></div>`).join('')
+    }</div></div>`;
+  });
+})();
+
+// Generate item checkboxes for evaluation result
+(function(){
+  const items = [
+    ['item1','項次1 推車-一般型'],['item2','項次2 推車-荷重型'],['item3','項次3 推車-擺位型'],
+    ['item4','項次4 輪椅-非輕量化量產型'],['item5','項次5 輪椅-輕量化量產型'],['item6','項次6 輪椅-客製型'],
+    ['item7','項次7 輪椅附加功能-利於移位'],['item8','項次8 輪椅附加功能-仰躺'],['item9','項次9 輪椅附加功能-空中傾倒'],
+    ['item10','項次10 高活動型-基礎型'],['item11','項次11 高活動型-進階型'],
+    ['item12','項次12 手推圈啟動型動力輔助'],['item13','項次13 輪椅配件-後推式介護型'],
+    ['item31','項次31 完成搭配衝擊測試'],
+    ['itemEC01','EC01 輪椅-A款'],['itemEC02','EC02 輪椅-B款'],['itemEC03','EC03 輪椅-C款'],
+    ['itemEC04','EC04 附加功能-A款'],['itemEC05','EC05 附加功能-B款'],['itemEC06','EC06 附加功能-C款']
+  ];
+  const c = document.getElementById('itemGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label.replace('項次','').replace(' ','')}</label></div>`;
+  });
+})();
+
+// Generate spec type checkboxes
+(function(){
+  const items = [
+    ['spec_buggy_std','推車-基礎型'],['spec_buggy_hd','推車-荷重型'],['spec_buggy_pos','推車-擺位型'],
+    ['spec_wc_std','輪椅-非輕量化量產型'],['spec_wc_light','輪椅-輕量化量產型'],['spec_wc_custom','輪椅-客製型'],
+    ['spec_af_transfer','附加功能-利於移位'],['spec_af_recline','附加功能-仰躺'],['spec_af_tilt','附加功能-空中傾倒'],
+    ['spec_ha_basic','高活動型-基礎型'],['spec_ha_adv','高活動型-進階型'],
+    ['spec_power','手推圈啟動型動力輔助'],['spec_pk_rear','配件-後推式介護型'],['spec_pk_self','配件-後推式自駕型'],['spec_pk_front','配件-前拉式自駕型']
+  ];
+  const c = document.getElementById('specTypeGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+})();
+
+// Generate belt checkboxes
+(function(){
+  const items = [
+    ['belt_pelvic_velcro','骨盆帶-兩節式黏扣帶'],['belt_pelvic_buckle_2','骨盆帶-彈扣式二點'],['belt_pelvic_buckle_3','骨盆帶-彈扣式三點'],['belt_pelvic_buckle_4','骨盆帶-彈扣式四點'],['belt_pelvic_pad','骨盆帶-加裝襯墊/套'],
+    ['belt_trunk_1','軀幹固定帶-一字型'],['belt_trunk_H','軀幹固定帶-H型'],['belt_trunk_vest','軀幹固定帶-夾克/背心型'],
+    ['belt_5pt','五點式彈扣織帶(與骨盆帶整合)'],
+    ['belt_thigh','大腿環帶'],['belt_calf','小腿綁帶']
+  ];
+  const c = document.getElementById('beltGrid');
+  items.forEach(([id,label]) => {
+    c.innerHTML += `<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${label}"><label for="${id}">${label}</label></div>`;
+  });
+  c.innerHTML += '<div class="field" style="width:100%;margin-top:8px"><input type="text" id="belt_other" placeholder="其他固定帶"></div>';
+})();
+
+// Exempt detail toggle
+document.querySelectorAll('input[name="exempt"]').forEach(r => r.addEventListener('change', function(){
+  document.getElementById('exemptDetail').style.display = this.value === '需要' ? 'block' : 'none';
+}));
+
+// Source detail toggle
+document.querySelectorAll('input[name="cur_source"]').forEach(r => r.addEventListener('change', function(){
+  document.getElementById('srcDetail').classList.add('show');
+}));
+
+// Pressure sore detail toggle
+document.querySelectorAll('input[name="pressure_sore"]').forEach(r => r.addEventListener('change', function(){
+  const block = document.getElementById('soreDetailBlock');
+  if(block) block.classList.toggle('show', this.value !== '未曾發生');
+}));
+
+// Progress bar
+function updateProgress(){
+  const checked = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked').length;
+  const filled = Array.from(document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea')).filter(el => el.value.trim()).length;
+  const total = 60;
+  const pct = Math.min(100, Math.round((checked + filled) / total * 100));
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+document.addEventListener('change', updateProgress);
+document.addEventListener('input', updateProgress);
+
+function collectData(){
+  const data = {};
+  document.querySelectorAll('input[type="text"], input[type="text" inputmode="decimal"], textarea').forEach(el => {
+    if (el.id && el.value.trim()) data[el.id] = el.value.trim();
+  });
+  document.querySelectorAll('input[type="radio"]:checked').forEach(el => { data[el.name] = el.value; });
+  const checks = {};
+  document.querySelectorAll('input[type="checkbox"]:checked').forEach(el => {
+    const key = el.name || el.id;
+    if (!checks[key]) checks[key] = [];
+    checks[key].push(el.value);
+  });
+  data._checks = checks;
+  data._timestamp = new Date().toISOString();
+  data._report = '編號01-輪椅';
+  return data;
+}
+
+function saveLocal(){
+  localStorage.setItem('form01_draft', JSON.stringify(collectData()));
+  showToast('已暫存至本機');
+}
+
+function exportJSON(){
+  const data = collectData();
+  const json = JSON.stringify(data, null, 2);
+  try{
+    const blob = new Blob([json],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `01_輪椅_${data.f_evaluator||'草稿'}_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  }catch(e){}
+  copyJSON();
+}
+
+function copyJSON(){
+  const json = JSON.stringify(collectData(), null, 2);
+  showCopyModal(json);
+}
+
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('已複製到剪貼簿');}catch(e){showCopyModal(text);}
+  document.body.removeChild(ta);
+}
+
+function showCopyModal(text){
+  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  const b=document.createElement('div');b.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';
+  b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字全選→複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;
+  o.appendChild(b);document.body.appendChild(o);b.querySelector('textarea').focus();b.querySelector('textarea').select();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+window.addEventListener('load',function(){
+  updateProgress();
+  if(!document.getElementById('f_eval_date').value){
+    const d=new Date();
+    document.getElementById('f_eval_date').value=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  }
+});
+</script>
+</body>
+</html>

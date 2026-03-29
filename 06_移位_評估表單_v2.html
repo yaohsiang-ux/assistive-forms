@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>編號06 移位輔具及移位機</title>
+<style>
+:root{--brand:#D65A31;--brand-light:#fef0eb;--brown:#4B3621;--bg:#fafaf8;--card:#fff;--border:#e2e0d8;--text:#2c2c2a;--text2:#6b6a65;--text3:#9c9a92;--amber:#E6AF2E;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06)}*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:120px}.header{background:var(--brand);color:#fff;padding:16px 20px;position:sticky;top:0;z-index:100}.header h1{font-size:18px;font-weight:600}.header .sub{font-size:13px;opacity:.85;margin-top:2px}.progress-bar{height:3px;background:var(--border);position:sticky;top:60px;z-index:99}.progress-fill{height:100%;background:var(--brand);transition:width .3s;width:0%}.section{background:var(--card);margin:12px;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border)}.section-header{padding:14px 16px;background:linear-gradient(135deg,var(--brand-light),#fff);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}.section-header .num{background:var(--brand);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}.section-header .title{font-size:15px;font-weight:600;color:var(--brown)}.section-header .chevron{margin-left:auto;font-size:18px;color:var(--text3);transition:transform .2s}.section-header.collapsed .chevron{transform:rotate(-90deg)}.section-body{padding:16px}.section-body.hidden{display:none}.field{margin-bottom:16px}.field:last-child{margin-bottom:0}.field-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}input[type="text"],input[type="text" inputmode="decimal"],textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(214,90,49,.12)}textarea{resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.check-grid{display:flex;flex-wrap:wrap;gap:8px}.check-item input{display:none}.check-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}.check-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}.radio-inline{display:flex;flex-wrap:wrap;gap:8px}.radio-item input{display:none}.radio-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}.radio-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}.divider{border:none;border-top:1px solid var(--border);margin:16px 0}.sub-label{font-size:14px;font-weight:600;color:var(--brown);margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--amber)}.cond-block{display:none;margin-top:8px;padding:12px;background:var(--brand-light);border-radius:8px}.cond-block.show{display:block}.env-block{background:#f8f6f0;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100}.btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}.btn-primary{background:var(--brand);color:#fff}.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:200}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="header"><h1>編號06 移位輔具及移位機</h1><div class="sub">臺北市西區輔具資源中心</div></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div id="toast" class="toast"></div>
+
+<!-- S1: 活動需求 -->
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><div class="num">1</div><div class="title">活動需求</div><div class="chevron">›</div></div>
+<div class="section-body">
+  <div class="field"><label class="field-label">使用場合（可複選）</label><div class="check-grid"><div class="check-item"><input type="checkbox" name="place_home" id="ph" value="居家生活"><label for="ph">居家生活</label></div><div class="check-item"><input type="checkbox" name="place_inst" id="pi2" value="照顧機構"><label for="pi2">照顧機構</label></div><div class="check-item"><input type="checkbox" name="place_school" id="ps" value="校園學習"><label for="ps">校園學習</label></div><div class="check-item"><input type="checkbox" name="place_work" id="pw" value="職場就業"><label for="pw">職場就業</label></div></div><div class="field" style="margin-top:8px"><input type="text" id="place_other" placeholder="其他場合"></div></div>
+  <div class="field"><label class="field-label">活動需求（可複選）</label><div class="check-grid"><div class="check-item"><input type="checkbox" name="need_independent" id="ni" value="個案獨立移位"><label for="ni">個案獨立移位</label></div><div class="check-item"><input type="checkbox" name="need_assist" id="na" value="由照顧者協助移位"><label for="na">照顧者協助移位</label></div></div><div class="field" style="margin-top:8px"><input type="text" id="need_other" placeholder="其他活動需求"></div></div>
+  <div class="field"><label class="field-label">使用環境（可複選）</label><div class="check-grid"><div class="check-item"><input type="checkbox" name="env_floor" id="ef" value="需自地面移位"><label for="ef">自地面移位</label></div><div class="check-item"><input type="checkbox" name="env_narrow" id="en" value="移位空間狹小"><label for="en">空間狹小</label></div><div class="check-item"><input type="checkbox" name="env_thresh" id="et" value="需跨越門檻"><label for="et">跨越門檻</label></div></div><div class="field" style="margin-top:8px"><input type="text" id="env_other" placeholder="其他環境"></div></div>
+  <div class="field"><label class="field-label">人力支持（可複選）</label><div class="check-grid"><div class="check-item"><input type="checkbox" name="sup_alone" id="sa" value="獨居"><label for="sa">獨居</label></div><div class="check-item"><input type="checkbox" name="sup_cohabit" id="sc" value="有同住者"><label for="sc">有同住者</label></div><div class="check-item"><input type="checkbox" name="sup_pro" id="sp" value="有專業人力協助"><label for="sp">有專業人力</label></div></div>
+    <div class="field" style="margin-top:8px"><input type="text" id="sup_pro_detail" placeholder="專業人力說明"></div>
+    <div class="field"><input type="text" id="sup_other" placeholder="其他人力支持"></div>
+  </div>
+</div></div>
+
+<!-- S2: 目前輔具 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">2</div><div class="title">目前使用的輔具</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+  <div class="field"><label class="field-label">輔具種類（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="cur_belt" id="cb" value="移位腰帶"><label for="cb">移位腰帶</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_turntable" id="ctt" value="移位轉盤"><label for="ctt">移位轉盤</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_board" id="cbd" value="移位板"><label for="cbd">移位板</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_sling" id="csl" value="人力移位吊帶"><label for="csl">人力移位吊帶</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_slide" id="csd" value="移位滑布"><label for="csd">移位滑布</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_slidepad" id="csp" value="躺式移位滑墊"><label for="csp">躺式移位滑墊</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_lift_manual" id="clm" value="人力型移位機"><label for="clm">人力型移位機</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_lift_electric" id="cle" value="電動型移位機"><label for="cle">電動型移位機</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="cur_other_type" placeholder="其他輔具種類"></div></div>
+
+  <hr class="divider">
+  <div class="field"><label class="field-label">輔具來源</label>
+    <div class="radio-inline">
+      <div class="radio-item"><input type="radio" name="cur_source" value="政府補助" id="src1"><label for="src1">政府補助</label></div>
+      <div class="radio-item"><input type="radio" name="cur_source" value="二手輔具" id="src2"><label for="src2">二手輔具</label></div>
+      <div class="radio-item"><input type="radio" name="cur_source" value="自購" id="src3"><label for="src3">自購</label></div>
+      <div class="radio-item"><input type="radio" name="cur_source" value="其他" id="src4"><label for="src4">其他</label></div>
+    </div>
+    <div id="srcDetail" class="cond-block">
+      <div class="field"><label class="field-label">政府補助類型</label><div class="check-grid" id="govGrid"></div><div class="field" style="margin-top:8px"><input type="text" id="src_gov_other" placeholder="其他補助"></div></div>
+      <div class="field"><label class="field-label">二手方式</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="src_2nd_type" value="租借" id="s2a"><label for="s2a">租借</label></div><div class="radio-item"><input type="radio" name="src_2nd_type" value="媒合" id="s2b"><label for="s2b">媒合</label></div></div></div>
+      <div class="field"><input type="text" id="src_other_text" placeholder="其他來源"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="field"><label class="field-label">已使用約(年)</label><input type="text" inputmode="decimal" id="cur_years"></div>
+    <div class="field" style="display:flex;align-items:end"><div class="check-item"><input type="checkbox" name="cur_yr_unknown" id="cyu" value="年限不明"><label for="cyu">年限不明</label></div></div>
+  </div>
+  <div class="field"><label class="field-label">使用情形</label>
+    <div class="radio-inline">
+      <div class="radio-item"><input type="radio" name="cur_status" value="已損壞不堪修復，需更新" id="cs1"><label for="cs1">損壞需更新</label></div>
+      <div class="radio-item"><input type="radio" name="cur_status" value="規格或功能不符使用者現在的需求，需更換" id="cs2"><label for="cs2">規格不符</label></div>
+      <div class="radio-item"><input type="radio" name="cur_status" value="適合繼續使用，但需要另行購置於不同場所使用" id="cs3"><label for="cs3">另購不同場所</label></div>
+    </div>
+    <div class="field" style="margin-top:8px"><input type="text" id="cur_status_other" placeholder="其他使用情形"></div>
+  </div>
+</div></div>
+
+<!-- S3: 身體功能評估 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">3</div><div class="title">身體功能評估</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+  <div class="sub-label">診斷（可複選）</div>
+  <div class="check-grid" id="dxGrid06"></div>
+  <div class="row" style="margin-top:8px"><div class="field"><input type="text" id="dx_stroke_side" placeholder="中風偏癱(左/右)"></div><div class="field"><input type="text" id="dx_sci_level" placeholder="脊損位(頸/胸/腰/薦)"></div></div>
+  <div class="field"><input type="text" id="dx_tbi_side" placeholder="腦外傷(左/右)"></div>
+  <div class="field"><input type="text" id="dx_other_text" placeholder="其他診斷"></div>
+
+  <div class="sub-label">管路/造口（可複選）</div>
+  <div class="check-grid" id="tubeGrid06"></div>
+
+  <hr class="divider">
+  <div class="sub-label">身體尺寸</div>
+  <div class="row"><div class="field"><label class="field-label">身高(cm)</label><input type="text" inputmode="decimal" id="f_height"></div><div class="field"><label class="field-label">體重(kg)</label><input type="text" inputmode="decimal" id="f_weight"></div></div>
+  <div class="row"><div class="field"><label class="field-label">腰圍(cm)</label><input type="text" inputmode="decimal" id="waist"></div><div class="field"><label class="field-label">備註</label><input type="text" id="body_note"></div></div>
+
+  <hr class="divider">
+  <div class="field"><label class="field-label">坐姿平衡能力</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="sit_bal" value="放手且獨立坐" id="sb1"><label for="sb1">放手獨立坐</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="抓握扶持下可重心轉移" id="sb2"><label for="sb2">抓握可轉移</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="抓握扶持下僅可維持" id="sb3"><label for="sb3">抓握僅維持</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="需他人協助維持" id="sb4"><label for="sb4">需人協助</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="完全依賴" id="sb5"><label for="sb5">完全依賴</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">坐姿站起能力</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="stand_up" value="可獨立自行站起" id="su1"><label for="su1">獨立站起</label></div>
+    <div class="radio-item"><input type="radio" name="stand_up" value="輕度協助可站起" id="su2"><label for="su2">輕度協助</label></div>
+    <div class="radio-item"><input type="radio" name="stand_up" value="中度協助可站起" id="su3"><label for="su3">中度協助</label></div>
+    <div class="radio-item"><input type="radio" name="stand_up" value="重度協助可站起" id="su4"><label for="su4">重度協助</label></div>
+    <div class="radio-item"><input type="radio" name="stand_up" value="無法站起" id="su5"><label for="su5">無法站起</label></div>
+  </div></div>
+
+  <hr class="divider">
+  <div class="sub-label">環境配置與策略</div>
+
+  <div class="env-block">
+    <div class="field"><label class="field-label">床上移位</label></div>
+    <div class="field"><label class="field-label">建議轉位方式</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="bed_method" id="bm1" value="仰躺平移"><label for="bm1">仰躺平移</label></div>
+    </div></div>
+  </div>
+
+  <div class="env-block">
+    <div class="field"><label class="field-label">床↔輪椅</label></div>
+    <div class="field"><label class="field-label">路徑淨空且高度接近</label><div class="radio-inline">
+      <div class="radio-item"><input type="radio" name="bed_wc_clear" value="現況否" id="bwc1"><label for="bwc1">現況否</label></div>
+      <div class="radio-item"><input type="radio" name="bed_wc_clear" value="現況是" id="bwc2"><label for="bwc2">現況是</label></div>
+    </div></div>
+    <div class="field"><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="bed_wc_chg" id="bwc_nb" value="不需更換"><label for="bwc_nb">不需更換</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_chg" id="bwc_cb" value="需換床"><label for="bwc_cb">需換床</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_chg" id="bwc_cw" value="需換輪椅"><label for="bwc_cw">需換輪椅</label></div>
+    </div></div>
+    <div class="field"><label class="field-label">建議轉位方式（可複選）</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm1" value="站起移位"><label for="bwm1">站起移位</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm2" value="站立式移位機"><label for="bwm2">站立式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm3" value="直接人力搬移"><label for="bwm3">直接人力搬移</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm4" value="懸吊式移位機"><label for="bwm4">懸吊式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm5" value="坐姿平移"><label for="bwm5">坐姿平移</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_wc_method" id="bwm6" value="仰躺平移"><label for="bwm6">仰躺平移</label></div>
+    </div></div>
+  </div>
+
+  <div class="env-block">
+    <div class="field"><label class="field-label">床↔沐浴椅/便盆椅</label></div>
+    <div class="field"><label class="field-label">路徑淨空且高度接近</label><div class="radio-inline">
+      <div class="radio-item"><input type="radio" name="bed_bath_clear" value="現況否" id="bbc1"><label for="bbc1">現況否</label></div>
+      <div class="radio-item"><input type="radio" name="bed_bath_clear" value="現況是" id="bbc2"><label for="bbc2">現況是</label></div>
+    </div></div>
+    <div class="field"><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="bed_bath_chg" id="bbc_nb" value="不需更換"><label for="bbc_nb">不需更換</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_chg" id="bbc_cb" value="需換床"><label for="bbc_cb">需換床</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_chg" id="bbc_cs" value="需換沐浴椅/便盆椅"><label for="bbc_cs">需換沐浴椅/便盆椅</label></div>
+    </div></div>
+    <div class="field"><label class="field-label">建議轉位方式（可複選）</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm1" value="站起移位"><label for="bbm1">站起移位</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm2" value="站立式移位機"><label for="bbm2">站立式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm3" value="直接人力搬移"><label for="bbm3">直接人力搬移</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm4" value="懸吊式移位機"><label for="bbm4">懸吊式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm5" value="坐姿平移"><label for="bbm5">坐姿平移</label></div>
+      <div class="check-item"><input type="checkbox" name="bed_bath_method" id="bbm6" value="仰躺平移"><label for="bbm6">仰躺平移</label></div>
+    </div></div>
+  </div>
+
+  <div class="env-block">
+    <div class="field"><label class="field-label">輪椅↔沐浴椅/便盆椅</label></div>
+    <div class="field"><label class="field-label">路徑淨空且高度接近</label><div class="radio-inline">
+      <div class="radio-item"><input type="radio" name="wc_bath_clear" value="現況否" id="wbc1"><label for="wbc1">現況否</label></div>
+      <div class="radio-item"><input type="radio" name="wc_bath_clear" value="現況是" id="wbc2"><label for="wbc2">現況是</label></div>
+    </div></div>
+    <div class="field"><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="wc_bath_chg" id="wbc_nb" value="不需更換"><label for="wbc_nb">不需更換</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_chg" id="wbc_cw" value="需換輪椅"><label for="wbc_cw">需換輪椅</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_chg" id="wbc_cs" value="需換沐浴椅/便盆椅"><label for="wbc_cs">需換沐浴椅/便盆椅</label></div>
+    </div></div>
+    <div class="field"><label class="field-label">建議轉位方式（可複選）</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm1" value="站起移位"><label for="wbm1">站起移位</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm2" value="站立式移位機"><label for="wbm2">站立式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm3" value="直接人力搬移"><label for="wbm3">直接人力搬移</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm4" value="懸吊式移位機"><label for="wbm4">懸吊式移位機</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm5" value="坐姿平移"><label for="wbm5">坐姿平移</label></div>
+      <div class="check-item"><input type="checkbox" name="wc_bath_method" id="wbm6" value="仰躺平移"><label for="wbm6">仰躺平移</label></div>
+    </div></div>
+  </div>
+
+  <div class="env-block">
+    <div class="field"><label class="field-label">其他</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="other_method" id="om1" value="介護行走"><label for="om1">介護行走</label></div>
+      <div class="check-item"><input type="checkbox" name="other_method" id="om2" value="上下樓梯"><label for="om2">上下樓梯</label></div>
+    </div></div>
+  </div>
+</div></div>
+
+<!-- S4: 評估結果 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">4</div><div class="title">評估結果</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+  <div class="field"><label class="field-label">評估結果</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="result" value="不建議" id="rn"><label for="rn">不建議</label></div><div class="radio-item"><input type="radio" name="result" value="建議使用" id="ry"><label for="ry">建議使用</label></div></div><div class="field" style="margin-top:8px"><input type="text" id="result_no_reason" placeholder="不建議理由"></div>
+    <div class="field" style="margin-top:8px"><input type="text" id="result_yes_detail" placeholder="建議使用項目說明"></div></div>
+  <div class="check-grid" style="margin-top:8px"><div class="check-item"><input type="checkbox" name="returning_home" id="rh" value="即將返家"><label for="rh">目前安置機構/住院，即將返家</label></div></div>
+
+  <div class="field" style="margin-top:12px"><label class="field-label">建議項目（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="item49" id="i49" value="49 移位腰帶"><label for="i49">49 移位腰帶</label></div>
+    <div class="check-item"><input type="checkbox" name="item50" id="i50" value="50 移位轉盤"><label for="i50">50 移位轉盤</label></div>
+    <div class="check-item"><input type="checkbox" name="item51" id="i51" value="51 移位板"><label for="i51">51 移位板</label></div>
+    <div class="check-item"><input type="checkbox" name="item52" id="i52" value="52 人力移位吊帶"><label for="i52">52 人力移位吊帶</label></div>
+    <div class="check-item"><input type="checkbox" name="item53" id="i53" value="53 移位滑布"><label for="i53">53 移位滑布</label></div>
+    <div class="check-item"><input type="checkbox" name="item54" id="i54" value="54 躺式移位滑墊"><label for="i54">54 躺式移位滑墊</label></div>
+    <div class="check-item"><input type="checkbox" name="item55" id="i55" value="55 移位機-人力型"><label for="i55">55 移位機-人力型</label></div>
+    <div class="check-item"><input type="checkbox" name="item56" id="i56" value="56 移位機-電動型"><label for="i56">56 移位機-電動型</label></div>
+    <div class="check-item"><input type="checkbox" name="item57" id="i57" value="57 移位機吊帶"><label for="i57">57 移位機吊帶</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED01" id="ed01" value="ED01 移位腰帶"><label for="ed01">ED01 移位腰帶</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED02" id="ed02" value="ED02 移位板"><label for="ed02">ED02 移位板</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED03" id="ed03" value="ED03 人力吊帶"><label for="ed03">ED03 人力吊帶</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED04" id="ed04" value="ED04 移位滑墊A"><label for="ed04">ED04 滑墊A</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED05" id="ed05" value="ED05 移位滑墊B"><label for="ed05">ED05 滑墊B</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED06" id="ed06" value="ED06 移位轉盤"><label for="ed06">ED06 移位轉盤</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED07" id="ed07" value="ED07 移位機"><label for="ed07">ED07 移位機</label></div>
+    <div class="check-item"><input type="checkbox" name="itemED08" id="ed08" value="ED08 移位機吊帶"><label for="ed08">ED08 吊帶</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">使用理由</label><textarea id="use_reason" rows="3"></textarea></div>
+  <hr class="divider">
+  <div class="field"><label class="field-label">使用訓練</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="training" value="需要" id="ty"><label for="ty">需要</label></div><div class="radio-item"><input type="radio" name="training" value="不需要" id="tn2"><label for="tn2">不需要</label></div></div></div>
+  <div class="field"><label class="field-label">追蹤</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="followup" value="需要" id="fy"><label for="fy">需要</label></div><div class="radio-item"><input type="radio" name="followup" value="不需要" id="fn"><label for="fn">不需要</label></div></div></div>
+  <div class="field"><label class="field-label">免評</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="exempt" value="需要" id="ey"><label for="ey">需要</label></div><div class="radio-item"><input type="radio" name="exempt" value="不需要" id="en2"><label for="en2">不需要</label></div></div><div id="exemptDetail" style="display:none;margin-top:8px"><div class="row"><div class="field"><input type="text" id="exempt_ltc" placeholder="長照項目"></div><div class="field"><input type="text" id="exempt_disability" placeholder="身障項目"></div></div></div></div>
+  <div class="field"><label class="field-label">其他</label><textarea id="result_other" rows="2" placeholder="其他評估結果備註"></textarea></div>
+</div></div>
+
+<!-- S5: 規格配置 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">5</div><div class="title">規格配置建議</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+
+  <div class="sub-label">站起移位 / 介護行走 / 上下樓</div>
+  <div class="field"><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_belt" id="spb" value="移位腰帶"><label for="spb">移位腰帶</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_belt_strap" id="spbs" value="含胯下帶/大腿環帶"><label for="spbs">含胯下帶/大腿環帶</label></div>
+  </div></div>
+  <div class="field"><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_turntable" id="spt" value="移位轉盤"><label for="spt">移位轉盤</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">站立式移位機</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_stand_manual" id="ssm" value="人力型"><label for="ssm">人力型</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_stand_electric" id="sse" value="電動型"><label for="sse">電動型</label></div>
+  </div></div>
+
+  <hr class="divider">
+  <div class="sub-label">坐姿平移</div>
+  <div class="field"><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_sit_belt" id="ssb" value="移位腰帶"><label for="ssb">移位腰帶</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_sit_belt_strap" id="ssbs" value="含胯下帶/大腿環帶"><label for="ssbs">含胯下帶/大腿環帶</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_sit_board" id="ssbd" value="移位板"><label for="ssbd">移位板</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_sit_slide" id="sssl" value="移位滑布"><label for="sssl">移位滑布</label></div>
+  </div></div>
+
+  <hr class="divider">
+  <div class="sub-label">仰躺平移</div>
+  <div class="field"><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_lie_slide" id="slsl" value="移位滑布"><label for="slsl">移位滑布</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_lie_pad" id="slsp" value="躺式移位滑墊"><label for="slsp">躺式移位滑墊</label></div>
+  </div></div>
+
+  <hr class="divider">
+  <div class="sub-label">直接人力搬移</div>
+  <div class="field"><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spec_carry_seat" id="sccs" value="座椅型人力移位吊帶"><label for="sccs">座椅型人力移位吊帶</label></div>
+    <div class="check-item"><input type="checkbox" name="spec_carry_lie" id="sccl" value="仰躺型人力移位吊帶"><label for="sccl">仰躺型人力移位吊帶</label></div>
+  </div></div>
+
+  <hr class="divider">
+  <div class="sub-label">使用懸吊式移位機</div>
+  <div class="field"><label class="field-label">1. 移位機種類</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="hoist_type" value="移動式" id="ht1"><label for="ht1">移動式</label></div>
+    <div class="radio-item"><input type="radio" name="hoist_type" value="壁掛式" id="ht2"><label for="ht2">壁掛式</label></div>
+    <div class="radio-item"><input type="radio" name="hoist_type" value="軌道式" id="ht3"><label for="ht3">軌道式</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">2. 升降動力來源</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="hoist_power" value="人力" id="hp1"><label for="hp1">人力</label></div>
+    <div class="radio-item"><input type="radio" name="hoist_power" value="電動" id="hp2"><label for="hp2">電動</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">3. 移位機吊帶/裝置型式（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="hoist_sling_head" id="hsh" value="坐式有頭部支撐"><label for="hsh">坐式有頭部支撐</label></div>
+    <div class="check-item"><input type="checkbox" name="hoist_sling_nohead" id="hsnh" value="坐式無頭部支撐"><label for="hsnh">坐式無頭部支撐</label></div>
+    <div class="check-item"><input type="checkbox" name="hoist_sling_toilet" id="hst" value="如廁清潔型"><label for="hst">如廁清潔型</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="hoist_sling_other" placeholder="其他吊帶型式"></div></div>
+  <div class="field"><label class="field-label">4. 其他配件</label><input type="text" id="hoist_acc" placeholder="其他配件"></div>
+
+  <hr class="divider">
+  <div class="sub-label">適配服務建議</div>
+  <div class="field"><textarea id="fitting_suggest" rows="2" placeholder="建議於取得輔具後，與輔具中心預約免費的適配服務，聯絡方式：(02)2523-7902"></textarea></div>
+  <div class="field"><label class="field-label">其他建議</label><textarea id="other_suggest" rows="2">無</textarea></div>
+</div></div>
+
+<!-- S6: 評估資訊 -->
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><div class="num">6</div><div class="title">評估資訊</div><div class="chevron">›</div></div>
+<div class="section-body">
+  <div class="field"><label class="field-label">評估單位</label><input type="text" id="f_eval_unit" value="臺北市西區輔具資源中心"></div>
+  <div class="row"><div class="field"><label class="field-label">評估人員</label><input type="text" id="f_evaluator" value="莊博文"></div><div class="field"><label class="field-label">職稱</label><input type="text" id="f_eval_title" value="甲類輔具評估人員"></div></div>
+  <div class="field"><label class="field-label">評估日期</label><input type="text" id="f_eval_date" placeholder="YYYY/MM/DD"></div>
+</div></div>
+
+<div class="action-bar"><button class="btn btn-secondary" onclick="saveLocal()">暫存</button><button class="btn btn-secondary" onclick="copyJSON()">複製 JSON</button><button class="btn btn-primary" onclick="exportJSON()">匯出 JSON</button></div>
+
+<script>
+function toggleSection(el){el.classList.toggle('collapsed');el.nextElementSibling.classList.toggle('hidden');}
+
+// Diagnosis
+(function(){const dx=[['dx_veg','植物人'],['dx_dementia','失智症'],['dx_stroke','中風偏癱'],['dx_sci','脊髓損傷'],['dx_tbi','腦外傷'],['dx_cerebellar','小腦萎縮症'],['dx_cp','腦性麻痺'],['dx_delay','發展遲緩'],['dx_mnd','運動神經元疾病'],['dx_parkinson','巴金森氏症'],['dx_muscular','肌肉萎縮症'],['dx_polio','小兒麻痺'],['dx_fracture','骨折'],['dx_amputation','截肢'],['dx_arthritis','關節炎']];const c=document.getElementById('dxGrid06');dx.forEach(([id,l])=>{c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});})();
+
+// Tube/stoma
+(function(){const items=[['tube_none','無'],['tube_trach','氣切管'],['tube_ng','鼻胃管'],['tube_foley','尿管'],['tube_gastro','胃造口'],['tube_colost','腸造口'],['tube_cystost','膀胱造口']];const c=document.getElementById('tubeGrid06');items.forEach(([id,l])=>{c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});c.innerHTML+='<div class="field" style="width:100%;margin-top:8px"><input type="text" id="tube_other" placeholder="其他管路/造口"></div>';})();
+
+// Gov subsidy grid
+(function(){const items=['身障','長照','職災','職再','教育','榮民','健保'];const c=document.getElementById('govGrid');items.forEach((l,i)=>{const id='src_gov_'+i;c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});})();
+
+// Toggles
+document.querySelectorAll('input[name="exempt"]').forEach(r=>r.addEventListener('change',function(){document.getElementById('exemptDetail').style.display=this.value==='需要'?'block':'none';}));
+document.querySelectorAll('input[name="cur_source"]').forEach(r=>r.addEventListener('change',function(){document.getElementById('srcDetail').classList.add('show');}));
+
+function updateProgress(){const n=document.querySelectorAll('input[type="radio"]:checked,input[type="checkbox"]:checked').length;const f=Array.from(document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea')).filter(el=>el.value.trim()).length;document.getElementById('progressFill').style.width=Math.min(100,Math.round((n+f)/30*100))+'%';}
+document.addEventListener('change',updateProgress);document.addEventListener('input',updateProgress);
+
+function collectData(){const d={};document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea').forEach(el=>{if(el.id&&el.value.trim())d[el.id]=el.value.trim();});document.querySelectorAll('input[type="radio"]:checked').forEach(el=>{d[el.name]=el.value;});const c={};document.querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{const k=el.name||el.id;if(!c[k])c[k]=[];c[k].push(el.value);});d._checks=c;d._timestamp=new Date().toISOString();d._report='編號06-移位';return d;}
+function saveLocal(){localStorage.setItem('form06_draft',JSON.stringify(collectData()));showToast('已暫存');}
+function exportJSON(){const d=collectData();const j=JSON.stringify(d,null,2);try{const b=new Blob([j],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`06_移位_${d.f_evaluator||'草稿'}_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);}catch(e){}copyJSON();}
+function copyJSON(){const j=JSON.stringify(collectData(),null,2);showCopyModal(j);}
+function fallbackCopy(t){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('已複製');}catch(e){}document.body.removeChild(ta);}
+function showCopyModal(text){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';const b=document.createElement('div');b.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字 → 全選 → 複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;o.appendChild(b);document.body.appendChild(o);b.querySelector('textarea').focus();b.querySelector('textarea').select();}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+window.addEventListener('load',function(){updateProgress();if(!document.getElementById('f_eval_date').value){const d=new Date();document.getElementById('f_eval_date').value=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}});
+</script>
+</body>
+</html>

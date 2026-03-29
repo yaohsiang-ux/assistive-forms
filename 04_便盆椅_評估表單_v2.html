@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>編號04 沐浴椅/便盆椅評估表</title>
+<style>
+:root{--brand:#D65A31;--brand-light:#fef0eb;--brown:#4B3621;--bg:#fafaf8;--card:#fff;--border:#e2e0d8;--text:#2c2c2a;--text2:#6b6a65;--text3:#9c9a92;--amber:#E6AF2E;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06)}*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:120px}.header{background:var(--brand);color:#fff;padding:16px 20px;position:sticky;top:0;z-index:100}.header h1{font-size:18px;font-weight:600}.header .sub{font-size:13px;opacity:.85;margin-top:2px}.progress-bar{height:3px;background:var(--border);position:sticky;top:60px;z-index:99}.progress-fill{height:100%;background:var(--brand);transition:width .3s;width:0%}.section{background:var(--card);margin:12px;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border)}.section-header{padding:14px 16px;background:linear-gradient(135deg,var(--brand-light),#fff);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}.section-header .num{background:var(--brand);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}.section-header .title{font-size:15px;font-weight:600;color:var(--brown)}.section-header .chevron{margin-left:auto;font-size:18px;color:var(--text3);transition:transform .2s}.section-header.collapsed .chevron{transform:rotate(-90deg)}.section-body{padding:16px}.section-body.hidden{display:none}.field{margin-bottom:16px}.field:last-child{margin-bottom:0}.field-label{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}input[type="text"],input[type="text" inputmode="decimal"],textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text);-webkit-appearance:none}input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(214,90,49,.12)}textarea{resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.check-grid{display:flex;flex-wrap:wrap;gap:8px}.check-item input{display:none}.check-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}.check-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}.radio-inline{display:flex;flex-wrap:wrap;gap:8px}.radio-item input{display:none}.radio-item label{display:block;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s}.radio-item input:checked+label{background:var(--brand);color:#fff;border-color:var(--brand)}.divider{border:none;border-top:1px solid var(--border);margin:16px 0}.sub-label{font-size:14px;font-weight:600;color:var(--brown);margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--amber)}.cond-block{display:none;margin-top:8px;padding:12px;background:var(--brand-light);border-radius:8px}.cond-block.show{display:block}.action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100}.btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}.btn-primary{background:var(--brand);color:#fff}.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:200}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="header"><h1>編號04 沐浴椅/便盆椅</h1><div class="sub">移動式清洗槽、沐浴椅、便盆椅、附加功能</div></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div id="toast" class="toast"></div>
+
+<!-- S1: 活動需求 -->
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><div class="num">1</div><div class="title">活動需求</div><div class="chevron">›</div></div>
+<div class="section-body">
+  <div class="field"><label class="field-label">使用場合（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="place_home" id="ph" value="居家生活"><label for="ph">居家生活</label></div>
+    <div class="check-item"><input type="checkbox" name="place_inst" id="pi2" value="照顧機構"><label for="pi2">照顧機構</label></div>
+    <div class="check-item"><input type="checkbox" name="place_school" id="ps" value="校園學習"><label for="ps">校園學習</label></div>
+    <div class="check-item"><input type="checkbox" name="place_work" id="pw" value="職場就業"><label for="pw">職場就業</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="place_other" placeholder="其他場合"></div></div>
+
+  <div class="field"><label class="field-label">活動需求（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="need_independent" id="ni" value="個案獨立浴廁"><label for="ni">個案獨立浴廁</label></div>
+    <div class="check-item"><input type="checkbox" name="need_assist" id="na" value="由照顧者協助浴廁"><label for="na">照顧者協助浴廁</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="need_other" placeholder="其他活動需求"></div></div>
+
+  <div class="field"><label class="field-label">使用環境（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="env_far" id="ef" value="浴廁距起居空間較遠"><label for="ef">浴廁距離遠</label></div>
+    <div class="check-item"><input type="checkbox" name="env_narrow" id="en" value="浴廁空間狹小"><label for="en">空間狹小</label></div>
+    <div class="check-item"><input type="checkbox" name="env_thresh" id="et" value="需跨越門檻"><label for="et">跨越門檻</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="env_other" placeholder="其他環境"></div></div>
+
+  <div class="field"><label class="field-label">人力支持（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="sup_alone" id="sa" value="獨居"><label for="sa">獨居</label></div>
+    <div class="check-item"><input type="checkbox" name="sup_cohabit" id="sc" value="有同住者"><label for="sc">有同住者</label></div>
+    <div class="check-item"><input type="checkbox" name="sup_pro" id="sp" value="有專業人力協助"><label for="sp">有專業人力</label></div>
+  </div>
+    <div class="field" style="margin-top:8px"><input type="text" id="sup_pro_detail" placeholder="專業人力說明"></div>
+    <div class="field"><input type="text" id="sup_other" placeholder="其他人力支持"></div>
+  </div>
+</div></div>
+
+<!-- S2: 目前輔具(三大類) -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">2</div><div class="title">目前使用的輔具</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+
+  <div class="sub-label">移動式身體清洗槽</div>
+  <div class="field"><label class="field-label">種類</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="wash_type" value="局部型" id="wt1"><label for="wt1">局部型</label></div>
+    <div class="radio-item"><input type="radio" name="wash_type" value="全身型" id="wt2"><label for="wt2">全身型</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="wash_other_type" placeholder="其他種類"></div></div>
+  <div class="field"><label class="field-label">來源</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="wash_src" value="政府補助" id="ws1"><label for="ws1">政府補助</label></div>
+    <div class="radio-item"><input type="radio" name="wash_src" value="二手輔具" id="ws2"><label for="ws2">二手輔具</label></div>
+    <div class="radio-item"><input type="radio" name="wash_src" value="自購" id="ws3"><label for="ws3">自購</label></div>
+    <div class="radio-item"><input type="radio" name="wash_src" value="其他" id="ws4"><label for="ws4">其他</label></div>
+  </div><div class="cond-block" id="washSrcDetail"><div class="field"><label class="field-label">政府補助類型</label><div class="check-grid" id="washGovGrid"></div><div class="field" style="margin-top:8px"><input type="text" id="wash_gov_other" placeholder="其他補助"></div></div><div class="field"><label class="field-label">二手方式</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="wash_2nd" value="租借" id="w2a"><label for="w2a">租借</label></div><div class="radio-item"><input type="radio" name="wash_2nd" value="媒合" id="w2b"><label for="w2b">媒合</label></div></div></div><div class="field"><input type="text" id="wash_src_other_text" placeholder="其他來源"></div></div></div>
+  <div class="row"><div class="field"><label class="field-label">已使用約(年)</label><input type="text" inputmode="decimal" id="wash_years"></div><div class="field" style="display:flex;align-items:end"><div class="check-item"><input type="checkbox" name="wash_yr_unknown" id="wyu" value="年限不明"><label for="wyu">年限不明</label></div></div></div>
+  <div class="field"><label class="field-label">使用情形</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="wash_status" value="已損壞不堪修復，需更新" id="wst1"><label for="wst1">損壞需更新</label></div>
+    <div class="radio-item"><input type="radio" name="wash_status" value="規格或功能不符使用者現在的需求，需更換" id="wst2"><label for="wst2">規格不符</label></div>
+    <div class="radio-item"><input type="radio" name="wash_status" value="適合繼續使用，但需要另行購置於不同場所使用" id="wst3"><label for="wst3">另購不同場所</label></div>
+    <div class="radio-item"><input type="radio" name="wash_status" value="適合繼續使用，無需更換" id="wst4"><label for="wst4">無需更換</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="wash_status_other" placeholder="其他"></div></div>
+
+  <hr class="divider">
+  <div class="sub-label">沐浴椅</div>
+  <div class="field"><label class="field-label">種類</label><div class="check-grid"><div class="check-item"><input type="checkbox" name="cur_shower" id="csh" value="沐浴椅"><label for="csh">沐浴椅</label></div></div><div class="field" style="margin-top:8px"><input type="text" id="shower_other_type" placeholder="其他種類"></div></div>
+  <div class="field"><label class="field-label">附加功能（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="shower_af_wheel" id="saw" value="附輪"><label for="saw">附輪</label></div>
+    <div class="check-item"><input type="checkbox" name="shower_af_transfer" id="sat" value="具利於移位之扶手"><label for="sat">利於移位扶手</label></div>
+    <div class="check-item"><input type="checkbox" name="shower_af_recline" id="sar" value="具仰躺功能"><label for="sar">仰躺</label></div>
+    <div class="check-item"><input type="checkbox" name="shower_af_tilt" id="sati" value="具空中傾倒功能"><label for="sati">空中傾倒</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">來源</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="shower_src" value="政府補助" id="ss1"><label for="ss1">政府補助</label></div>
+    <div class="radio-item"><input type="radio" name="shower_src" value="二手輔具" id="ss2"><label for="ss2">二手輔具</label></div>
+    <div class="radio-item"><input type="radio" name="shower_src" value="自購" id="ss3"><label for="ss3">自購</label></div>
+    <div class="radio-item"><input type="radio" name="shower_src" value="其他" id="ss4"><label for="ss4">其他</label></div>
+  </div><div class="cond-block" id="showerSrcDetail"><div class="field"><label class="field-label">政府補助類型</label><div class="check-grid" id="showerGovGrid"></div><div class="field" style="margin-top:8px"><input type="text" id="shower_gov_other" placeholder="其他補助"></div></div><div class="field"><label class="field-label">二手方式</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="shower_2nd" value="租借" id="s2a"><label for="s2a">租借</label></div><div class="radio-item"><input type="radio" name="shower_2nd" value="媒合" id="s2b"><label for="s2b">媒合</label></div></div></div><div class="field"><input type="text" id="shower_src_other_text" placeholder="其他來源"></div></div></div>
+  <div class="row"><div class="field"><label class="field-label">已使用約(年)</label><input type="text" inputmode="decimal" id="shower_years"></div><div class="field" style="display:flex;align-items:end"><div class="check-item"><input type="checkbox" name="shower_yr_unknown" id="syu" value="年限不明"><label for="syu">年限不明</label></div></div></div>
+  <div class="field"><label class="field-label">使用情形</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="shower_status" value="已損壞不堪修復，需更新" id="sst1"><label for="sst1">損壞需更新</label></div>
+    <div class="radio-item"><input type="radio" name="shower_status" value="規格或功能不符使用者現在的需求，需更換" id="sst2"><label for="sst2">規格不符</label></div>
+    <div class="radio-item"><input type="radio" name="shower_status" value="適合繼續使用，但需要另行購置於不同場所使用" id="sst3"><label for="sst3">另購不同場所</label></div>
+    <div class="radio-item"><input type="radio" name="shower_status" value="適合繼續使用，無需更換" id="sst4"><label for="sst4">無需更換</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="shower_status_other" placeholder="其他"></div></div>
+
+  <hr class="divider">
+  <div class="sub-label">便盆椅</div>
+  <div class="field"><label class="field-label">種類</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="cur_toilet_riser" id="ctr" value="馬桶增高器"><label for="ctr">馬桶增高器</label></div>
+    <div class="check-item"><input type="checkbox" name="cur_commode" id="ccm" value="便盆椅"><label for="ccm">便盆椅</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="commode_other_type" placeholder="其他種類"></div></div>
+  <div class="field"><label class="field-label">附加功能（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="commode_af_wheel" id="caw" value="附輪"><label for="caw">附輪</label></div>
+    <div class="check-item"><input type="checkbox" name="commode_af_transfer" id="cat2" value="具利於移位之扶手"><label for="cat2">利於移位扶手</label></div>
+    <div class="check-item"><input type="checkbox" name="commode_af_recline" id="car" value="具仰躺功能"><label for="car">仰躺</label></div>
+    <div class="check-item"><input type="checkbox" name="commode_af_tilt" id="cati" value="具空中傾倒功能"><label for="cati">空中傾倒</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">來源</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="commode_src" value="政府補助" id="cs1"><label for="cs1">政府補助</label></div>
+    <div class="radio-item"><input type="radio" name="commode_src" value="二手輔具" id="cs2"><label for="cs2">二手輔具</label></div>
+    <div class="radio-item"><input type="radio" name="commode_src" value="自購" id="cs3"><label for="cs3">自購</label></div>
+    <div class="radio-item"><input type="radio" name="commode_src" value="其他" id="cs4"><label for="cs4">其他</label></div>
+  </div><div class="cond-block" id="commodeSrcDetail"><div class="field"><label class="field-label">政府補助類型</label><div class="check-grid" id="commodeGovGrid"></div><div class="field" style="margin-top:8px"><input type="text" id="commode_gov_other" placeholder="其他補助"></div></div><div class="field"><label class="field-label">二手方式</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="commode_2nd" value="租借" id="c2a"><label for="c2a">租借</label></div><div class="radio-item"><input type="radio" name="commode_2nd" value="媒合" id="c2b"><label for="c2b">媒合</label></div></div></div><div class="field"><input type="text" id="commode_src_other_text" placeholder="其他來源"></div></div></div>
+  <div class="row"><div class="field"><label class="field-label">已使用約(年)</label><input type="text" inputmode="decimal" id="commode_years"></div><div class="field" style="display:flex;align-items:end"><div class="check-item"><input type="checkbox" name="commode_yr_unknown" id="cyu" value="年限不明"><label for="cyu">年限不明</label></div></div></div>
+  <div class="field"><label class="field-label">使用情形</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="commode_status" value="已損壞不堪修復，需更新" id="cst1"><label for="cst1">損壞需更新</label></div>
+    <div class="radio-item"><input type="radio" name="commode_status" value="規格或功能不符使用者現在的需求，需更換" id="cst2"><label for="cst2">規格不符</label></div>
+    <div class="radio-item"><input type="radio" name="commode_status" value="適合繼續使用，但需要另行購置於不同場所使用" id="cst3"><label for="cst3">另購不同場所</label></div>
+    <div class="radio-item"><input type="radio" name="commode_status" value="適合繼續使用，無需更換" id="cst4"><label for="cst4">無需更換</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="commode_status_other" placeholder="其他"></div></div>
+</div></div>
+
+<!-- S3: 身體功能評估 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">3</div><div class="title">身體功能評估</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+  <div class="sub-label">診斷（可複選）</div>
+  <div class="check-grid" id="dxGrid04"></div>
+  <div class="row" style="margin-top:8px"><div class="field"><input type="text" id="dx_stroke_side" placeholder="中風偏癱(左/右)"></div><div class="field"><input type="text" id="dx_sci_level" placeholder="脊損位(頸/胸/腰/薦)"></div></div>
+  <div class="field"><input type="text" id="dx_tbi_side" placeholder="腦外傷(左/右)"></div>
+  <div class="field"><input type="text" id="dx_other_text" placeholder="其他診斷"></div>
+
+  <div class="sub-label">管路/造口（可複選）</div>
+  <div class="check-grid" id="tubeGrid04"></div>
+
+  <hr class="divider">
+  <div class="sub-label">身體尺寸</div>
+  <div class="row"><div class="field"><label class="field-label">身高(cm)</label><input type="text" inputmode="decimal" id="f_height"></div><div class="field"><label class="field-label">體重(kg)</label><input type="text" inputmode="decimal" id="f_weight"></div></div>
+  <div class="field"><label class="field-label">臀寬(cm)</label><input type="text" inputmode="decimal" id="hip_w"></div>
+
+  <hr class="divider">
+  <div class="sub-label">身體姿態</div>
+  <div class="field"><label class="field-label">骨盆（可複選）</label><div class="check-grid" id="pelvisGrid04"></div></div>
+
+  <div class="field"><label class="field-label">脊柱（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="spine_normal" id="spn" value="正常或無明顯變形"><label for="spn">正常/無明顯變形</label></div>
+    <div class="check-item"><input type="checkbox" name="spine_scol" id="sps" value="脊柱側彎"><label for="sps">脊柱側彎</label></div>
+    <div class="check-item"><input type="checkbox" name="spine_lordosis" id="spl" value="過度前凸"><label for="spl">過度前凸</label></div>
+    <div class="check-item"><input type="checkbox" name="spine_kyphosis" id="spk" value="過度後凸"><label for="spk">過度後凸</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="spine_other" placeholder="其他變形"></div></div>
+
+  <div class="field"><label class="field-label">髖部</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="hip" value="正常" id="hip1"><label for="hip1">正常</label></div>
+    <div class="radio-item"><input type="radio" name="hip" value="內收變形" id="hip2"><label for="hip2">內收變形</label></div>
+    <div class="radio-item"><input type="radio" name="hip" value="外展變形" id="hip3"><label for="hip3">外展變形</label></div>
+    <div class="radio-item"><input type="radio" name="hip" value="風吹式變形" id="hip4"><label for="hip4">風吹式變形</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="hip_other" placeholder="其他髖部"></div></div>
+
+  <div class="field"><label class="field-label">膝部</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="knee" value="正常" id="kn1"><label for="kn1">正常</label></div>
+    <div class="radio-item"><input type="radio" name="knee" value="屈曲變形" id="kn2"><label for="kn2">屈曲變形</label></div>
+    <div class="radio-item"><input type="radio" name="knee" value="伸直變形" id="kn3"><label for="kn3">伸直變形</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="knee_other" placeholder="其他膝部"></div></div>
+
+  <hr class="divider">
+  <div class="sub-label">功能評估</div>
+  <div class="field"><label class="field-label">頭部控制</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="head_ctrl" value="正常" id="hc1"><label for="hc1">正常</label></div>
+    <div class="radio-item"><input type="radio" name="head_ctrl" value="偶可維持頭部正中位置但控制不佳或耐力不足" id="hc2"><label for="hc2">偶可維持但不佳</label></div>
+    <div class="radio-item"><input type="radio" name="head_ctrl" value="完全無法控制" id="hc3"><label for="hc3">完全無法</label></div>
+  </div></div>
+
+  <div class="field"><label class="field-label">坐姿平衡</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="sit_bal" value="良好" id="sb1"><label for="sb1">良好</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="雙手扶持尚可維持平衡" id="sb2"><label for="sb2">雙手扶持尚可</label></div>
+    <div class="radio-item"><input type="radio" name="sit_bal" value="雙手扶持難以維持平衡" id="sb3"><label for="sb3">雙手扶持難以</label></div>
+  </div>
+    <div class="field" style="margin-top:8px"><label class="field-label">身體明顯倒向（可複選）</label><div class="check-grid">
+      <div class="check-item"><input type="checkbox" name="fall_l" id="fl" value="左側"><label for="fl">左側</label></div>
+      <div class="check-item"><input type="checkbox" name="fall_r" id="fr" value="右側"><label for="fr">右側</label></div>
+      <div class="check-item"><input type="checkbox" name="fall_f" id="ff" value="前方"><label for="ff">前方</label></div>
+      <div class="check-item"><input type="checkbox" name="fall_b" id="fb" value="後方"><label for="fb">後方</label></div>
+    </div></div>
+  </div>
+
+  <div class="field"><label class="field-label">如廁沐浴困難（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="diff_fall" id="df1" value="浴廁內移動、操作有跌倒疑慮"><label for="df1">跌倒疑慮</label></div>
+    <div class="check-item"><input type="checkbox" name="diff_late" id="df2" value="無法及時步行到達浴廁，如廁常來不及"><label for="df2">如廁來不及</label></div>
+    <div class="check-item"><input type="checkbox" name="diff_unsafe" id="df3" value="步行至浴廁有安全疑慮"><label for="df3">步行不安全</label></div>
+    <div class="check-item"><input type="checkbox" name="diff_nowalk" id="df4" value="無法步行至浴廁"><label for="df4">無法步行</label></div>
+    <div class="check-item"><input type="checkbox" name="diff_notransfer" id="df5" value="無法以下肢承重轉位"><label for="df5">無法承重轉位</label></div>
+  </div></div>
+</div></div>
+
+<!-- S4: 評估結果 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">4</div><div class="title">評估結果</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+  <div class="field"><label class="field-label">評估結果</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="result" value="不建議" id="rn"><label for="rn">不建議</label></div>
+    <div class="radio-item"><input type="radio" name="result" value="建議使用" id="ry"><label for="ry">建議使用</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="result_no_reason" placeholder="不建議理由"></div>
+    <div class="field" style="margin-top:8px"><input type="text" id="result_yes_detail" placeholder="建議使用項目說明"></div></div>
+
+  <div class="field"><label class="field-label">建議項目（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="item163" id="i163" value="163 移動式清洗槽-局部型"><label for="i163">163 清洗槽-局部型</label></div>
+    <div class="check-item"><input type="checkbox" name="item164" id="i164" value="164 移動式清洗槽-全身型"><label for="i164">164 清洗槽-全身型</label></div>
+    <div class="check-item"><input type="checkbox" name="item166" id="i166" value="166 馬桶增高器"><label for="i166">166 馬桶增高器</label></div>
+    <div class="check-item"><input type="checkbox" name="item167" id="i167" value="167 沐浴椅(一般型)"><label for="i167">167 沐浴椅</label></div>
+    <div class="check-item"><input type="checkbox" name="item168" id="i168" value="168 便盆椅(一般型)"><label for="i168">168 便盆椅</label></div>
+    <div class="check-item"><input type="checkbox" name="item169" id="i169" value="169 附加功能-附輪"><label for="i169">169 附加-附輪</label></div>
+    <div class="check-item"><input type="checkbox" name="item170" id="i170" value="170 附加功能-利於移位之扶手"><label for="i170">170 附加-利於移位扶手</label></div>
+    <div class="check-item"><input type="checkbox" name="item171" id="i171" value="171 附加功能-仰躺"><label for="i171">171 附加-仰躺</label></div>
+    <div class="check-item"><input type="checkbox" name="item172" id="i172" value="172 附加功能-空中傾倒"><label for="i172">172 附加-空中傾倒</label></div>
+    <div class="check-item"><input type="checkbox" name="itemEA01_1" id="ea1" value="EA01-1 馬桶增高器"><label for="ea1">EA01-1 馬桶增高器</label></div>
+    <div class="check-item"><input type="checkbox" name="itemEA01_2" id="ea2" value="EA01-2 便盆椅"><label for="ea2">EA01-2 便盆椅</label></div>
+    <div class="check-item"><input type="checkbox" name="itemEA01_3" id="ea3" value="EA01-3 沐浴椅"><label for="ea3">EA01-3 沐浴椅</label></div>
+    <div class="check-item"><input type="checkbox" name="itemFA20" id="fa20" value="FA20 特殊簡易洗槽"><label for="fa20">FA20 特殊簡易洗槽</label></div>
+    <div class="check-item"><input type="checkbox" name="itemFA21" id="fa21" value="FA21 特殊簡易浴槽"><label for="fa21">FA21 特殊簡易浴槽</label></div>
+  </div></div>
+
+  <div class="field"><label class="field-label">使用理由</label><textarea id="use_reason" rows="3"></textarea></div>
+  <hr class="divider">
+  <div class="field"><label class="field-label">使用訓練</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="training" value="需要" id="ty"><label for="ty">需要</label></div><div class="radio-item"><input type="radio" name="training" value="不需要" id="tn2"><label for="tn2">不需要</label></div></div></div>
+  <div class="field"><label class="field-label">追蹤</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="followup" value="需要" id="fy"><label for="fy">需要</label></div><div class="radio-item"><input type="radio" name="followup" value="不需要" id="fn"><label for="fn">不需要</label></div></div></div>
+  <div class="field"><label class="field-label">免評</label><div class="radio-inline"><div class="radio-item"><input type="radio" name="exempt" value="需要" id="ey"><label for="ey">需要</label></div><div class="radio-item"><input type="radio" name="exempt" value="不需要" id="en2"><label for="en2">不需要</label></div></div><div id="exemptDetail" style="display:none;margin-top:8px"><div class="row"><div class="field"><input type="text" id="exempt_ltc" placeholder="長照項目"></div><div class="field"><input type="text" id="exempt_disability" placeholder="身障項目"></div></div></div></div>
+  <div class="field"><label class="field-label">其他</label><textarea id="result_other" rows="2" placeholder="其他評估結果備註"></textarea></div>
+</div></div>
+
+<!-- S5: 規格配置 -->
+<div class="section"><div class="section-header collapsed" onclick="toggleSection(this)"><div class="num">5</div><div class="title">規格配置建議</div><div class="chevron">›</div></div>
+<div class="section-body hidden">
+
+  <div class="sub-label">移動式身體清洗槽</div>
+  <div class="field"><label class="field-label">類型</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="spec_wash" value="局部型" id="spw1"><label for="spw1">局部型</label></div>
+    <div class="radio-item"><input type="radio" name="spec_wash" value="全身型" id="spw2"><label for="spw2">全身型</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">局部型配置（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="wash_fold" id="wfo" value="可折疊"><label for="wfo">可折疊</label></div>
+    <div class="check-item"><input type="checkbox" name="wash_inflatable" id="win" value="充氣式"><label for="win">充氣式</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="wash_spec_other" placeholder="其他配置"></div></div>
+  <div class="field"><label class="field-label">全身型使用方式</label><div class="radio-inline">
+    <div class="radio-item"><input type="radio" name="wash_full_mode" value="原床沐浴" id="wfm1"><label for="wfm1">原床沐浴</label></div>
+    <div class="radio-item"><input type="radio" name="wash_full_mode" value="獨立浴槽" id="wfm2"><label for="wfm2">獨立浴槽</label></div>
+  </div></div>
+  <div class="field"><label class="field-label">全身型配置（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="wash_full_fold" id="wff" value="可折疊"><label for="wff">可折疊</label></div>
+    <div class="check-item"><input type="checkbox" name="wash_full_rail" id="wfr" value="以床欄為支架"><label for="wfr">以床欄為支架</label></div>
+    <div class="check-item"><input type="checkbox" name="wash_full_inflatable" id="wfi" value="充氣式"><label for="wfi">充氣式</label></div>
+  </div><div class="field" style="margin-top:8px"><input type="text" id="wash_full_other" placeholder="其他配置"></div></div>
+
+  <hr class="divider">
+  <div class="sub-label">沐浴椅</div>
+  <div class="field"><label class="field-label">扶手</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="sh_armrest_fixed" id="shaf" value="固定式扶手"><label for="shaf">固定式扶手</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_armrest_transfer" id="shat" value="具利於移位之扶手"><label for="shat">利於移位扶手</label></div>
+  </div></div>
+  <div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="sh_backrest" id="shbk" value="需有背靠"><label for="shbk">需有背靠</label></div>
+  </div>
+  <div class="field" style="margin-top:8px"><label class="field-label">附輪</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="sh_wheel" id="shwh" value="需附輪"><label for="shwh">需附輪</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_4caster" id="sh4c" value="四輪皆轉向輪"><label for="sh4c">四輪皆轉向</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_2caster" id="sh2c" value="僅兩輪為轉向輪"><label for="sh2c">僅兩輪轉向</label></div>
+  </div></div>
+  <div class="check-grid" style="margin-top:8px">
+    <div class="check-item"><input type="checkbox" name="sh_recline" id="shrc" value="具仰躺功能"><label for="shrc">仰躺功能</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_tilt" id="shti" value="具空中傾倒功能"><label for="shti">空中傾倒功能</label></div>
+  </div>
+  <div class="field" style="margin-top:8px"><label class="field-label">其他配置（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="sh_height_adj" id="shha" value="座高調整功能"><label for="shha">座高調整</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_pelvic_belt" id="shpb" value="骨盆帶"><label for="shpb">骨盆帶</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_chest_belt" id="shcb" value="胸帶"><label for="shcb">胸帶</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_head_sup" id="shhs" value="頭頸支撐功能"><label for="shhs">頭頸支撐</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_swivel" id="shsw" value="座椅可轉向"><label for="shsw">座椅可轉向</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_fold" id="shfo" value="可收折"><label for="shfo">可收折</label></div>
+    <div class="check-item"><input type="checkbox" name="sh_tub" id="shtb" value="可跨浴缸"><label for="shtb">可跨浴缸</label></div>
+  </div></div>
+  <div class="row" style="margin-top:8px">
+    <div class="field"><input type="text" id="sh_seat_h" placeholder="特殊座高建議"></div>
+    <div class="field"><input type="text" id="sh_width" placeholder="特殊整體寬度(cm)"></div>
+  </div>
+  <div class="field"><input type="text" id="sh_other" placeholder="其他沐浴椅配置"></div>
+
+  <hr class="divider">
+  <div class="sub-label">便盆椅</div>
+  <div class="field"><label class="field-label">附輪</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="cm_wheel" id="cmwh" value="需附輪"><label for="cmwh">需附輪</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_4caster" id="cm4c" value="四輪皆轉向輪"><label for="cm4c">四輪皆轉向</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_2caster" id="cm2c" value="僅兩輪為轉向輪"><label for="cm2c">僅兩輪轉向</label></div>
+  </div></div>
+  <div class="check-grid" style="margin-top:8px">
+    <div class="check-item"><input type="checkbox" name="cm_transfer" id="cmtr" value="具利於移位之扶手"><label for="cmtr">利於移位扶手</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_recline" id="cmrc" value="具仰躺功能"><label for="cmrc">仰躺功能</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_tilt" id="cmti" value="具空中傾倒功能"><label for="cmti">空中傾倒功能</label></div>
+  </div>
+  <div class="field" style="margin-top:8px"><label class="field-label">其他配置（可複選）</label><div class="check-grid">
+    <div class="check-item"><input type="checkbox" name="cm_height_adj" id="cmha" value="座高調整功能"><label for="cmha">座高調整</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_pelvic_belt" id="cmpb" value="骨盆帶"><label for="cmpb">骨盆帶</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_chest_belt" id="cmcb" value="胸帶"><label for="cmcb">胸帶</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_head_sup" id="cmhs" value="頭頸支撐功能"><label for="cmhs">頭頸支撐</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_toilet" id="cmto" value="可跨馬桶"><label for="cmto">可跨馬桶</label></div>
+    <div class="check-item"><input type="checkbox" name="cm_fold" id="cmfo" value="可收折"><label for="cmfo">可收折</label></div>
+  </div></div>
+  <div class="row" style="margin-top:8px">
+    <div class="field"><input type="text" id="cm_seat_h" placeholder="特殊座高建議"></div>
+    <div class="field"><input type="text" id="cm_width" placeholder="特殊整體寬度(cm)"></div>
+  </div>
+  <div class="field"><input type="text" id="cm_other" placeholder="其他便盆椅配置"></div>
+
+  <hr class="divider">
+  <div class="sub-label">適配服務建議</div>
+  <div class="field"><textarea id="fitting_suggest" rows="2" placeholder="建議於取得輔具後，與輔具中心預約免費的適配服務，聯絡方式：(02)2523-7902"></textarea></div>
+  <div class="field"><label class="field-label">其他建議</label><textarea id="other_suggest" rows="2">無</textarea></div>
+</div></div>
+
+<!-- S6: 評估資訊 -->
+<div class="section"><div class="section-header" onclick="toggleSection(this)"><div class="num">6</div><div class="title">評估資訊</div><div class="chevron">›</div></div>
+<div class="section-body">
+  <div class="field"><label class="field-label">評估單位</label><input type="text" id="f_eval_unit" value="臺北市西區輔具資源中心"></div>
+  <div class="row"><div class="field"><label class="field-label">評估人員</label><input type="text" id="f_evaluator" value="莊博文"></div><div class="field"><label class="field-label">職稱</label><input type="text" id="f_eval_title" value="甲類輔具評估人員"></div></div>
+  <div class="field"><label class="field-label">評估日期</label><input type="text" id="f_eval_date" placeholder="YYYY/MM/DD"></div>
+</div></div>
+
+<div class="action-bar"><button class="btn btn-secondary" onclick="saveLocal()">暫存</button><button class="btn btn-secondary" onclick="copyJSON()">複製 JSON</button><button class="btn btn-primary" onclick="exportJSON()">匯出 JSON</button></div>
+
+<script>
+function toggleSection(el){el.classList.toggle('collapsed');el.nextElementSibling.classList.toggle('hidden');}
+
+// Diagnosis
+(function(){const dx=[['dx_veg','植物人'],['dx_dementia','失智症'],['dx_stroke','中風偏癱'],['dx_sci','脊髓損傷'],['dx_tbi','腦外傷'],['dx_cerebellar','小腦萎縮症'],['dx_cp','腦性麻痺'],['dx_delay','發展遲緩'],['dx_mnd','運動神經元疾病'],['dx_parkinson','巴金森氏症'],['dx_muscular','肌肉萎縮症'],['dx_polio','小兒麻痺'],['dx_fracture','骨折'],['dx_amputation','截肢'],['dx_arthritis','關節炎']];const c=document.getElementById('dxGrid04');dx.forEach(([id,l])=>{c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});})();
+
+// Tube/stoma
+(function(){const items=[['tube_none','無'],['tube_trach','氣切管'],['tube_ng','鼻胃管'],['tube_foley','尿管'],['tube_gastro','胃造口'],['tube_colost','腸造口'],['tube_cystost','膀胱造口']];const c=document.getElementById('tubeGrid04');items.forEach(([id,l])=>{c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});c.innerHTML+='<div class="field" style="width:100%;margin-top:8px"><input type="text" id="tube_other" placeholder="其他管路/造口"></div>';})();
+
+// Pelvis
+(function(){const items=[['pelvis_normal','正常'],['pelvis_tilt','向前/後傾'],['pelvis_lat','向左/右傾斜'],['pelvis_rot','向左/右旋轉'],['pelvis_ant_slide','向前滑動'],['pelvis_post_slide','向後滑動'],['pelvis_l_slide','向左滑動'],['pelvis_r_slide','向右滑動'],['pelvis_no_slide','無明顯滑動']];const c=document.getElementById('pelvisGrid04');items.forEach(([id,l])=>{c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});})();
+
+// Gov subsidy grids for 3 categories
+(function(){const govItems=[['身障'],['長照'],['職災'],['職再'],['教育'],['榮民'],['健保']];['washGovGrid','showerGovGrid','commodeGovGrid'].forEach(gid=>{const c=document.getElementById(gid);const prefix=gid.replace('GovGrid','');govItems.forEach(([l],i)=>{const id=prefix+'_gov_'+i;c.innerHTML+=`<div class="check-item"><input type="checkbox" name="${id}" id="${id}" value="${l}"><label for="${id}">${l}</label></div>`;});});})();
+
+// Source detail toggles
+['wash_src','shower_src','commode_src'].forEach(name=>{
+  const detailId=name.replace('_src','')+'SrcDetail';
+  document.querySelectorAll(`input[name="${name}"]`).forEach(r=>r.addEventListener('change',function(){document.getElementById(detailId).classList.add('show');}));
+});
+
+// Exempt
+document.querySelectorAll('input[name="exempt"]').forEach(r=>r.addEventListener('change',function(){document.getElementById('exemptDetail').style.display=this.value==='需要'?'block':'none';}));
+
+function updateProgress(){const n=document.querySelectorAll('input[type="radio"]:checked,input[type="checkbox"]:checked').length;const f=Array.from(document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea')).filter(el=>el.value.trim()).length;document.getElementById('progressFill').style.width=Math.min(100,Math.round((n+f)/35*100))+'%';}
+document.addEventListener('change',updateProgress);document.addEventListener('input',updateProgress);
+
+function collectData(){const d={};document.querySelectorAll('input[type="text"],input[type="text" inputmode="decimal"],textarea').forEach(el=>{if(el.id&&el.value.trim())d[el.id]=el.value.trim();});document.querySelectorAll('input[type="radio"]:checked').forEach(el=>{d[el.name]=el.value;});const c={};document.querySelectorAll('input[type="checkbox"]:checked').forEach(el=>{const k=el.name||el.id;if(!c[k])c[k]=[];c[k].push(el.value);});d._checks=c;d._timestamp=new Date().toISOString();d._report='編號04-便盆椅';return d;}
+function saveLocal(){localStorage.setItem('form04_draft',JSON.stringify(collectData()));showToast('已暫存');}
+function exportJSON(){const d=collectData();const j=JSON.stringify(d,null,2);try{const b=new Blob([j],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`04_便盆椅_${d.f_evaluator||'草稿'}_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);}catch(e){}copyJSON();}
+function copyJSON(){const j=JSON.stringify(collectData(),null,2);showCopyModal(j);}
+function fallbackCopy(t){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('已複製');}catch(e){}document.body.removeChild(ta);}
+function showCopyModal(text){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';const b=document.createElement('div');b.style.cssText='background:#fff;border-radius:12px;padding:16px;width:100%;max-height:70vh;display:flex;flex-direction:column;gap:12px';b.innerHTML=`<div style="font-weight:600;font-size:15px">長按下方文字 → 全選 → 複製</div><textarea readonly style="flex:1;min-height:200px;font-size:12px;font-family:monospace;border:1px solid #ddd;border-radius:8px;padding:8px">${text.replace(/</g,'&lt;')}</textarea><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px">關閉</button>`;o.appendChild(b);document.body.appendChild(o);b.querySelector('textarea').focus();b.querySelector('textarea').select();}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+window.addEventListener('load',function(){updateProgress();if(!document.getElementById('f_eval_date').value){const d=new Date();document.getElementById('f_eval_date').value=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');}});
+</script>
+</body>
+</html>
