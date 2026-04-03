@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>居家無障礙 評估標註工具</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:'Noto Sans TC',sans-serif;background:#111;color:#eee}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useCallback, useEffect } = React;
+
+/* ═══════ Fixture SVG ═══════ */
+function ToiletSVG(){return <g><rect x={-18} y={-30} width={36} height={14} rx={2} fill="#fff" stroke="#333" strokeWidth={2}/><ellipse cx={0} cy={6} rx={16} ry={22} fill="#fff" stroke="#333" strokeWidth={2}/><line x1={-5} y1={-8} x2={-5} y2={24} stroke="#aaa" strokeWidth={1}/><line x1={5} y1={-8} x2={5} y2={24} stroke="#aaa" strokeWidth={1}/></g>}
+function SinkSVG(){return <g><rect x={-20} y={-14} width={40} height={28} rx={4} fill="#fff" stroke="#333" strokeWidth={2}/><rect x={-14} y={-8} width={28} height={16} rx={2} fill="none" stroke="#aaa" strokeWidth={1}/><rect x={-3} y={-18} width={6} height={6} fill="#888"/></g>}
+function BathtubSVG(){return <g><rect x={-24} y={-42} width={48} height={84} rx={4} fill="#fff" stroke="#333" strokeWidth={2}/><rect x={-20} y={-38} width={40} height={76} rx={2} fill="none" stroke="#aaa" strokeWidth={1}/></g>}
+function ShowerSVG(){return <g><circle cx={0} cy={0} r={26} fill="#fff" stroke="#333" strokeWidth={2}/><circle cx={0} cy={0} r={6} fill="#999"/>{[0,1,2,3,4,5].map(i=>{const a=i*Math.PI/3;return <line key={i} x1={Math.cos(a)*9} y1={Math.sin(a)*9} x2={Math.cos(a)*18} y2={Math.sin(a)*18} stroke="#bbb" strokeWidth={1}/>})}</g>}
+function DoorSVG(){return <g><line x1={0} y1={0} x2={-48} y2={0} stroke="#333" strokeWidth={3}/><line x1={0} y1={0} x2={0} y2={-48} stroke="#333" strokeWidth={2}/><path d="M0,-48 A48,48 0 0,0 -48,0" fill="none" stroke="#999" strokeWidth={1.5} strokeDasharray="4,3"/></g>}
+
+const FIX_MAP={toilet:ToiletSVG,sink:SinkSVG,bathtub:BathtubSVG,shower:ShowerSVG,door:DoorSVG};
+const FIX_LBL={toilet:"馬桶",sink:"洗手台",bathtub:"浴缸/木桶",shower:"淋浴區",door:"門"};
+const FIX_EMJ={toilet:"🚽",sink:"🚰",bathtub:"🛁",shower:"🚿",door:"🚪"};
+
+function YellowLabel({x,y,text}){
+  if(!text)return null;
+  const fs=16,w=text.length*fs*0.7+20,h=fs+12;
+  return <g><rect x={x-w/2} y={y-h/2} width={w} height={h} rx={5} fill="rgba(255,214,0,0.92)"/><text x={x} y={y+fs*0.35} textAnchor="middle" fontFamily="'Noto Sans TC',sans-serif" fontWeight="900" fontSize={fs} fill="#000">{text}</text></g>;
+}
+
+/* ═══════ App ═══════ */
+function App(){
+  const [mode,setMode]=useState("photo");
+  const [photoSrc,setPhotoSrc]=useState(null);
+  const [pTool,setPTool]=useState("line");
+  const [anns,setAnns]=useState([]);
+  const [drawing,setDrawing]=useState(false);
+  const [dStart,setDStart]=useState(null);
+  const [dCur,setDCur]=useState(null);
+  const [lMid,setLMid]=useState(null);
+  const [lPhase,setLPhase]=useState(0);
+  const [fTool,setFTool]=useState("wall");
+  const [fObjs,setFObjs]=useState([]);
+  const [selIdx,setSelIdx]=useState(-1);
+  const [pendFix,setPendFix]=useState(null);
+  const [fDraw,setFDraw]=useState(false);
+  const [fStart,setFStart]=useState(null);
+  const [fCur,setFCur]=useState(null);
+  const [dragOff,setDragOff]=useState(null);
+  const [modal,setModal]=useState(null);
+  const [mVal,setMVal]=useState("");
+  // Container size
+  const [cSize,setCSize]=useState({w:800,h:600});
+
+  const areaRef=useRef(null);
+  const svgRef=useRef(null);
+  const imgRef=useRef(null);
+  const fileRef=useRef(null);
+
+  // Track container size
+  useEffect(()=>{
+    const el=areaRef.current;
+    if(!el)return;
+    const ro=new ResizeObserver(entries=>{
+      for(const e of entries){
+        setCSize({w:e.contentRect.width,h:e.contentRect.height});
+      }
+    });
+    ro.observe(el);
+    // Initial
+    setCSize({w:el.clientWidth,h:el.clientHeight});
+    return ()=>ro.disconnect();
+  },[]);
+
+  const getP=useCallback((e)=>{
+    const el=areaRef.current;
+    if(!el)return{x:0,y:0};
+    const r=el.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-r.left,y:t.clientY-r.top};
+  },[]);
+
+  const snap=v=>Math.round(v/20)*20;
+  const snapHV=(s,p)=>{let x=p.x,y=p.y;if(Math.abs(p.x-s.x)<15)x=s.x;if(Math.abs(p.y-s.y)<15)y=s.y;return{x,y}};
+
+  /* Modal */
+  const ask=(title,ph)=>new Promise(res=>{setMVal("");setModal({title,ph,res})});
+  const closeMdl=v=>{if(modal)modal.res(v||"");setModal(null);setMVal("")};
+
+  /* Photo */
+  const loadPhoto=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setPhotoSrc(ev.target.result);r.readAsDataURL(f)};
+
+  /* Pointer events */
+  const onDown=e=>{
+    e.preventDefault();
+    const p=getP(e);
+    if(mode==="photo"){
+      if(!photoSrc)return;
+      if(pTool==="text"){ask("輸入文字","例：水平扶手上緣離地約70公分").then(v=>{if(v)setAnns(a=>[...a,{type:"text",x:p.x,y:p.y,label:v}])});return}
+      if(pTool==="lshape"){
+        if(lPhase===0){setDStart(p);setLPhase(1);setDrawing(true)}
+        else if(lPhase===1){setLMid(p);setLPhase(2)}
+        return;
+      }
+      setDStart(p);setDrawing(true);
+    }else{
+      const sp={x:snap(p.x),y:snap(p.y)};
+      if(pendFix){setFObjs(o=>[...o,{type:"fixture",fixture:pendFix,x:sp.x,y:sp.y,rotation:0,scale:1,flipped:false}]);return}
+      if(fTool==="select"){
+        let found=-1;
+        for(let i=fObjs.length-1;i>=0;i--){const o=fObjs[i];if(o.type==="fixture"){const sz=35*(o.scale||1);if(Math.abs(p.x-o.x)<sz&&Math.abs(p.y-o.y)<sz){found=i;break}}}
+        setSelIdx(found);
+        if(found>=0){setDragOff({x:p.x-fObjs[found].x,y:p.y-fObjs[found].y});setFDraw(true)}
+        return;
+      }
+      setFStart(sp);setFDraw(true);
+    }
+  };
+
+  const onMove=e=>{
+    e.preventDefault();
+    const p=getP(e);
+    if(mode==="photo"&&drawing)setDCur(p);
+    else if(mode==="floor"&&fDraw){
+      if(fTool==="select"&&selIdx>=0&&dragOff)setFObjs(os=>os.map((o,i)=>i===selIdx?{...o,x:snap(p.x-dragOff.x),y:snap(p.y-dragOff.y)}:o));
+      else setFCur({x:snap(p.x),y:snap(p.y)});
+    }
+  };
+
+  const onUp=async e=>{
+    e.preventDefault();
+    const p=getP(e);
+    if(mode==="photo"&&drawing){
+      setDrawing(false);setDCur(null);
+      if(pTool==="line"){
+        const s=snapHV(dStart,p);if(Math.hypot(s.x-dStart.x,s.y-dStart.y)<5)return;
+        const lbl=await ask("輸入尺寸","例：70公分");
+        setAnns(a=>[...a,{type:"line",x1:dStart.x,y1:dStart.y,x2:s.x,y2:s.y,label:lbl}]);
+      }else if(pTool==="lshape"&&lPhase===2){
+        setLPhase(0);
+        const v1=await ask("第一段尺寸","例：70公分"),v2=await ask("第二段尺寸","例：40公分");
+        setAnns(a=>[...a,{type:"lshape",x1:dStart.x,y1:dStart.y,mx:lMid.x,my:lMid.y,x2:p.x,y2:p.y,label1:v1,label2:v2}]);
+      }else if(pTool==="arrow"){
+        const lbl=await ask("離地描述","例：水平扶手上緣離地約70公分");
+        setAnns(a=>[...a,{type:"arrow",x:dStart.x,y1:dStart.y,y2:p.y,label:lbl}]);
+      }
+    }else if(mode==="floor"&&fDraw){
+      setFDraw(false);setFCur(null);
+      if(fTool==="select")return;
+      const sp={x:snap(p.x),y:snap(p.y)};
+      if(fTool==="wall"||fTool==="handrail"){
+        if(!fStart)return;
+        let ex=sp.x,ey=sp.y;
+        if(Math.abs(sp.x-fStart.x)<Math.abs(sp.y-fStart.y))ex=fStart.x;else ey=fStart.y;
+        if(Math.hypot(ex-fStart.x,ey-fStart.y)<5)return;
+        setFObjs(o=>[...o,{type:fTool,x1:fStart.x,y1:fStart.y,x2:ex,y2:ey}]);
+      }else if(fTool==="dim"){
+        if(!fStart||Math.hypot(sp.x-fStart.x,sp.y-fStart.y)<5)return;
+        const lbl=await ask("輸入尺寸","例：120cm");
+        setFObjs(o=>[...o,{type:"dim",x1:fStart.x,y1:fStart.y,x2:sp.x,y2:sp.y,label:lbl}]);
+      }
+    }
+  };
+
+  /* FAB */
+  const rotS=d=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,rotation:((x.rotation||0)+d)%360}:x));
+  const flipS=()=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,flipped:!x.flipped}:x));
+  const scaleS=f=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,scale:(x.scale||1)*f}:x));
+  const delS=()=>{setFObjs(o=>o.filter((_,i)=>i!==selIdx));setSelIdx(-1)};
+
+  /* Export photo */
+  const doExport=()=>{
+    if(!photoSrc||!imgRef.current)return;
+    const img=imgRef.current;
+    const cv=document.createElement("canvas");
+    cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+    const ctx=cv.getContext("2d");ctx.drawImage(img,0,0);
+    const imgR=img.getBoundingClientRect(),aR=areaRef.current.getBoundingClientRect();
+    const ox=imgR.left-aR.left,oy=imgR.top-aR.top;
+    const sx=img.naturalWidth/imgR.width,sy=img.naturalHeight/imgR.height;
+    anns.forEach(a=>{
+      const m=(x,y)=>({x:(x-ox)*sx,y:(y-oy)*sy});
+      ctx.lineCap="round";
+      if(a.type==="line"){const p1=m(a.x1,a.y1),p2=m(a.x2,a.y2);ctx.strokeStyle="#F00";ctx.lineWidth=6*sx;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();if(a.label)cLbl(ctx,(p1.x+p2.x)/2,(p1.y+p2.y)/2-25*sy,a.label,22*sx)}
+      else if(a.type==="lshape"){const p1=m(a.x1,a.y1),pm=m(a.mx,a.my),p2=m(a.x2,a.y2);ctx.strokeStyle="#F00";ctx.lineWidth=6*sx;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(pm.x,pm.y);ctx.stroke();ctx.beginPath();ctx.moveTo(pm.x,pm.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();if(a.label1)cLbl(ctx,(p1.x+pm.x)/2,(p1.y+pm.y)/2-25*sy,a.label1,22*sx);if(a.label2)cLbl(ctx,(pm.x+p2.x)/2,(pm.y+p2.y)/2-25*sy,a.label2,22*sx)}
+      else if(a.type==="arrow"){const px=m(a.x,0).x,y1=m(0,a.y1).y,y2=m(0,a.y2).y;ctx.strokeStyle="#FFD600";ctx.fillStyle="#FFD600";ctx.lineWidth=3*sx;ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px,y2);ctx.stroke();const h=12*sx;ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px-6*sx,y1+h);ctx.lineTo(px+6*sx,y1+h);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(px,y2);ctx.lineTo(px-6*sx,y2-h);ctx.lineTo(px+6*sx,y2-h);ctx.closePath();ctx.fill();if(a.label)cLbl(ctx,px,y2+30*sy,a.label,22*sx)}
+      else if(a.type==="text"){const pt=m(a.x,a.y);cLbl(ctx,pt.x,pt.y,a.label,22*sx)}
+    });
+    cv.toBlob(blob=>{
+      if(!blob)return;
+      const url=URL.createObjectURL(blob);
+      if(navigator.share&&navigator.canShare){const f=new File([blob],'annotated.png',{type:'image/png'});if(navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>dlk(url));return}}
+      dlk(url);
+    },'image/png');
+  };
+  function dlk(u){const a=document.createElement("a");a.href=u;a.download="annotated_"+Date.now()+".png";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),3000)}
+  function cLbl(ctx,x,y,text,fs){
+    ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;const tw=ctx.measureText(text).width,px=12,py=6;
+    ctx.fillStyle="rgba(255,214,0,0.92)";const rx=x-tw/2-px,ry=y-fs/2-py,rw=tw+px*2,rh=fs+py*2,r=6;
+    ctx.beginPath();ctx.moveTo(rx+r,ry);ctx.lineTo(rx+rw-r,ry);ctx.quadraticCurveTo(rx+rw,ry,rx+rw,ry+r);ctx.lineTo(rx+rw,ry+rh-r);ctx.quadraticCurveTo(rx+rw,ry+rh,rx+rw-r,ry+rh);ctx.lineTo(rx+r,ry+rh);ctx.quadraticCurveTo(rx,ry+rh,rx,ry+rh-r);ctx.lineTo(rx,ry+r);ctx.quadraticCurveTo(rx,ry,rx+r,ry);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#000";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(text,x,y);
+  }
+
+  /* Export floor */
+  const expFloor=()=>{
+    const oldSel=selIdx;setSelIdx(-1);
+    setTimeout(()=>{
+      const svgEl=svgRef.current;if(!svgEl)return;
+      const data=new XMLSerializer().serializeToString(svgEl);
+      const blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const img=new Image();
+      img.onload=()=>{
+        const cv=document.createElement("canvas");cv.width=cSize.w;cv.height=cSize.h;
+        const ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0);
+        URL.revokeObjectURL(url);
+        cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);dlk(u);setSelIdx(oldSel)},'image/png');
+      };
+      img.src=url;
+    },50);
+  };
+
+  /* Preview */
+  const preview=()=>{
+    if(mode==="photo"&&drawing&&dStart&&dCur){
+      if(pTool==="line"){const s=snapHV(dStart,dCur);return <line x1={dStart.x} y1={dStart.y} x2={s.x} y2={s.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>}
+      if(pTool==="lshape"){
+        if(lPhase===1)return <line x1={dStart.x} y1={dStart.y} x2={dCur.x} y2={dCur.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>;
+        if(lPhase===2&&lMid)return <g><line x1={dStart.x} y1={dStart.y} x2={lMid.x} y2={lMid.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/><line x1={lMid.x} y1={lMid.y} x2={dCur.x} y2={dCur.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/></g>;
+      }
+      if(pTool==="arrow")return <g><line x1={dStart.x} y1={dStart.y} x2={dStart.x} y2={dCur.y} stroke="#FFD600" strokeWidth={3}/><polygon points={`${dStart.x},${dStart.y} ${dStart.x-6},${dStart.y+12} ${dStart.x+6},${dStart.y+12}`} fill="#FFD600"/><polygon points={`${dStart.x},${dCur.y} ${dStart.x-6},${dCur.y-12} ${dStart.x+6},${dCur.y-12}`} fill="#FFD600"/></g>;
+    }
+    if(mode==="floor"&&fDraw&&fStart&&fCur&&fTool!=="select"){
+      if(fTool==="wall"||fTool==="handrail"){let ex=fCur.x,ey=fCur.y;if(Math.abs(fCur.x-fStart.x)<Math.abs(fCur.y-fStart.y))ex=fStart.x;else ey=fStart.y;return <line x1={fStart.x} y1={fStart.y} x2={ex} y2={ey} stroke={fTool==="wall"?"#222":"#F00"} strokeWidth={fTool==="wall"?6:4} strokeLinecap="round"/>}
+      if(fTool==="dim")return <line x1={fStart.x} y1={fStart.y} x2={fCur.x} y2={fCur.y} stroke="#555" strokeWidth={1.5}/>;
+    }
+    return null;
+  };
+
+  const selObj=selIdx>=0?fObjs[selIdx]:null;
+
+  /* Grid lines as SVG */
+  const gridLines=[];
+  for(let x=0;x<=cSize.w;x+=20)gridLines.push(<line key={`gx${x}`} x1={x} y1={0} x2={x} y2={cSize.h} stroke="#ddd" strokeWidth={0.5}/>);
+  for(let y=0;y<=cSize.h;y+=20)gridLines.push(<line key={`gy${y}`} x1={0} y1={y} x2={cSize.w} y2={y} stroke="#ddd" strokeWidth={0.5}/>);
+
+  const B=(on)=>({fontSize:11,padding:"4px 8px",border:`1px solid ${on?"#e94560":"#444"}`,borderRadius:5,background:on?"#e94560":"#252545",color:on?"#fff":"#eee",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",fontWeight:on?700:500});
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#111",fontFamily:"'Noto Sans TC',sans-serif",color:"#eee",overflow:"hidden"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#1a1a2e",borderBottom:"1px solid #333",flexWrap:"wrap",flexShrink:0,zIndex:200}}>
+        <div style={{fontSize:14,fontWeight:900,color:"#e94560",whiteSpace:"nowrap"}}>🏠 無障礙標註</div>
+        <div style={{display:"flex",gap:2,background:"#111",borderRadius:6,padding:2}}>
+          <button style={{padding:"5px 12px",border:"none",borderRadius:5,background:mode==="photo"?"#e94560":"transparent",color:mode==="photo"?"#fff":"#888",fontSize:12,fontWeight:mode==="photo"?700:500,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("photo");setSelIdx(-1);setPendFix(null)}}>📷 照片</button>
+          <button style={{padding:"5px 12px",border:"none",borderRadius:5,background:mode==="floor"?"#e94560":"transparent",color:mode==="floor"?"#fff":"#888",fontSize:12,fontWeight:mode==="floor"?700:500,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("floor");setSelIdx(-1);setPendFix(null)}}>📐 平面圖</button>
+        </div>
+        {mode==="photo"?(
+          <div style={{display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
+            <button style={B(false)} onClick={()=>fileRef.current?.click()}>📁 載入</button>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={loadPhoto}/>
+            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
+            <button style={B(pTool==="line")} onClick={()=>{setPTool("line");setLPhase(0);setDrawing(false)}}>📏 線</button>
+            <button style={B(pTool==="lshape")} onClick={()=>{setPTool("lshape");setLPhase(0);setDrawing(false)}}>⌐ L型</button>
+            <button style={B(pTool==="arrow")} onClick={()=>{setPTool("arrow");setDrawing(false)}}>↕ 離地</button>
+            <button style={B(pTool==="text")} onClick={()=>{setPTool("text");setDrawing(false)}}>Aa</button>
+            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
+            <button style={B(false)} onClick={()=>setAnns(a=>a.slice(0,-1))}>↩</button>
+            <button style={{...B(false),borderColor:"#c0392b",color:"#e74c3c"}} onClick={()=>{if(confirm("清除？"))setAnns([])}}>🗑</button>
+            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
+            <button style={{...B(false),background:"#27ae60",borderColor:"#27ae60",color:"#fff",fontWeight:700}} onClick={doExport}>💾 匯出</button>
+          </div>
+        ):(
+          <div style={{display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
+            <button style={B(fTool==="wall"&&!pendFix)} onClick={()=>{setFTool("wall");setPendFix(null);setSelIdx(-1)}}>▬ 牆</button>
+            <button style={B(fTool==="select"&&!pendFix)} onClick={()=>{setFTool("select");setPendFix(null)}}>☝ 選取</button>
+            <button style={B(fTool==="handrail"&&!pendFix)} onClick={()=>{setFTool("handrail");setPendFix(null);setSelIdx(-1)}}>┃ 扶手</button>
+            <button style={B(fTool==="dim"&&!pendFix)} onClick={()=>{setFTool("dim");setPendFix(null);setSelIdx(-1)}}>📏 標註</button>
+            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
+            <button style={B(false)} onClick={()=>{setFObjs(o=>o.slice(0,-1));setSelIdx(-1)}}>↩</button>
+            <button style={{...B(false),borderColor:"#c0392b",color:"#e74c3c"}} onClick={()=>{if(confirm("清除？")){setFObjs([]);setSelIdx(-1)}}}>🗑</button>
+            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
+            <button style={{...B(false),background:"#27ae60",borderColor:"#27ae60",color:"#fff",fontWeight:700}} onClick={expFloor}>💾 匯出</button>
+          </div>
+        )}
+      </div>
+
+      {/* Main */}
+      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+        <div ref={areaRef} style={{flex:1,position:"relative",overflow:"hidden",background:mode==="floor"?"#fff":"#0a0a14"}}>
+          {/* Photo */}
+          {mode==="photo"&&photoSrc&&(
+            <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <img ref={imgRef} src={photoSrc} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",pointerEvents:"none",userSelect:"none"}} alt=""/>
+            </div>
+          )}
+
+          {/* SVG */}
+          <svg ref={svgRef} viewBox={`0 0 ${cSize.w} ${cSize.h}`} width={cSize.w} height={cSize.h} style={{position:"absolute",left:0,top:0,zIndex:10,touchAction:"none",cursor:mode==="floor"&&fTool==="select"?"default":"crosshair"}} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
+            {/* Transparent event catcher */}
+            <rect x={0} y={0} width={cSize.w} height={cSize.h} fill="transparent"/>
+
+            {/* Floor grid */}
+            {mode==="floor"&&gridLines}
+
+            {/* Photo annotations */}
+            {mode==="photo"&&anns.map((a,i)=>(
+              <g key={i}>
+                {a.type==="line"&&<><line x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>{a.label&&<YellowLabel x={(a.x1+a.x2)/2} y={(a.y1+a.y2)/2-25} text={a.label}/>}</>}
+                {a.type==="lshape"&&<><line x1={a.x1} y1={a.y1} x2={a.mx} y2={a.my} stroke="#F00" strokeWidth={5} strokeLinecap="round"/><line x1={a.mx} y1={a.my} x2={a.x2} y2={a.y2} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>{a.label1&&<YellowLabel x={(a.x1+a.mx)/2} y={(a.y1+a.my)/2-25} text={a.label1}/>}{a.label2&&<YellowLabel x={(a.mx+a.x2)/2} y={(a.my+a.y2)/2-25} text={a.label2}/>}</>}
+                {a.type==="arrow"&&<><line x1={a.x} y1={a.y1} x2={a.x} y2={a.y2} stroke="#FFD600" strokeWidth={3}/><polygon points={`${a.x},${a.y1} ${a.x-6},${a.y1+12} ${a.x+6},${a.y1+12}`} fill="#FFD600"/><polygon points={`${a.x},${a.y2} ${a.x-6},${a.y2-12} ${a.x+6},${a.y2-12}`} fill="#FFD600"/>{a.label&&<YellowLabel x={a.x} y={a.y2+25} text={a.label}/>}</>}
+                {a.type==="text"&&<YellowLabel x={a.x} y={a.y} text={a.label}/>}
+              </g>
+            ))}
+
+            {/* Floor objects */}
+            {mode==="floor"&&fObjs.map((o,i)=>(
+              <g key={i}>
+                {o.type==="wall"&&<line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#222" strokeWidth={6} strokeLinecap="round"/>}
+                {o.type==="handrail"&&<><line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#F00" strokeWidth={4} strokeLinecap="round"/><circle cx={o.x1} cy={o.y1} r={4} fill="#F00"/><circle cx={o.x2} cy={o.y2} r={4} fill="#F00"/></>}
+                {o.type==="dim"&&<><line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#555" strokeWidth={1.5}/>{o.label&&<text x={(o.x1+o.x2)/2} y={(o.y1+o.y2)/2-8} textAnchor="middle" fontSize={14} fontWeight={700} fill="#333" fontFamily="'Noto Sans TC',sans-serif">{o.label}</text>}</>}
+                {o.type==="fixture"&&<g transform={`translate(${o.x},${o.y}) rotate(${o.rotation||0}) ${o.flipped?"scale(-1,1)":""} scale(${o.scale||1})`}>{(()=>{const C=FIX_MAP[o.fixture];return C?<C/>:null})()}</g>}
+                {o.type==="fixture"&&i===selIdx&&(()=>{const sz=40*(o.scale||1);return <rect x={o.x-sz} y={o.y-sz} width={sz*2} height={sz*2} fill="none" stroke="#3498db" strokeWidth={2} strokeDasharray="5,3"/>})()}
+              </g>
+            ))}
+
+            {preview()}
+          </svg>
+
+          {/* Drop zone (photo only, no photo loaded) */}
+          {mode==="photo"&&!photoSrc&&(
+            <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)"}}>
+              <div style={{border:"3px dashed #555",borderRadius:16,padding:"30px 40px",textAlign:"center"}}>
+                <div style={{fontSize:18,color:"#888",marginBottom:6}}>📷 選擇照片</div>
+                <button style={{padding:"10px 24px",background:"#e94560",color:"#fff",border:"none",borderRadius:8,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>fileRef.current?.click()}>選擇照片</button>
+              </div>
+            </div>
+          )}
+
+          {/* FAB */}
+          {mode==="floor"&&selObj&&(
+            <div style={{position:"absolute",left:Math.min(selObj.x+50,cSize.w-280),top:Math.max(10,selObj.y-25),zIndex:100,display:"flex",flexWrap:"wrap",gap:3,background:"#1a1a2e",border:"1px solid #333",borderRadius:8,padding:5,boxShadow:"0 4px 16px rgba(0,0,0,.5)"}}>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>rotS(90)}>🔄 90°</button>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>rotS(45)}>↻ 45°</button>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>flipS()}>↔ 翻</button>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>scaleS(1.3)}>＋</button>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>scaleS(0.7)}>－</button>
+              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #c0392b",borderRadius:5,background:"#252545",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={delS}>🗑</button>
+            </div>
+          )}
+        </div>
+
+        {/* Side panel */}
+        {mode==="floor"&&(
+          <div style={{width:150,background:"#1a1a2e",borderLeft:"1px solid #333",padding:8,overflowY:"auto",flexShrink:0}}>
+            <div style={{fontSize:11,color:"#888",marginBottom:6,letterSpacing:1}}>衛浴元件</div>
+            <div style={{fontSize:10,color:"#666",marginBottom:6}}>點選 → 點畫布放置</div>
+            {Object.keys(FIX_MAP).map(f=>(
+              <div key={f} style={{display:"flex",alignItems:"center",gap:6,padding:6,marginBottom:3,background:pendFix===f?"#e94560":"#252545",border:`1px solid ${pendFix===f?"#e94560":"#333"}`,borderRadius:6,cursor:"pointer",fontSize:12,color:pendFix===f?"#fff":"#eee"}} onClick={()=>setPendFix(pendFix===f?null:f)}>
+                {FIX_EMJ[f]} {FIX_LBL[f]}
+              </div>
+            ))}
+            <div style={{fontSize:11,color:"#888",marginTop:12,letterSpacing:1}}>提示</div>
+            <div style={{fontSize:10,color:"#666",lineHeight:1.6}}>① 點選元件<br/>② 點畫布放置<br/>③「選取」點已放元件<br/>④ 浮動鈕操作<br/>⑤ 可拖動位置</div>
+          </div>
+        )}
+      </div>
+
+      {/* Status */}
+      <div style={{padding:"3px 10px",background:"#1a1a2e",borderTop:"1px solid #333",fontSize:10,color:"#888",flexShrink:0}}>
+        {mode==="photo"?`照片標註 | ${{line:"直線",lshape:"L型",arrow:"離地",text:"文字"}[pTool]}`:`平面圖 | ${pendFix?"放置："+FIX_LBL[pendFix]:{wall:"畫牆",select:"選取",handrail:"扶手",dim:"標註"}[fTool]}`}
+      </div>
+
+      {/* Modal */}
+      {modal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#1a1a2e",border:"1px solid #333",borderRadius:12,padding:16,width:280}}>
+            <div style={{fontSize:14,marginBottom:10,color:"#e94560",fontWeight:700}}>{modal.title}</div>
+            <input style={{width:"100%",padding:8,border:"1px solid #333",borderRadius:6,background:"#252545",color:"#eee",fontSize:14,fontFamily:"inherit",marginBottom:8}} value={mVal} onChange={e=>setMVal(e.target.value)} placeholder={modal.ph} autoFocus onKeyDown={e=>{if(e.key==="Enter")closeMdl(mVal);if(e.key==="Escape")closeMdl("")}}/>
+            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+              <button style={{padding:"7px 16px",background:"#252545",color:"#888",border:"1px solid #333",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>closeMdl("")}>取消</button>
+              <button style={{padding:"7px 16px",background:"#e94560",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>closeMdl(mVal)}>確定</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+</body>
+</html>
