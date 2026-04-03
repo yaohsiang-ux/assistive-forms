@@ -143,6 +143,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx)}
   </div>
 </div>
 
+<!-- Export overlay -->
+<div id="exportOverlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="padding:12px;text-align:center;flex-shrink:0">
+    <div style="color:#FFD600;font-size:15px;font-weight:700;margin-bottom:8px">👆 長按下方圖片 → 加入照片</div>
+    <button onclick="closeExport()" style="padding:6px 20px;background:#e94560;color:#fff;border:none;border-radius:6px;font:700 13px 'Noto Sans TC',sans-serif;cursor:pointer">✕ 關閉</button>
+  </div>
+  <img id="exportImg" style="max-width:95%;height:auto;border-radius:8px;margin:0 auto 20px" src="">
+</div>
+
 <script>
 // ═══════ STATE ═══════
 let mode='photo', pTool='line', fTool='wall';
@@ -502,17 +511,42 @@ function exportFloor(){
 }
 
 function doSave(canvas){
-  // iOS Safari: open image in new tab for long-press save
-  const dataUrl=canvas.toDataURL('image/png');
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-  if(isIOS){
-    const w=window.open('');
-    if(w){w.document.write('<html><head><title>長按圖片儲存</title><meta name="viewport" content="width=device-width"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111}img{max-width:100%;height:auto}</style></head><body><img src="'+dataUrl+'"></body></html>');w.document.close()}
-    else{alert('請允許彈出視窗，或長按下方圖片儲存');window.location.href=dataUrl}
-  }else{
-    const a=document.createElement('a');a.href=dataUrl;a.download='annotated_'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
-  }
-  setStatus('已匯出');
+  canvas.toBlob(async blob=>{
+    if(!blob){setStatus('匯出失敗');return}
+
+    // 1) Try Web Share API
+    try{
+      if(navigator.share&&navigator.canShare){
+        const file=new File([blob],'annotated_'+Date.now()+'.png',{type:'image/png'});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:'標註照片'});
+          setStatus('已分享');return;
+        }
+      }
+    }catch(e){/* user cancelled or not supported */}
+
+    // 2) iOS fallback: show in-page overlay
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(isIOS){
+      const dataUrl=canvas.toDataURL('image/png');
+      document.getElementById('exportImg').src=dataUrl;
+      document.getElementById('exportOverlay').style.display='flex';
+      setStatus('長按圖片儲存');
+    }else{
+      // Desktop: direct download
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='annotated_'+Date.now()+'.png';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),3000);
+      setStatus('已匯出');
+    }
+  },'image/png');
+}
+
+function closeExport(){
+  document.getElementById('exportOverlay').style.display='none';
+  document.getElementById('exportImg').src='';
+  setStatus('就緒');
 }
 
 // ═══════ MODAL ═══════
