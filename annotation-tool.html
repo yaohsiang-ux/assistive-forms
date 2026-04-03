@@ -2,400 +2,547 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>居家無障礙 評估標註工具</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body,#root{height:100%;overflow:hidden}
-body{font-family:'Noto Sans TC',sans-serif;background:#111;color:#eee}
+:root{--bg:#111;--sf:#1a1a2e;--s2:#252545;--ac:#e94560;--gn:#27ae60;--tx:#eee;--dm:#888;--bd:#444}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--tx)}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* Header */
+.hdr{display:flex;align-items:center;gap:4px;padding:5px 8px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;z-index:100}
+.hdr h1{font-size:13px;font-weight:900;color:var(--ac);white-space:nowrap;margin-right:4px}
+.tabs{display:flex;gap:1px;background:var(--bg);border-radius:5px;padding:1px}
+.tab{padding:4px 10px;border:none;border-radius:4px;background:transparent;color:var(--dm);font:600 11px 'Noto Sans TC',sans-serif;cursor:pointer}
+.tab.on{background:var(--ac);color:#fff}
+.tb{display:flex;gap:2px;align-items:center;flex-wrap:wrap}
+.btn{font:600 10px 'Noto Sans TC',sans-serif;padding:3px 7px;border:1px solid var(--bd);border-radius:4px;background:var(--s2);color:var(--tx);cursor:pointer;white-space:nowrap}
+.btn.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
+.btn.go{background:var(--gn);border-color:var(--gn);color:#fff;font-weight:700}
+.btn.del{border-color:#a33;color:#e55}
+.sep{width:1px;height:16px;background:var(--bd);margin:0 1px}
+.file-btn{font:600 10px 'Noto Sans TC',sans-serif;padding:3px 7px;border:1px solid var(--bd);border-radius:4px;background:var(--s2);color:var(--tx);cursor:pointer}
+
+/* Main */
+.main{flex:1;display:flex;overflow:hidden;min-height:0}
+.canvas-area{flex:1;position:relative;overflow:hidden;touch-action:none}
+.canvas-area canvas{position:absolute;left:0;top:0;touch-action:none}
+
+/* Side panel */
+.side{width:130px;background:var(--sf);border-left:1px solid var(--bd);padding:6px;overflow-y:auto;flex-shrink:0;display:none;font-size:11px}
+.side h3{font-size:10px;color:var(--dm);margin-bottom:4px;letter-spacing:1px}
+.fix-btn{display:block;width:100%;padding:5px 6px;margin-bottom:2px;background:var(--s2);border:1px solid var(--bd);border-radius:5px;color:var(--tx);font:12px 'Noto Sans TC',sans-serif;cursor:pointer;text-align:left}
+.fix-btn.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.side p{font-size:9px;color:var(--dm);line-height:1.5;margin-top:6px}
+
+/* FAB */
+.fab{position:absolute;z-index:50;display:none;flex-wrap:wrap;gap:2px;background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:4px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.fab.show{display:flex}
+.fab button{font:700 10px 'Noto Sans TC',sans-serif;padding:3px 7px;border:1px solid var(--bd);border-radius:4px;background:var(--s2);color:var(--tx);cursor:pointer}
+
+/* Drop zone */
+.drop{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+.drop-box{border:2px dashed var(--bd);border-radius:12px;padding:24px 32px;text-align:center}
+.drop-box h2{font-size:16px;color:var(--dm);margin-bottom:4px}
+.drop-box p{font-size:11px;color:var(--dm);margin-bottom:10px}
+.drop-box button{padding:8px 20px;background:var(--ac);color:#fff;border:none;border-radius:6px;font:700 13px 'Noto Sans TC',sans-serif;cursor:pointer}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px;width:260px}
+.modal h3{font-size:13px;color:var(--ac);margin-bottom:8px}
+.modal input{width:100%;padding:7px;border:1px solid var(--bd);border-radius:5px;background:var(--s2);color:var(--tx);font:13px 'Noto Sans TC',sans-serif;margin-bottom:6px}
+.modal .btns{display:flex;gap:6px;justify-content:flex-end}
+.modal .btns button{padding:6px 14px;border:none;border-radius:5px;font:700 12px 'Noto Sans TC',sans-serif;cursor:pointer}
+.modal .ok{background:var(--ac);color:#fff}
+.modal .cc{background:var(--s2);color:var(--dm);border:1px solid var(--bd)}
+
+/* Status */
+.status{padding:2px 8px;background:var(--sf);border-top:1px solid var(--bd);font-size:9px;color:var(--dm);flex-shrink:0}
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useRef, useCallback, useEffect } = React;
-
-/* ═══════ Fixture SVG ═══════ */
-function ToiletSVG(){return <g><rect x={-18} y={-30} width={36} height={14} rx={2} fill="#fff" stroke="#333" strokeWidth={2}/><ellipse cx={0} cy={6} rx={16} ry={22} fill="#fff" stroke="#333" strokeWidth={2}/><line x1={-5} y1={-8} x2={-5} y2={24} stroke="#aaa" strokeWidth={1}/><line x1={5} y1={-8} x2={5} y2={24} stroke="#aaa" strokeWidth={1}/></g>}
-function SinkSVG(){return <g><rect x={-20} y={-14} width={40} height={28} rx={4} fill="#fff" stroke="#333" strokeWidth={2}/><rect x={-14} y={-8} width={28} height={16} rx={2} fill="none" stroke="#aaa" strokeWidth={1}/><rect x={-3} y={-18} width={6} height={6} fill="#888"/></g>}
-function BathtubSVG(){return <g><rect x={-24} y={-42} width={48} height={84} rx={4} fill="#fff" stroke="#333" strokeWidth={2}/><rect x={-20} y={-38} width={40} height={76} rx={2} fill="none" stroke="#aaa" strokeWidth={1}/></g>}
-function ShowerSVG(){return <g><circle cx={0} cy={0} r={26} fill="#fff" stroke="#333" strokeWidth={2}/><circle cx={0} cy={0} r={6} fill="#999"/>{[0,1,2,3,4,5].map(i=>{const a=i*Math.PI/3;return <line key={i} x1={Math.cos(a)*9} y1={Math.sin(a)*9} x2={Math.cos(a)*18} y2={Math.sin(a)*18} stroke="#bbb" strokeWidth={1}/>})}</g>}
-function DoorSVG(){return <g><line x1={0} y1={0} x2={-48} y2={0} stroke="#333" strokeWidth={3}/><line x1={0} y1={0} x2={0} y2={-48} stroke="#333" strokeWidth={2}/><path d="M0,-48 A48,48 0 0,0 -48,0" fill="none" stroke="#999" strokeWidth={1.5} strokeDasharray="4,3"/></g>}
-
-const FIX_MAP={toilet:ToiletSVG,sink:SinkSVG,bathtub:BathtubSVG,shower:ShowerSVG,door:DoorSVG};
-const FIX_LBL={toilet:"馬桶",sink:"洗手台",bathtub:"浴缸/木桶",shower:"淋浴區",door:"門"};
-const FIX_EMJ={toilet:"🚽",sink:"🚰",bathtub:"🛁",shower:"🚿",door:"🚪"};
-
-function YellowLabel({x,y,text}){
-  if(!text)return null;
-  const fs=16,w=text.length*fs*0.7+20,h=fs+12;
-  return <g><rect x={x-w/2} y={y-h/2} width={w} height={h} rx={5} fill="rgba(255,214,0,0.92)"/><text x={x} y={y+fs*0.35} textAnchor="middle" fontFamily="'Noto Sans TC',sans-serif" fontWeight="900" fontSize={fs} fill="#000">{text}</text></g>;
-}
-
-/* ═══════ App ═══════ */
-function App(){
-  const [mode,setMode]=useState("photo");
-  const [photoSrc,setPhotoSrc]=useState(null);
-  const [pTool,setPTool]=useState("line");
-  const [anns,setAnns]=useState([]);
-  const [drawing,setDrawing]=useState(false);
-  const [dStart,setDStart]=useState(null);
-  const [dCur,setDCur]=useState(null);
-  const [lMid,setLMid]=useState(null);
-  const [lPhase,setLPhase]=useState(0);
-  const [fTool,setFTool]=useState("wall");
-  const [fObjs,setFObjs]=useState([]);
-  const [selIdx,setSelIdx]=useState(-1);
-  const [pendFix,setPendFix]=useState(null);
-  const [fDraw,setFDraw]=useState(false);
-  const [fStart,setFStart]=useState(null);
-  const [fCur,setFCur]=useState(null);
-  const [dragOff,setDragOff]=useState(null);
-  const [modal,setModal]=useState(null);
-  const [mVal,setMVal]=useState("");
-  // Container size
-  const [cSize,setCSize]=useState({w:800,h:600});
-
-  const areaRef=useRef(null);
-  const svgRef=useRef(null);
-  const imgRef=useRef(null);
-  const fileRef=useRef(null);
-
-  // Track container size
-  useEffect(()=>{
-    const el=areaRef.current;
-    if(!el)return;
-    const ro=new ResizeObserver(entries=>{
-      for(const e of entries){
-        setCSize({w:e.contentRect.width,h:e.contentRect.height});
-      }
-    });
-    ro.observe(el);
-    // Initial
-    setCSize({w:el.clientWidth,h:el.clientHeight});
-    return ()=>ro.disconnect();
-  },[]);
-
-  const getP=useCallback((e)=>{
-    const el=areaRef.current;
-    if(!el)return{x:0,y:0};
-    const r=el.getBoundingClientRect();
-    const t=e.touches?e.touches[0]:e;
-    return{x:t.clientX-r.left,y:t.clientY-r.top};
-  },[]);
-
-  const snap=v=>Math.round(v/20)*20;
-  const snapHV=(s,p)=>{let x=p.x,y=p.y;if(Math.abs(p.x-s.x)<15)x=s.x;if(Math.abs(p.y-s.y)<15)y=s.y;return{x,y}};
-
-  /* Modal */
-  const ask=(title,ph)=>new Promise(res=>{setMVal("");setModal({title,ph,res})});
-  const closeMdl=v=>{if(modal)modal.res(v||"");setModal(null);setMVal("")};
-
-  /* Photo */
-  const loadPhoto=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setPhotoSrc(ev.target.result);r.readAsDataURL(f)};
-
-  /* Pointer events */
-  const onDown=e=>{
-    e.preventDefault();
-    const p=getP(e);
-    if(mode==="photo"){
-      if(!photoSrc)return;
-      if(pTool==="text"){ask("輸入文字","例：水平扶手上緣離地約70公分").then(v=>{if(v)setAnns(a=>[...a,{type:"text",x:p.x,y:p.y,label:v}])});return}
-      if(pTool==="lshape"){
-        if(lPhase===0){setDStart(p);setLPhase(1);setDrawing(true)}
-        else if(lPhase===1){setLMid(p);setLPhase(2)}
-        return;
-      }
-      setDStart(p);setDrawing(true);
-    }else{
-      const sp={x:snap(p.x),y:snap(p.y)};
-      if(pendFix){setFObjs(o=>[...o,{type:"fixture",fixture:pendFix,x:sp.x,y:sp.y,rotation:0,scale:1,flipped:false}]);return}
-      if(fTool==="select"){
-        let found=-1;
-        for(let i=fObjs.length-1;i>=0;i--){const o=fObjs[i];if(o.type==="fixture"){const sz=35*(o.scale||1);if(Math.abs(p.x-o.x)<sz&&Math.abs(p.y-o.y)<sz){found=i;break}}}
-        setSelIdx(found);
-        if(found>=0){setDragOff({x:p.x-fObjs[found].x,y:p.y-fObjs[found].y});setFDraw(true)}
-        return;
-      }
-      setFStart(sp);setFDraw(true);
-    }
-  };
-
-  const onMove=e=>{
-    e.preventDefault();
-    const p=getP(e);
-    if(mode==="photo"&&drawing)setDCur(p);
-    else if(mode==="floor"&&fDraw){
-      if(fTool==="select"&&selIdx>=0&&dragOff)setFObjs(os=>os.map((o,i)=>i===selIdx?{...o,x:snap(p.x-dragOff.x),y:snap(p.y-dragOff.y)}:o));
-      else setFCur({x:snap(p.x),y:snap(p.y)});
-    }
-  };
-
-  const onUp=async e=>{
-    e.preventDefault();
-    const p=getP(e);
-    if(mode==="photo"&&drawing){
-      setDrawing(false);setDCur(null);
-      if(pTool==="line"){
-        const s=snapHV(dStart,p);if(Math.hypot(s.x-dStart.x,s.y-dStart.y)<5)return;
-        const lbl=await ask("輸入尺寸","例：70公分");
-        setAnns(a=>[...a,{type:"line",x1:dStart.x,y1:dStart.y,x2:s.x,y2:s.y,label:lbl}]);
-      }else if(pTool==="lshape"&&lPhase===2){
-        setLPhase(0);
-        const v1=await ask("第一段尺寸","例：70公分"),v2=await ask("第二段尺寸","例：40公分");
-        setAnns(a=>[...a,{type:"lshape",x1:dStart.x,y1:dStart.y,mx:lMid.x,my:lMid.y,x2:p.x,y2:p.y,label1:v1,label2:v2}]);
-      }else if(pTool==="arrow"){
-        const lbl=await ask("離地描述","例：水平扶手上緣離地約70公分");
-        setAnns(a=>[...a,{type:"arrow",x:dStart.x,y1:dStart.y,y2:p.y,label:lbl}]);
-      }
-    }else if(mode==="floor"&&fDraw){
-      setFDraw(false);setFCur(null);
-      if(fTool==="select")return;
-      const sp={x:snap(p.x),y:snap(p.y)};
-      if(fTool==="wall"||fTool==="handrail"){
-        if(!fStart)return;
-        let ex=sp.x,ey=sp.y;
-        if(Math.abs(sp.x-fStart.x)<Math.abs(sp.y-fStart.y))ex=fStart.x;else ey=fStart.y;
-        if(Math.hypot(ex-fStart.x,ey-fStart.y)<5)return;
-        setFObjs(o=>[...o,{type:fTool,x1:fStart.x,y1:fStart.y,x2:ex,y2:ey}]);
-      }else if(fTool==="dim"){
-        if(!fStart||Math.hypot(sp.x-fStart.x,sp.y-fStart.y)<5)return;
-        const lbl=await ask("輸入尺寸","例：120cm");
-        setFObjs(o=>[...o,{type:"dim",x1:fStart.x,y1:fStart.y,x2:sp.x,y2:sp.y,label:lbl}]);
-      }
-    }
-  };
-
-  /* FAB */
-  const rotS=d=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,rotation:((x.rotation||0)+d)%360}:x));
-  const flipS=()=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,flipped:!x.flipped}:x));
-  const scaleS=f=>setFObjs(o=>o.map((x,i)=>i===selIdx?{...x,scale:(x.scale||1)*f}:x));
-  const delS=()=>{setFObjs(o=>o.filter((_,i)=>i!==selIdx));setSelIdx(-1)};
-
-  /* Export photo */
-  const doExport=()=>{
-    if(!photoSrc||!imgRef.current)return;
-    const img=imgRef.current;
-    const cv=document.createElement("canvas");
-    cv.width=img.naturalWidth;cv.height=img.naturalHeight;
-    const ctx=cv.getContext("2d");ctx.drawImage(img,0,0);
-    const imgR=img.getBoundingClientRect(),aR=areaRef.current.getBoundingClientRect();
-    const ox=imgR.left-aR.left,oy=imgR.top-aR.top;
-    const sx=img.naturalWidth/imgR.width,sy=img.naturalHeight/imgR.height;
-    anns.forEach(a=>{
-      const m=(x,y)=>({x:(x-ox)*sx,y:(y-oy)*sy});
-      ctx.lineCap="round";
-      if(a.type==="line"){const p1=m(a.x1,a.y1),p2=m(a.x2,a.y2);ctx.strokeStyle="#F00";ctx.lineWidth=6*sx;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();if(a.label)cLbl(ctx,(p1.x+p2.x)/2,(p1.y+p2.y)/2-25*sy,a.label,22*sx)}
-      else if(a.type==="lshape"){const p1=m(a.x1,a.y1),pm=m(a.mx,a.my),p2=m(a.x2,a.y2);ctx.strokeStyle="#F00";ctx.lineWidth=6*sx;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(pm.x,pm.y);ctx.stroke();ctx.beginPath();ctx.moveTo(pm.x,pm.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();if(a.label1)cLbl(ctx,(p1.x+pm.x)/2,(p1.y+pm.y)/2-25*sy,a.label1,22*sx);if(a.label2)cLbl(ctx,(pm.x+p2.x)/2,(pm.y+p2.y)/2-25*sy,a.label2,22*sx)}
-      else if(a.type==="arrow"){const px=m(a.x,0).x,y1=m(0,a.y1).y,y2=m(0,a.y2).y;ctx.strokeStyle="#FFD600";ctx.fillStyle="#FFD600";ctx.lineWidth=3*sx;ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px,y2);ctx.stroke();const h=12*sx;ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px-6*sx,y1+h);ctx.lineTo(px+6*sx,y1+h);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(px,y2);ctx.lineTo(px-6*sx,y2-h);ctx.lineTo(px+6*sx,y2-h);ctx.closePath();ctx.fill();if(a.label)cLbl(ctx,px,y2+30*sy,a.label,22*sx)}
-      else if(a.type==="text"){const pt=m(a.x,a.y);cLbl(ctx,pt.x,pt.y,a.label,22*sx)}
-    });
-    cv.toBlob(blob=>{
-      if(!blob)return;
-      const url=URL.createObjectURL(blob);
-      if(navigator.share&&navigator.canShare){const f=new File([blob],'annotated.png',{type:'image/png'});if(navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>dlk(url));return}}
-      dlk(url);
-    },'image/png');
-  };
-  function dlk(u){const a=document.createElement("a");a.href=u;a.download="annotated_"+Date.now()+".png";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),3000)}
-  function cLbl(ctx,x,y,text,fs){
-    ctx.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;const tw=ctx.measureText(text).width,px=12,py=6;
-    ctx.fillStyle="rgba(255,214,0,0.92)";const rx=x-tw/2-px,ry=y-fs/2-py,rw=tw+px*2,rh=fs+py*2,r=6;
-    ctx.beginPath();ctx.moveTo(rx+r,ry);ctx.lineTo(rx+rw-r,ry);ctx.quadraticCurveTo(rx+rw,ry,rx+rw,ry+r);ctx.lineTo(rx+rw,ry+rh-r);ctx.quadraticCurveTo(rx+rw,ry+rh,rx+rw-r,ry+rh);ctx.lineTo(rx+r,ry+rh);ctx.quadraticCurveTo(rx,ry+rh,rx,ry+rh-r);ctx.lineTo(rx,ry+r);ctx.quadraticCurveTo(rx,ry,rx+r,ry);ctx.closePath();ctx.fill();
-    ctx.fillStyle="#000";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(text,x,y);
-  }
-
-  /* Export floor */
-  const expFloor=()=>{
-    const oldSel=selIdx;setSelIdx(-1);
-    setTimeout(()=>{
-      const svgEl=svgRef.current;if(!svgEl)return;
-      const data=new XMLSerializer().serializeToString(svgEl);
-      const blob=new Blob([data],{type:'image/svg+xml;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const img=new Image();
-      img.onload=()=>{
-        const cv=document.createElement("canvas");cv.width=cSize.w;cv.height=cSize.h;
-        const ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0);
-        URL.revokeObjectURL(url);
-        cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);dlk(u);setSelIdx(oldSel)},'image/png');
-      };
-      img.src=url;
-    },50);
-  };
-
-  /* Preview */
-  const preview=()=>{
-    if(mode==="photo"&&drawing&&dStart&&dCur){
-      if(pTool==="line"){const s=snapHV(dStart,dCur);return <line x1={dStart.x} y1={dStart.y} x2={s.x} y2={s.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>}
-      if(pTool==="lshape"){
-        if(lPhase===1)return <line x1={dStart.x} y1={dStart.y} x2={dCur.x} y2={dCur.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>;
-        if(lPhase===2&&lMid)return <g><line x1={dStart.x} y1={dStart.y} x2={lMid.x} y2={lMid.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/><line x1={lMid.x} y1={lMid.y} x2={dCur.x} y2={dCur.y} stroke="#F00" strokeWidth={5} strokeLinecap="round"/></g>;
-      }
-      if(pTool==="arrow")return <g><line x1={dStart.x} y1={dStart.y} x2={dStart.x} y2={dCur.y} stroke="#FFD600" strokeWidth={3}/><polygon points={`${dStart.x},${dStart.y} ${dStart.x-6},${dStart.y+12} ${dStart.x+6},${dStart.y+12}`} fill="#FFD600"/><polygon points={`${dStart.x},${dCur.y} ${dStart.x-6},${dCur.y-12} ${dStart.x+6},${dCur.y-12}`} fill="#FFD600"/></g>;
-    }
-    if(mode==="floor"&&fDraw&&fStart&&fCur&&fTool!=="select"){
-      if(fTool==="wall"||fTool==="handrail"){let ex=fCur.x,ey=fCur.y;if(Math.abs(fCur.x-fStart.x)<Math.abs(fCur.y-fStart.y))ex=fStart.x;else ey=fStart.y;return <line x1={fStart.x} y1={fStart.y} x2={ex} y2={ey} stroke={fTool==="wall"?"#222":"#F00"} strokeWidth={fTool==="wall"?6:4} strokeLinecap="round"/>}
-      if(fTool==="dim")return <line x1={fStart.x} y1={fStart.y} x2={fCur.x} y2={fCur.y} stroke="#555" strokeWidth={1.5}/>;
-    }
-    return null;
-  };
-
-  const selObj=selIdx>=0?fObjs[selIdx]:null;
-
-  /* Grid lines as SVG */
-  const gridLines=[];
-  for(let x=0;x<=cSize.w;x+=20)gridLines.push(<line key={`gx${x}`} x1={x} y1={0} x2={x} y2={cSize.h} stroke="#ddd" strokeWidth={0.5}/>);
-  for(let y=0;y<=cSize.h;y+=20)gridLines.push(<line key={`gy${y}`} x1={0} y1={y} x2={cSize.w} y2={y} stroke="#ddd" strokeWidth={0.5}/>);
-
-  const B=(on)=>({fontSize:11,padding:"4px 8px",border:`1px solid ${on?"#e94560":"#444"}`,borderRadius:5,background:on?"#e94560":"#252545",color:on?"#fff":"#eee",cursor:"pointer",whiteSpace:"nowrap",fontFamily:"inherit",fontWeight:on?700:500});
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#111",fontFamily:"'Noto Sans TC',sans-serif",color:"#eee",overflow:"hidden"}}>
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"#1a1a2e",borderBottom:"1px solid #333",flexWrap:"wrap",flexShrink:0,zIndex:200}}>
-        <div style={{fontSize:14,fontWeight:900,color:"#e94560",whiteSpace:"nowrap"}}>🏠 無障礙標註</div>
-        <div style={{display:"flex",gap:2,background:"#111",borderRadius:6,padding:2}}>
-          <button style={{padding:"5px 12px",border:"none",borderRadius:5,background:mode==="photo"?"#e94560":"transparent",color:mode==="photo"?"#fff":"#888",fontSize:12,fontWeight:mode==="photo"?700:500,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("photo");setSelIdx(-1);setPendFix(null)}}>📷 照片</button>
-          <button style={{padding:"5px 12px",border:"none",borderRadius:5,background:mode==="floor"?"#e94560":"transparent",color:mode==="floor"?"#fff":"#888",fontSize:12,fontWeight:mode==="floor"?700:500,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setMode("floor");setSelIdx(-1);setPendFix(null)}}>📐 平面圖</button>
-        </div>
-        {mode==="photo"?(
-          <div style={{display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
-            <button style={B(false)} onClick={()=>fileRef.current?.click()}>📁 載入</button>
-            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={loadPhoto}/>
-            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
-            <button style={B(pTool==="line")} onClick={()=>{setPTool("line");setLPhase(0);setDrawing(false)}}>📏 線</button>
-            <button style={B(pTool==="lshape")} onClick={()=>{setPTool("lshape");setLPhase(0);setDrawing(false)}}>⌐ L型</button>
-            <button style={B(pTool==="arrow")} onClick={()=>{setPTool("arrow");setDrawing(false)}}>↕ 離地</button>
-            <button style={B(pTool==="text")} onClick={()=>{setPTool("text");setDrawing(false)}}>Aa</button>
-            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
-            <button style={B(false)} onClick={()=>setAnns(a=>a.slice(0,-1))}>↩</button>
-            <button style={{...B(false),borderColor:"#c0392b",color:"#e74c3c"}} onClick={()=>{if(confirm("清除？"))setAnns([])}}>🗑</button>
-            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
-            <button style={{...B(false),background:"#27ae60",borderColor:"#27ae60",color:"#fff",fontWeight:700}} onClick={doExport}>💾 匯出</button>
-          </div>
-        ):(
-          <div style={{display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
-            <button style={B(fTool==="wall"&&!pendFix)} onClick={()=>{setFTool("wall");setPendFix(null);setSelIdx(-1)}}>▬ 牆</button>
-            <button style={B(fTool==="select"&&!pendFix)} onClick={()=>{setFTool("select");setPendFix(null)}}>☝ 選取</button>
-            <button style={B(fTool==="handrail"&&!pendFix)} onClick={()=>{setFTool("handrail");setPendFix(null);setSelIdx(-1)}}>┃ 扶手</button>
-            <button style={B(fTool==="dim"&&!pendFix)} onClick={()=>{setFTool("dim");setPendFix(null);setSelIdx(-1)}}>📏 標註</button>
-            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
-            <button style={B(false)} onClick={()=>{setFObjs(o=>o.slice(0,-1));setSelIdx(-1)}}>↩</button>
-            <button style={{...B(false),borderColor:"#c0392b",color:"#e74c3c"}} onClick={()=>{if(confirm("清除？")){setFObjs([]);setSelIdx(-1)}}}>🗑</button>
-            <div style={{width:1,height:18,background:"#333",margin:"0 2px"}}/>
-            <button style={{...B(false),background:"#27ae60",borderColor:"#27ae60",color:"#fff",fontWeight:700}} onClick={expFloor}>💾 匯出</button>
-          </div>
-        )}
-      </div>
-
-      {/* Main */}
-      <div style={{flex:1,display:"flex",overflow:"hidden"}}>
-        <div ref={areaRef} style={{flex:1,position:"relative",overflow:"hidden",background:mode==="floor"?"#fff":"#0a0a14"}}>
-          {/* Photo */}
-          {mode==="photo"&&photoSrc&&(
-            <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <img ref={imgRef} src={photoSrc} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",pointerEvents:"none",userSelect:"none"}} alt=""/>
-            </div>
-          )}
-
-          {/* SVG */}
-          <svg ref={svgRef} viewBox={`0 0 ${cSize.w} ${cSize.h}`} width={cSize.w} height={cSize.h} style={{position:"absolute",left:0,top:0,zIndex:10,touchAction:"none",cursor:mode==="floor"&&fTool==="select"?"default":"crosshair"}} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
-            {/* Transparent event catcher */}
-            <rect x={0} y={0} width={cSize.w} height={cSize.h} fill="transparent"/>
-
-            {/* Floor grid */}
-            {mode==="floor"&&gridLines}
-
-            {/* Photo annotations */}
-            {mode==="photo"&&anns.map((a,i)=>(
-              <g key={i}>
-                {a.type==="line"&&<><line x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>{a.label&&<YellowLabel x={(a.x1+a.x2)/2} y={(a.y1+a.y2)/2-25} text={a.label}/>}</>}
-                {a.type==="lshape"&&<><line x1={a.x1} y1={a.y1} x2={a.mx} y2={a.my} stroke="#F00" strokeWidth={5} strokeLinecap="round"/><line x1={a.mx} y1={a.my} x2={a.x2} y2={a.y2} stroke="#F00" strokeWidth={5} strokeLinecap="round"/>{a.label1&&<YellowLabel x={(a.x1+a.mx)/2} y={(a.y1+a.my)/2-25} text={a.label1}/>}{a.label2&&<YellowLabel x={(a.mx+a.x2)/2} y={(a.my+a.y2)/2-25} text={a.label2}/>}</>}
-                {a.type==="arrow"&&<><line x1={a.x} y1={a.y1} x2={a.x} y2={a.y2} stroke="#FFD600" strokeWidth={3}/><polygon points={`${a.x},${a.y1} ${a.x-6},${a.y1+12} ${a.x+6},${a.y1+12}`} fill="#FFD600"/><polygon points={`${a.x},${a.y2} ${a.x-6},${a.y2-12} ${a.x+6},${a.y2-12}`} fill="#FFD600"/>{a.label&&<YellowLabel x={a.x} y={a.y2+25} text={a.label}/>}</>}
-                {a.type==="text"&&<YellowLabel x={a.x} y={a.y} text={a.label}/>}
-              </g>
-            ))}
-
-            {/* Floor objects */}
-            {mode==="floor"&&fObjs.map((o,i)=>(
-              <g key={i}>
-                {o.type==="wall"&&<line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#222" strokeWidth={6} strokeLinecap="round"/>}
-                {o.type==="handrail"&&<><line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#F00" strokeWidth={4} strokeLinecap="round"/><circle cx={o.x1} cy={o.y1} r={4} fill="#F00"/><circle cx={o.x2} cy={o.y2} r={4} fill="#F00"/></>}
-                {o.type==="dim"&&<><line x1={o.x1} y1={o.y1} x2={o.x2} y2={o.y2} stroke="#555" strokeWidth={1.5}/>{o.label&&<text x={(o.x1+o.x2)/2} y={(o.y1+o.y2)/2-8} textAnchor="middle" fontSize={14} fontWeight={700} fill="#333" fontFamily="'Noto Sans TC',sans-serif">{o.label}</text>}</>}
-                {o.type==="fixture"&&<g transform={`translate(${o.x},${o.y}) rotate(${o.rotation||0}) ${o.flipped?"scale(-1,1)":""} scale(${o.scale||1})`}>{(()=>{const C=FIX_MAP[o.fixture];return C?<C/>:null})()}</g>}
-                {o.type==="fixture"&&i===selIdx&&(()=>{const sz=40*(o.scale||1);return <rect x={o.x-sz} y={o.y-sz} width={sz*2} height={sz*2} fill="none" stroke="#3498db" strokeWidth={2} strokeDasharray="5,3"/>})()}
-              </g>
-            ))}
-
-            {preview()}
-          </svg>
-
-          {/* Drop zone (photo only, no photo loaded) */}
-          {mode==="photo"&&!photoSrc&&(
-            <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.5)"}}>
-              <div style={{border:"3px dashed #555",borderRadius:16,padding:"30px 40px",textAlign:"center"}}>
-                <div style={{fontSize:18,color:"#888",marginBottom:6}}>📷 選擇照片</div>
-                <button style={{padding:"10px 24px",background:"#e94560",color:"#fff",border:"none",borderRadius:8,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>fileRef.current?.click()}>選擇照片</button>
-              </div>
-            </div>
-          )}
-
-          {/* FAB */}
-          {mode==="floor"&&selObj&&(
-            <div style={{position:"absolute",left:Math.min(selObj.x+50,cSize.w-280),top:Math.max(10,selObj.y-25),zIndex:100,display:"flex",flexWrap:"wrap",gap:3,background:"#1a1a2e",border:"1px solid #333",borderRadius:8,padding:5,boxShadow:"0 4px 16px rgba(0,0,0,.5)"}}>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>rotS(90)}>🔄 90°</button>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>rotS(45)}>↻ 45°</button>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>flipS()}>↔ 翻</button>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>scaleS(1.3)}>＋</button>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #333",borderRadius:5,background:"#252545",color:"#eee",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>scaleS(0.7)}>－</button>
-              <button style={{fontSize:11,padding:"4px 8px",border:"1px solid #c0392b",borderRadius:5,background:"#252545",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={delS}>🗑</button>
-            </div>
-          )}
-        </div>
-
-        {/* Side panel */}
-        {mode==="floor"&&(
-          <div style={{width:150,background:"#1a1a2e",borderLeft:"1px solid #333",padding:8,overflowY:"auto",flexShrink:0}}>
-            <div style={{fontSize:11,color:"#888",marginBottom:6,letterSpacing:1}}>衛浴元件</div>
-            <div style={{fontSize:10,color:"#666",marginBottom:6}}>點選 → 點畫布放置</div>
-            {Object.keys(FIX_MAP).map(f=>(
-              <div key={f} style={{display:"flex",alignItems:"center",gap:6,padding:6,marginBottom:3,background:pendFix===f?"#e94560":"#252545",border:`1px solid ${pendFix===f?"#e94560":"#333"}`,borderRadius:6,cursor:"pointer",fontSize:12,color:pendFix===f?"#fff":"#eee"}} onClick={()=>setPendFix(pendFix===f?null:f)}>
-                {FIX_EMJ[f]} {FIX_LBL[f]}
-              </div>
-            ))}
-            <div style={{fontSize:11,color:"#888",marginTop:12,letterSpacing:1}}>提示</div>
-            <div style={{fontSize:10,color:"#666",lineHeight:1.6}}>① 點選元件<br/>② 點畫布放置<br/>③「選取」點已放元件<br/>④ 浮動鈕操作<br/>⑤ 可拖動位置</div>
-          </div>
-        )}
-      </div>
-
-      {/* Status */}
-      <div style={{padding:"3px 10px",background:"#1a1a2e",borderTop:"1px solid #333",fontSize:10,color:"#888",flexShrink:0}}>
-        {mode==="photo"?`照片標註 | ${{line:"直線",lshape:"L型",arrow:"離地",text:"文字"}[pTool]}`:`平面圖 | ${pendFix?"放置："+FIX_LBL[pendFix]:{wall:"畫牆",select:"選取",handrail:"扶手",dim:"標註"}[fTool]}`}
-      </div>
-
-      {/* Modal */}
-      {modal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{background:"#1a1a2e",border:"1px solid #333",borderRadius:12,padding:16,width:280}}>
-            <div style={{fontSize:14,marginBottom:10,color:"#e94560",fontWeight:700}}>{modal.title}</div>
-            <input style={{width:"100%",padding:8,border:"1px solid #333",borderRadius:6,background:"#252545",color:"#eee",fontSize:14,fontFamily:"inherit",marginBottom:8}} value={mVal} onChange={e=>setMVal(e.target.value)} placeholder={modal.ph} autoFocus onKeyDown={e=>{if(e.key==="Enter")closeMdl(mVal);if(e.key==="Escape")closeMdl("")}}/>
-            <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
-              <button style={{padding:"7px 16px",background:"#252545",color:"#888",border:"1px solid #333",borderRadius:6,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>closeMdl("")}>取消</button>
-              <button style={{padding:"7px 16px",background:"#e94560",color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>closeMdl(mVal)}>確定</button>
-            </div>
-          </div>
-        </div>
-      )}
+<div class="app">
+  <div class="hdr">
+    <h1>🏠 無障礙標註</h1>
+    <div class="tabs">
+      <button class="tab on" id="tabPhoto" onclick="setMode('photo')">📷 照片</button>
+      <button class="tab" id="tabFloor" onclick="setMode('floor')">📐 平面圖</button>
     </div>
-  );
+    <div class="tb" id="tbPhoto">
+      <button class="file-btn" onclick="document.getElementById('fileIn').click()">📁 載入</button>
+      <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="loadImg(this)">
+      <div class="sep"></div>
+      <button class="btn on" id="tLine" onclick="setPT('line')">📏 線</button>
+      <button class="btn" id="tL" onclick="setPT('lshape')">⌐ L型</button>
+      <button class="btn" id="tA" onclick="setPT('arrow')">↕ 離地</button>
+      <button class="btn" id="tT" onclick="setPT('text')">Aa</button>
+      <div class="sep"></div>
+      <button class="btn" onclick="undo()">↩</button>
+      <button class="btn del" onclick="clearA()">🗑</button>
+      <div class="sep"></div>
+      <button class="btn go" onclick="exportPhoto()">💾 匯出</button>
+    </div>
+    <div class="tb" id="tbFloor" style="display:none">
+      <button class="btn on" id="fW" onclick="setFT('wall')">▬ 牆</button>
+      <button class="btn" id="fS" onclick="setFT('select')">☝ 選取</button>
+      <button class="btn" id="fH" onclick="setFT('handrail')">┃ 扶手</button>
+      <button class="btn" id="fD" onclick="setFT('dim')">📏 標註</button>
+      <div class="sep"></div>
+      <button class="btn" onclick="undoF()">↩</button>
+      <button class="btn del" onclick="clearF()">🗑</button>
+      <div class="sep"></div>
+      <button class="btn go" onclick="exportFloor()">💾 匯出</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="canvas-area" id="area">
+      <canvas id="cv"></canvas>
+      <div class="drop" id="dropZone">
+        <div class="drop-box">
+          <h2>📷 選擇照片</h2>
+          <p>點擊按鈕載入</p>
+          <button onclick="document.getElementById('fileIn').click()">選擇照片</button>
+        </div>
+      </div>
+      <div class="fab" id="fab">
+        <button onclick="rotSel(90)">🔄90°</button>
+        <button onclick="rotSel(45)">↻45°</button>
+        <button onclick="flipSel()">↔翻</button>
+        <button onclick="sclSel(1.3)">＋</button>
+        <button onclick="sclSel(.7)">－</button>
+        <button style="border-color:#a33;color:#e55" onclick="delSel()">🗑</button>
+      </div>
+    </div>
+    <div class="side" id="side">
+      <h3>衛浴元件</h3>
+      <button class="fix-btn" onclick="pickFix('toilet',this)">🚽 馬桶</button>
+      <button class="fix-btn" onclick="pickFix('sink',this)">🚰 洗手台</button>
+      <button class="fix-btn" onclick="pickFix('bathtub',this)">🛁 浴缸</button>
+      <button class="fix-btn" onclick="pickFix('shower',this)">🚿 淋浴區</button>
+      <button class="fix-btn" onclick="pickFix('door',this)">🚪 門</button>
+      <button class="fix-btn" onclick="pickFix('faucet',this)">🔧 水龍頭</button>
+      <p>① 點選元件<br>② 點畫布放置<br>③「選取」點元件<br>④ 浮動鈕操作</p>
+    </div>
+  </div>
+  <div class="status" id="st">就緒</div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="mTitle">輸入</h3>
+    <input id="mIn" placeholder="">
+    <div class="btns">
+      <button class="cc" onclick="mDone('')">取消</button>
+      <button class="ok" onclick="mDone(document.getElementById('mIn').value)">確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════ STATE ═══════
+let mode='photo', pTool='line', fTool='wall';
+let photo=null; // Image object
+let anns=[];    // photo annotations
+let fObjs=[];   // floor objects
+let selIdx=-1, pendFix=null;
+
+// Drawing
+let isDraw=false, ptStart=null, ptMid=null, ptCur=null, lPhase=0;
+let dragOff=null;
+
+// Canvas
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+const area=document.getElementById('area');
+let W=0, H=0, dpr=1;
+
+// Modal
+let mResolve=null;
+
+// ═══════ CANVAS SETUP ═══════
+function resize(){
+  const r=area.getBoundingClientRect();
+  W=r.width; H=r.height;
+  dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  draw();
 }
-ReactDOM.render(<App/>,document.getElementById('root'));
+window.addEventListener('resize',resize);
+
+function getP(e){
+  const r=cv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
+  return{x:t.clientX-r.left, y:t.clientY-r.top};
+}
+
+// ═══════ MODE ═══════
+function setMode(m){
+  mode=m;
+  document.getElementById('tabPhoto').classList.toggle('on',m==='photo');
+  document.getElementById('tabFloor').classList.toggle('on',m==='floor');
+  document.getElementById('tbPhoto').style.display=m==='photo'?'flex':'none';
+  document.getElementById('tbFloor').style.display=m==='floor'?'flex':'none';
+  document.getElementById('side').style.display=m==='floor'?'block':'none';
+  document.getElementById('dropZone').style.display=m==='photo'&&!photo?'flex':'none';
+  hideFab(); selIdx=-1; pendFix=null; isDraw=false; lPhase=0;
+  clearFixBtns();
+  // Need to resize because side panel changes area width
+  setTimeout(resize,50);
+  setStatus(m==='photo'?'照片標註':'平面圖');
+}
+
+// ═══════ PHOTO ═══════
+function loadImg(inp){
+  const f=inp.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{photo=img;document.getElementById('dropZone').style.display='none';draw();setStatus('照片已載入')};
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function setPT(t){
+  pTool=t; isDraw=false; lPhase=0;
+  document.querySelectorAll('#tbPhoto .btn').forEach(b=>b.classList.remove('on'));
+  const m={line:'tLine',lshape:'tL',arrow:'tA',text:'tT'};
+  if(m[t])document.getElementById(m[t]).classList.add('on');
+  setStatus({line:'直線',lshape:'L型線',arrow:'離地標示',text:'文字'}[t]);
+}
+
+function setFT(t){
+  fTool=t; pendFix=null; clearFixBtns();
+  if(t!=='select'){hideFab();selIdx=-1}
+  document.querySelectorAll('#tbFloor .btn').forEach(b=>b.classList.remove('on'));
+  const m={wall:'fW',select:'fS',handrail:'fH',dim:'fD'};
+  if(m[t])document.getElementById(m[t]).classList.add('on');
+  setStatus({wall:'畫牆',select:'選取',handrail:'扶手',dim:'標註'}[t]);
+  draw();
+}
+
+function pickFix(type,el){
+  pendFix=(pendFix===type)?null:type;
+  clearFixBtns();
+  if(pendFix)el.classList.add('on');
+  setStatus(pendFix?'放置：'+{toilet:'馬桶',sink:'洗手台',bathtub:'浴缸',shower:'淋浴區',door:'門',faucet:'水龍頭'}[pendFix]:'');
+}
+function clearFixBtns(){document.querySelectorAll('.fix-btn').forEach(b=>b.classList.remove('on'))}
+
+// ═══════ DRAWING ═══════
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  if(mode==='photo'){
+    if(photo){
+      ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      const s=Math.min(W/photo.width,H/photo.height);
+      const iw=photo.width*s,ih=photo.height*s;
+      const ox=(W-iw)/2,oy=(H-ih)/2;
+      ctx.drawImage(photo,ox,oy,iw,ih);
+    }
+    anns.forEach(a=>drawAnn(ctx,a));
+    // Preview
+    if(isDraw&&ptStart&&ptCur){
+      if(pTool==='line'){const s=snapHV(ptStart,ptCur);drawRedLine(ctx,ptStart.x,ptStart.y,s.x,s.y)}
+      else if(pTool==='lshape'&&lPhase===1){
+        // Auto L-shape: start→corner→end, corner is at (start.x, cur.y) forming vertical-then-horizontal
+        const cx=ptStart.x, cy=ptCur.y;
+        drawRedLine(ctx,ptStart.x,ptStart.y,cx,cy);
+        drawRedLine(ctx,cx,cy,ptCur.x,ptCur.y);
+      }
+      else if(pTool==='arrow')drawArrow(ctx,ptStart.x,ptStart.y,ptCur.y);
+    }
+  }else{
+    // Floor
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle='#ddd';ctx.lineWidth=0.5;
+    for(let x=0;x<W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+    for(let y=0;y<H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    // Objects
+    fObjs.forEach((o,i)=>{
+      if(o.type==='wall'){ctx.strokeStyle='#222';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x1,o.y1);ctx.lineTo(o.x2,o.y2);ctx.stroke()}
+      else if(o.type==='handrail'){ctx.strokeStyle='#F00';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(o.x1,o.y1);ctx.lineTo(o.x2,o.y2);ctx.stroke();ctx.fillStyle='#F00';ctx.beginPath();ctx.arc(o.x1,o.y1,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(o.x2,o.y2,4,0,Math.PI*2);ctx.fill()}
+      else if(o.type==='dim')drawDim(ctx,o);
+      else if(o.type==='fixture'){drawFixture(ctx,o);if(i===selIdx){const sz=40*(o.scale||1);ctx.strokeStyle='#3498db';ctx.lineWidth=2;ctx.setLineDash([5,3]);ctx.strokeRect(o.x-sz,o.y-sz,sz*2,sz*2);ctx.setLineDash([])}}
+    });
+    // Floor preview
+    if(isDraw&&ptStart&&ptCur&&fTool!=='select'&&!pendFix){
+      if(fTool==='wall'||fTool==='handrail'){
+        let ex=ptCur.x,ey=ptCur.y;
+        if(Math.abs(ptCur.x-ptStart.x)<Math.abs(ptCur.y-ptStart.y))ex=ptStart.x;else ey=ptStart.y;
+        ctx.strokeStyle=fTool==='wall'?'#222':'#F00';ctx.lineWidth=fTool==='wall'?6:4;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(ptStart.x,ptStart.y);ctx.lineTo(ex,ey);ctx.stroke();
+      }else if(fTool==='dim'){ctx.strokeStyle='#555';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ptStart.x,ptStart.y);ctx.lineTo(ptCur.x,ptCur.y);ctx.stroke()}
+    }
+  }
+}
+
+// ═══════ ANNOTATION HELPERS ═══════
+function drawAnn(c,a){
+  if(a.type==='line'){drawRedLine(c,a.x1,a.y1,a.x2,a.y2);if(a.label){const mx=(a.x1+a.x2)/2,my=(a.y1+a.y2)/2;const isVert=Math.abs(a.x2-a.x1)<Math.abs(a.y2-a.y1);drawLabel(c,isVert?mx-30:mx,isVert?my:my-28,a.label)}}
+  else if(a.type==='lshape'){drawRedLine(c,a.x1,a.y1,a.mx,a.my);drawRedLine(c,a.mx,a.my,a.x2,a.y2);if(a.l1){const mx1=(a.x1+a.mx)/2,my1=(a.y1+a.my)/2;const v1=Math.abs(a.mx-a.x1)<Math.abs(a.my-a.y1);drawLabel(c,v1?mx1-30:mx1,v1?my1:my1-28,a.l1)}if(a.l2){const mx2=(a.mx+a.x2)/2,my2=(a.my+a.y2)/2;const v2=Math.abs(a.x2-a.mx)<Math.abs(a.y2-a.my);drawLabel(c,v2?mx2-30:mx2,v2?my2:my2-28,a.l2)}}
+  else if(a.type==='arrow'){drawArrow(c,a.x,a.y1,a.y2);if(a.label)drawLabel(c,a.x,a.y2+25,a.label)}
+  else if(a.type==='text')drawLabel(c,a.x,a.y,a.label);
+}
+
+function drawRedLine(c,x1,y1,x2,y2){c.strokeStyle='#F00';c.lineWidth=5;c.lineCap='round';c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}
+
+function drawArrow(c,x,y1,y2){
+  c.strokeStyle='#FFD600';c.fillStyle='#FFD600';c.lineWidth=3;c.lineCap='round';
+  c.beginPath();c.moveTo(x,y1);c.lineTo(x,y2);c.stroke();
+  const h=10;
+  c.beginPath();c.moveTo(x,y1);c.lineTo(x-5,y1+(y2>y1?h:-h));c.lineTo(x+5,y1+(y2>y1?h:-h));c.closePath();c.fill();
+  c.beginPath();c.moveTo(x,y2);c.lineTo(x-5,y2+(y2>y1?-h:h));c.lineTo(x+5,y2+(y2>y1?-h:h));c.closePath();c.fill();
+}
+
+function drawArrowExport(c,x,y1,y2,sc){
+  const lw=Math.max(4,3*sc),hs=Math.max(14,10*sc),hw=Math.max(7,5*sc);
+  c.strokeStyle='#FFD600';c.fillStyle='#FFD600';c.lineWidth=lw;c.lineCap='round';
+  c.beginPath();c.moveTo(x,y1);c.lineTo(x,y2);c.stroke();
+  c.beginPath();c.moveTo(x,y1);c.lineTo(x-hw,y1+(y2>y1?hs:-hs));c.lineTo(x+hw,y1+(y2>y1?hs:-hs));c.closePath();c.fill();
+  c.beginPath();c.moveTo(x,y2);c.lineTo(x-hw,y2+(y2>y1?-hs:hs));c.lineTo(x+hw,y2+(y2>y1?-hs:hs));c.closePath();c.fill();
+}
+
+function drawLabel(c,x,y,text,fontSize){
+  const fs=fontSize||18;c.font=`900 ${fs}px 'Noto Sans TC',sans-serif`;
+  const tw=c.measureText(text).width,px=fs*0.55,py=fs*0.28;
+  c.fillStyle='rgba(255,214,0,0.92)';
+  roundRect(c,x-tw/2-px,y-fs/2-py,tw+px*2,fs+py*2,fs*0.28);c.fill();
+  c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';c.fillText(text,x,y);
+}
+
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath()}
+
+function snapHV(s,p){let x=p.x,y=p.y;if(Math.abs(p.x-s.x)<15)x=s.x;if(Math.abs(p.y-s.y)<15)y=s.y;return{x,y}}
+function snapG(v){return Math.round(v/20)*20}
+
+// ═══════ FIXTURES ═══════
+function drawFixture(c,o){
+  c.save();c.translate(o.x,o.y);c.rotate((o.rotation||0)*Math.PI/180);
+  if(o.flipped)c.scale(-1,1);
+  const sc=o.scale||1;c.scale(sc,sc);
+  c.strokeStyle='#333';c.fillStyle='#fff';c.lineWidth=2;
+
+  if(o.fixture==='toilet'){
+    c.fillRect(-18,-30,36,14);c.strokeRect(-18,-30,36,14);
+    c.beginPath();c.ellipse(0,6,16,22,0,0,Math.PI*2);c.fill();c.stroke();
+    c.strokeStyle='#aaa';c.lineWidth=1;c.beginPath();c.moveTo(-5,-8);c.lineTo(-5,24);c.moveTo(5,-8);c.lineTo(5,24);c.stroke();
+  }else if(o.fixture==='sink'){
+    c.fillRect(-20,-14,40,28);c.strokeRect(-20,-14,40,28);
+    c.strokeStyle='#aaa';c.lineWidth=1;c.strokeRect(-14,-8,28,16);
+    c.fillStyle='#888';c.fillRect(-3,-18,6,6);
+  }else if(o.fixture==='bathtub'){
+    c.fillRect(-24,-42,48,84);c.strokeRect(-24,-42,48,84);
+    c.strokeStyle='#aaa';c.lineWidth=1;c.strokeRect(-20,-38,40,76);
+  }else if(o.fixture==='shower'){
+    c.beginPath();c.arc(0,0,26,0,Math.PI*2);c.fill();c.stroke();
+    c.fillStyle='#999';c.beginPath();c.arc(0,0,6,0,Math.PI*2);c.fill();
+    c.strokeStyle='#bbb';c.lineWidth=1;
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;c.beginPath();c.moveTo(Math.cos(a)*9,Math.sin(a)*9);c.lineTo(Math.cos(a)*18,Math.sin(a)*18);c.stroke()}
+  }else if(o.fixture==='door'){
+    c.strokeStyle='#333';c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(-48,0);c.stroke();
+    c.lineWidth=2;c.beginPath();c.moveTo(0,0);c.lineTo(0,-48);c.stroke();
+    c.strokeStyle='#999';c.lineWidth=1.5;c.setLineDash([4,3]);c.beginPath();c.arc(0,0,48,-Math.PI/2,Math.PI,true);c.stroke();c.setLineDash([]);
+  }else if(o.fixture==='faucet'){
+    // T-pipe faucet symbol (plan view)
+    c.strokeStyle='#333';c.lineWidth=2;c.fillStyle='#fff';
+    // Horizontal pipe (wall supply)
+    c.fillRect(-20,-6,40,12);c.strokeRect(-20,-6,40,12);
+    // Vertical pipe (spout)
+    c.fillRect(-6,6,12,24);c.strokeRect(-6,6,12,24);
+  }
+  c.restore();
+}
+
+function drawDim(c,o){
+  c.strokeStyle='#555';c.lineWidth=1.5;c.beginPath();c.moveTo(o.x1,o.y1);c.lineTo(o.x2,o.y2);c.stroke();
+  // End ticks
+  const ang=Math.atan2(o.y2-o.y1,o.x2-o.x1);
+  const px=Math.sin(ang)*6,py=-Math.cos(ang)*6;
+  c.lineWidth=2;
+  c.beginPath();c.moveTo(o.x1-px,o.y1-py);c.lineTo(o.x1+px,o.y1+py);c.stroke();
+  c.beginPath();c.moveTo(o.x2-px,o.y2-py);c.lineTo(o.x2+px,o.y2+py);c.stroke();
+  if(o.label){c.font='700 13px "Noto Sans TC",sans-serif';c.textAlign='center';c.textBaseline='bottom';c.fillStyle='#333';c.fillText(o.label,(o.x1+o.x2)/2,(o.y1+o.y2)/2-8)}
+}
+
+// ═══════ POINTER EVENTS ═══════
+cv.addEventListener('pointerdown',onDown,{passive:false});
+cv.addEventListener('pointermove',onMove,{passive:false});
+cv.addEventListener('pointerup',onUp,{passive:false});
+cv.addEventListener('pointercancel',()=>{isDraw=false;draw()});
+
+function onDown(e){
+  e.preventDefault();
+  const p=getP(e);
+  if(mode==='photo'){
+    if(!photo)return;
+    if(pTool==='text'){askM('輸入文字','例：水平扶手上緣離地約70公分').then(v=>{if(v){anns.push({type:'text',x:p.x,y:p.y,label:v});draw()}});return}
+    if(pTool==='lshape'){
+      if(lPhase===0){ptStart=p;lPhase=1;isDraw=true;return}
+    }
+    ptStart=p;isDraw=true;
+  }else{
+    const sp={x:snapG(p.x),y:snapG(p.y)};
+    if(pendFix){fObjs.push({type:'fixture',fixture:pendFix,x:sp.x,y:sp.y,rotation:0,scale:1,flipped:false});draw();return}
+    if(fTool==='select'){
+      selIdx=-1;hideFab();
+      for(let i=fObjs.length-1;i>=0;i--){const o=fObjs[i];if(o.type==='fixture'){const sz=35*(o.scale||1);if(Math.abs(p.x-o.x)<sz&&Math.abs(p.y-o.y)<sz){selIdx=i;dragOff={x:p.x-o.x,y:p.y-o.y};isDraw=true;showFab(o);break}}}
+      draw();return;
+    }
+    ptStart=sp;isDraw=true;
+  }
+}
+
+function onMove(e){
+  e.preventDefault();
+  const p=getP(e);
+  if(mode==='photo'){
+    if(isDraw){ptCur=p;draw()}
+  }
+  else if(mode==='floor'&&isDraw){
+    if(fTool==='select'&&selIdx>=0&&dragOff){fObjs[selIdx].x=snapG(p.x-dragOff.x);fObjs[selIdx].y=snapG(p.y-dragOff.y);draw();showFab(fObjs[selIdx])}
+    else{ptCur={x:snapG(p.x),y:snapG(p.y)};draw()}
+  }
+}
+
+async function onUp(e){
+  e.preventDefault();
+  const p=getP(e);
+  if(mode==='photo'&&isDraw){
+    isDraw=false;ptCur=null;
+    if(pTool==='line'){const s=snapHV(ptStart,p);if(Math.hypot(s.x-ptStart.x,s.y-ptStart.y)<5)return;const v=await askM('輸入尺寸','例：70公分');anns.push({type:'line',x1:ptStart.x,y1:ptStart.y,x2:s.x,y2:s.y,label:v});draw()}
+    else if(pTool==='lshape'&&lPhase===1){
+      lPhase=0;
+      if(Math.hypot(p.x-ptStart.x,p.y-ptStart.y)<10)return;
+      // Auto corner: vertical first, then horizontal
+      const mx=ptStart.x, my=p.y;
+      const v1=await askM('垂直段尺寸','例：70公分');
+      const v2=await askM('水平段尺寸','例：40公分');
+      anns.push({type:'lshape',x1:ptStart.x,y1:ptStart.y,mx:mx,my:my,x2:p.x,y2:p.y,l1:v1,l2:v2});draw();
+    }
+    else if(pTool==='arrow'){const v=await askM('離地描述','例：水平扶手上緣離地約70公分');anns.push({type:'arrow',x:ptStart.x,y1:ptStart.y,y2:p.y,label:v});draw()}
+  }else if(mode==='floor'&&isDraw){
+    isDraw=false;ptCur=null;
+    if(fTool==='select')return;
+    const sp={x:snapG(p.x),y:snapG(p.y)};
+    if(fTool==='wall'||fTool==='handrail'){
+      if(!ptStart)return;let ex=sp.x,ey=sp.y;
+      if(Math.abs(sp.x-ptStart.x)<Math.abs(sp.y-ptStart.y))ex=ptStart.x;else ey=ptStart.y;
+      if(Math.hypot(ex-ptStart.x,ey-ptStart.y)<5)return;
+      fObjs.push({type:fTool,x1:ptStart.x,y1:ptStart.y,x2:ex,y2:ey});draw();
+    }else if(fTool==='dim'){
+      if(!ptStart||Math.hypot(sp.x-ptStart.x,sp.y-ptStart.y)<5)return;
+      const v=await askM('輸入尺寸','例：120cm');
+      fObjs.push({type:'dim',x1:ptStart.x,y1:ptStart.y,x2:sp.x,y2:sp.y,label:v});draw();
+    }
+  }
+}
+
+// ═══════ FAB ═══════
+function showFab(o){const f=document.getElementById('fab');f.style.left=Math.min(o.x+50,W-200)+'px';f.style.top=Math.max(10,o.y-20)+'px';f.classList.add('show')}
+function hideFab(){document.getElementById('fab').classList.remove('show')}
+function rotSel(d){if(selIdx<0)return;fObjs[selIdx].rotation=((fObjs[selIdx].rotation||0)+d)%360;draw();showFab(fObjs[selIdx])}
+function flipSel(){if(selIdx<0)return;fObjs[selIdx].flipped=!fObjs[selIdx].flipped;draw();showFab(fObjs[selIdx])}
+function sclSel(f){if(selIdx<0)return;fObjs[selIdx].scale=(fObjs[selIdx].scale||1)*f;draw();showFab(fObjs[selIdx])}
+function delSel(){if(selIdx<0)return;fObjs.splice(selIdx,1);selIdx=-1;hideFab();draw()}
+
+// ═══════ UNDO / CLEAR ═══════
+function undo(){anns.pop();draw()}
+function clearA(){if(confirm('清除？')){anns=[];draw()}}
+function undoF(){fObjs.pop();selIdx=-1;hideFab();draw()}
+function clearF(){if(confirm('清除？')){fObjs=[];selIdx=-1;hideFab();draw()}}
+
+// ═══════ EXPORT ═══════
+function exportPhoto(){
+  if(!photo)return alert('請先載入照片');
+  setStatus('匯出中...');
+  const ec=document.createElement('canvas');ec.width=photo.width;ec.height=photo.height;
+  const ectx=ec.getContext('2d');ectx.drawImage(photo,0,0);
+  // Map display→image coords
+  const s=Math.min(W/photo.width,H/photo.height);
+  const ox=(W-photo.width*s)/2,oy=(H-photo.height*s)/2;
+  const sx=1/s;
+  const labelFs=Math.max(40, 22*sx); // Export label font size - minimum 40px
+  anns.forEach(a=>{
+    const m=(x,y)=>({x:(x-ox)*sx,y:(y-oy)*sx});
+    if(a.type==='line'){const p1=m(a.x1,a.y1),p2=m(a.x2,a.y2);ectx.strokeStyle='#F00';ectx.lineWidth=Math.max(8,6*sx);ectx.lineCap='round';ectx.beginPath();ectx.moveTo(p1.x,p1.y);ectx.lineTo(p2.x,p2.y);ectx.stroke();if(a.label){const isV=Math.abs(p2.x-p1.x)<Math.abs(p2.y-p1.y);const lx=isV?(p1.x+p2.x)/2-labelFs*2:(p1.x+p2.x)/2;const ly=isV?(p1.y+p2.y)/2:(p1.y+p2.y)/2-labelFs*1.5;drawLabel(ectx,lx,ly,a.label,labelFs)}}
+    else if(a.type==='lshape'){const p1=m(a.x1,a.y1),pm=m(a.mx,a.my),p2=m(a.x2,a.y2);ectx.strokeStyle='#F00';ectx.lineWidth=Math.max(8,6*sx);ectx.lineCap='round';ectx.beginPath();ectx.moveTo(p1.x,p1.y);ectx.lineTo(pm.x,pm.y);ectx.stroke();ectx.beginPath();ectx.moveTo(pm.x,pm.y);ectx.lineTo(p2.x,p2.y);ectx.stroke();if(a.l1){const v1=Math.abs(pm.x-p1.x)<Math.abs(pm.y-p1.y);drawLabel(ectx,v1?(p1.x+pm.x)/2-labelFs*2:(p1.x+pm.x)/2,v1?(p1.y+pm.y)/2:(p1.y+pm.y)/2-labelFs*1.5,a.l1,labelFs)}if(a.l2){const v2=Math.abs(p2.x-pm.x)<Math.abs(p2.y-pm.y);drawLabel(ectx,v2?(pm.x+p2.x)/2-labelFs*2:(pm.x+p2.x)/2,v2?(pm.y+p2.y)/2:(pm.y+p2.y)/2-labelFs*1.5,a.l2,labelFs)}}
+    else if(a.type==='arrow'){const px=m(a.x,0).x,py1=m(0,a.y1).y,py2=m(0,a.y2).y;drawArrowExport(ectx,px,py1,py2,sx);if(a.label)drawLabel(ectx,px,py2+labelFs*1.5,a.label,labelFs)}
+    else if(a.type==='text'){const pt=m(a.x,a.y);drawLabel(ectx,pt.x,pt.y,a.label,labelFs)}
+  });
+  doSave(ec);
+}
+
+function exportFloor(){
+  setStatus('匯出中...');
+  const old=selIdx;selIdx=-1;draw();hideFab();
+  const ec=document.createElement('canvas');ec.width=W*2;ec.height=H*2;
+  const ectx=ec.getContext('2d');ectx.scale(2,2);
+  // Redraw onto export canvas
+  ectx.fillStyle='#fff';ectx.fillRect(0,0,W,H);
+  ectx.strokeStyle='#ddd';ectx.lineWidth=0.5;
+  for(let x=0;x<W;x+=20){ectx.beginPath();ectx.moveTo(x,0);ectx.lineTo(x,H);ectx.stroke()}
+  for(let y=0;y<H;y+=20){ectx.beginPath();ectx.moveTo(0,y);ectx.lineTo(W,y);ectx.stroke()}
+  fObjs.forEach(o=>{
+    if(o.type==='wall'){ectx.strokeStyle='#222';ectx.lineWidth=6;ectx.lineCap='round';ectx.beginPath();ectx.moveTo(o.x1,o.y1);ectx.lineTo(o.x2,o.y2);ectx.stroke()}
+    else if(o.type==='handrail'){ectx.strokeStyle='#F00';ectx.lineWidth=4;ectx.lineCap='round';ectx.beginPath();ectx.moveTo(o.x1,o.y1);ectx.lineTo(o.x2,o.y2);ectx.stroke();ectx.fillStyle='#F00';ectx.beginPath();ectx.arc(o.x1,o.y1,4,0,Math.PI*2);ectx.fill();ectx.beginPath();ectx.arc(o.x2,o.y2,4,0,Math.PI*2);ectx.fill()}
+    else if(o.type==='dim')drawDim(ectx,o);
+    else if(o.type==='fixture')drawFixture(ectx,o);
+  });
+  doSave(ec);
+  selIdx=old;draw();
+}
+
+function doSave(canvas){
+  // iOS Safari: open image in new tab for long-press save
+  const dataUrl=canvas.toDataURL('image/png');
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(isIOS){
+    const w=window.open('');
+    if(w){w.document.write('<html><head><title>長按圖片儲存</title><meta name="viewport" content="width=device-width"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111}img{max-width:100%;height:auto}</style></head><body><img src="'+dataUrl+'"></body></html>');w.document.close()}
+    else{alert('請允許彈出視窗，或長按下方圖片儲存');window.location.href=dataUrl}
+  }else{
+    const a=document.createElement('a');a.href=dataUrl;a.download='annotated_'+Date.now()+'.png';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+  setStatus('已匯出');
+}
+
+// ═══════ MODAL ═══════
+function askM(title,ph){
+  return new Promise(res=>{
+    document.getElementById('mTitle').textContent=title;
+    document.getElementById('mIn').placeholder=ph;
+    document.getElementById('mIn').value='';
+    mResolve=res;
+    document.getElementById('modalBg').classList.add('show');
+    setTimeout(()=>document.getElementById('mIn').focus(),100);
+  });
+}
+function mDone(v){
+  document.getElementById('modalBg').classList.remove('show');
+  if(mResolve)mResolve(v.trim());
+  mResolve=null;
+}
+document.getElementById('mIn').addEventListener('keydown',e=>{if(e.key==='Enter')mDone(e.target.value);if(e.key==='Escape')mDone('')});
+
+// ═══════ KEYBOARD ═══════
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){pendFix=null;clearFixBtns();isDraw=false;lPhase=0;if(selIdx>=0){selIdx=-1;hideFab();draw()}}
+  if(mode==='floor'&&selIdx>=0){if(e.key==='r'||e.key==='R')rotSel(90);if(e.key==='Delete'||e.key==='Backspace')delSel()}
+});
+
+function setStatus(s){document.getElementById('st').textContent=s}
+
+// INIT
+setTimeout(resize,0);
 </script>
 </body>
 </html>
