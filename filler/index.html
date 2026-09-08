@@ -42,6 +42,11 @@ header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px s
 .drop{border:2px dashed var(--line);border-radius:16px;padding:30px 18px;text-align:center;background:var(--cream)}
 .big{display:inline-block;background:var(--orange);color:#fff;border:0;border-radius:12px;
   padding:14px 22px;font-weight:700;font-size:16px;cursor:pointer}
+.big{-webkit-user-select:none;user-select:none}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.alt{margin-top:16px;font-size:13px;color:var(--muted)}
+.alt input{display:block;margin-top:7px;width:100%}
+.ver{margin-top:18px;font-size:11px;color:var(--muted);text-align:center}
 .hint{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.7;text-align:left}
 .hint b{color:var(--fg)}
 
@@ -89,8 +94,11 @@ header[hidden],footer[hidden]{display:none!important}
   <h1>輔具報告填寫器</h1>
   <p>開啟已灌好基本資料的報告書，現場填完直接存回 Word 檔。</p>
   <div class="drop">
-    <button class="big" id="pick">選擇報告書（.docx）</button>
-    <input type="file" id="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <label class="big" for="file">選擇報告書（.docx）</label>
+    <input type="file" id="file" class="vh"
+           accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <div class="alt">按了沒反應的話用這個：<input type="file" id="file2"
+           accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
     <div class="hint">
       <b>怎麼用</b><br>
       1. 出門前在 Mac 灌好基本資料，把 .docx 存到手機「檔案」App<br>
@@ -99,6 +107,7 @@ header[hidden],footer[hidden]{display:none!important}
       4. 回家自己轉 PDF<br><br>
       全程離線，不需要帳號，檔案不會離開這支手機。
     </div>
+    <div class="ver" id="ver">v2</div>
   </div>
 </div>
 
@@ -386,8 +395,13 @@ function toast(msg, bad) {
 }
 
 /* ── 載入 ─────────────────────────────────────────────────── */
-$("pick").onclick = () => $("file").click();
-$("file").onchange = e => { const f = e.target.files[0]; if (f) load(f); };
+for (const id of ["file", "file2"]) {
+  const el = $(id);
+  if (el) el.addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) load(f);
+  });
+}
 
 async function load(file) {
   try {
