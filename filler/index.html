@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K4XaoEWYzdfSrFp4O/cUXBxRjtHXa29Kr1JUTfuKNVM=' 'sha256-UEcsyl8A3YishNHiL7J/FD0nfwdRcaKDQPJpWV4D510='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EaSmsUneM1J3FFcpvKbGnSp86fU3yq4lTS5rbSWaBpo=' 'sha256-fpuz6zq8CO9uX9nJuyQcEpV4K1lTBAxZ03W3Y4vtzpM='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -78,7 +78,7 @@ header#bar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1
 .tools{display:flex;gap:6px;margin-top:8px}
 .tools input,.tools select{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);
   border-radius:10px;background:var(--card)}
-.tools select{flex:0 0 42%}
+.tools select{flex:0 0 36%}
 main#app{padding:10px 12px 96px;max-width:760px;margin:0 auto}
 .sec{margin:22px 0 8px;font-weight:700;color:var(--orange);font-size:15px;
   border-left:4px solid var(--gold);padding-left:9px}
@@ -89,6 +89,21 @@ main#app{padding:10px 12px 96px;max-width:760px;margin:0 auto}
 select.fld,input.fld{height:42px}
 .fld.filled{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 6%,var(--bg))}
 .flab{font-size:12px;color:var(--muted);margin:8px 0 0}
+.altrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--muted)}
+.chip.alt{padding:6px 11px;font-size:14px;border-radius:7px;background:var(--bg)}
+.chip.alt.on{background:var(--bg);border:2px solid var(--fg);color:var(--fg);font-weight:700}
+.phrow{display:none;margin-top:9px}
+body.phmode .phrow,.phrow.show{display:block}
+.phthumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.phthumb{position:relative;width:86px;height:86px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--chip)}
+.phthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.phthumb button{position:absolute;top:2px;right:2px;width:26px;height:26px;border-radius:50%;border:0;
+  background:rgba(0,0,0,.62);color:#fff;font-size:13px;line-height:26px;padding:0;cursor:pointer}
+.phctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.phctl .btn{white-space:normal;text-align:left;max-width:100%}
+.phctl select{padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:14px}
+.tools button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:0 11px;font-size:14px;font-weight:600;cursor:pointer}
+.tools button.on{background:var(--orange);border-color:var(--orange);color:#fff}
 .fhint{font-size:12px;color:var(--muted);margin-top:3px}
 footer#foot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);
   border-top:1px solid var(--line);padding:9px 12px calc(env(safe-area-inset-bottom) + 9px);
@@ -216,6 +231,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
   <div class="tools">
     <select id="jump"><option value="">跳到章節…</option></select>
     <input id="search" type="search" placeholder="搜尋題目…" autocomplete="off">
+    <button id="phmode" hidden>照片</button>
   </div>
 </header>
 <main id="app" hidden></main>
@@ -234,10 +250,11 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
    輔具報告填寫器 v4 ── 第一段：讀寫引擎
    讀 .docx → 把核取方塊與填空格攤成手機表單 → 填完寫回 .docx
    不綁模板：官方模板改版、換編號都不用改這支程式。
-   鐵則：只換 word/document.xml；沒動過的格子原樣保留；
+   鐵則：沒附照片時只換 word/document.xml；沒動過的格子原樣保留；
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
+         有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v4";
+const VERSION = "v5";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -395,8 +412,10 @@ function parseDoc(xmlDoc) {
   if (!body) throw new Error("這個檔案不是 Word 文件內容");
   const tAll = xmlDoc.getElementsByTagNameNS(NS_W, "t"), tIdx = new Map();
   for (let i = 0; i < tAll.length; i++) tIdx.set(tAll[i], i);
+  const tcAll = xmlDoc.getElementsByTagNameNS(NS_W, "tc"), tcIdx = new Map();
+  for (let i = 0; i < tcAll.length; i++) tcIdx.set(tcAll[i], i);
   const fields = [], blocks = [], seenWid = new Map();
-  let anon = 0, prevText = "", curTr = null, curTc = null;
+  let anon = 0, prevText = "", curTr = null, curTc = null, curP = null;   // curP＝這一題在文件裡的位置（照片接在它後面）
   const fid = info => {
     if (info.wid == null) return "x" + (anon++);
     const n = (seenWid.get(info.wid) || 0) + 1; seenWid.set(info.wid, n);
@@ -476,13 +495,39 @@ function parseDoc(xmlDoc) {
       }
     }
     const full = text.join("").trim();
-    if (!items.length) { if (full) { blocks.push({ kind: "head", text: full, tr: curTr, tc: curTc }); prevText = full; } return; }
-    const blk = { kind: "q", text: full, items: [], tr: curTr, tc: curTc };
+    const bare = !items.length;
+    const alts = bare && (full.length > 60 || RE_SECTION.test(full)) ? [] : altsOf(toks, tIdx);
+    if (bare && !alts.length) { if (full) { blocks.push({ kind: "head", text: full, tr: curTr, tc: curTc, anchor: curP, ti: firstT(toks) }); prevText = full; } return; }
+    for (const a of alts) items.push(a);
+    const blk = { kind: "q", text: full, items: [], tr: curTr, tc: curTc, anchor: curP, ti: firstT(toks), altOnly: bare };
     for (const it of items) { it.idx = fields.length; it.block = blk; fields.push(it); blk.items.push(it); }
     blocks.push(blk);
     if (full.replace(/[□＿\s]/g, "")) prevText = full;
   }
-  function para(p) { const toks = [], nested = []; inline(p, toks, nested); emit(toks); nested.forEach(para); }
+  function firstT(toks) { for (const k of toks) if (k.k === "t") return tIdx.get(k.el); return -1; }
+  function para(p) { const toks = [], nested = []; inline(p, toks, nested); curP = p; emit(toks); nested.forEach(para); }
+  /* 完全空白的表格格子（例如評估結果的「使用理由」欄）：當成一格可以打字的填空。
+     我們之前寫進去的字有隱形書籤標記（cellOurs），再打開時照樣認得，可以接著改或清空。 */
+  function blankCell(tc) {
+    const pr = kid(tc, NS_W, "tcPr"), vm = kid(pr, NS_W, "vMerge"), hm = kid(pr, NS_W, "hMerge");
+    if (vm && (wAttr(vm, "val") || "continue") === "continue") return false;   // 直向合併的下半格：不是獨立的格子
+    if (hm && (wAttr(hm, "val") || "continue") === "continue") return false;   // 橫向合併的後半格：同上
+    if (!kid(tc, NS_W, "p")) return false;
+    const ours = cellOurs(tc);                     // 這一格有我們之前寫的字：同格的照片可以留著，字照樣能改
+    for (const tag of ours ? ["sdt", "tbl", "pict", "object", "fldChar", "fldSimple", "hyperlink"]
+                           : ["sdt", "tbl", "drawing", "pict", "object", "fldChar", "fldSimple", "hyperlink"])
+      if (tc.getElementsByTagNameNS(NS_W, tag).length) return false;
+    if (!ours && tc.getElementsByTagNameNS(NS_MC, "AlternateContent").length) return false;
+    const ts = tc.getElementsByTagNameNS(NS_W, "t");
+    for (let i = 0; i < ts.length; i++) if ((ts[i].textContent || "").trim() && !(ours && ours.ts.has(ts[i]))) return false;
+    return true;
+  }
+  function emitCell(tc) {
+    const ours = cellOurs(tc);
+    const it = { type: "txt", kind: "text", cell: tc, id: "c" + tcIdx.get(tc), ctx: "", next: "", label: "填寫", orig: ours ? ours.text : "" };
+    const blk = { kind: "q", text: "", items: [it], tr: curTr, tc, cellFld: true, anchor: kid(tc, NS_W, "p") };
+    it.idx = fields.length; it.block = blk; fields.push(it); blocks.push(blk);
+  }
   const SKIP = new Set(["sdtPr", "sdtEndPr", "tblPr", "tblGrid", "trPr", "tcPr", "sectPr", "pPr", "rPr"]);
   function block(node) {
     for (let c = node.firstElementChild; c; c = c.nextElementSibling) {
@@ -490,21 +535,76 @@ function parseDoc(xmlDoc) {
       if (isEl(c, NS_W, "p")) para(c);
       else if (isEl(c, NS_W, "sdt")) {
         const info = sdtInfo(c);
-        if (info.kind === "cb") emit([{ k: "cb", el: c, info }]);
+        if (info.kind === "cb") { curP = c; emit([{ k: "cb", el: c, info }]); }
         else if (!info.cont) continue;
         else if (info.cont.getElementsByTagNameNS(NS_W, "sdt").length) block(info.cont);
-        else if (info.kind !== "text" || info.plc || !sdtText(info.cont).trim()) emit([{ k: "fld", el: c, info }]);
+        else if (info.kind !== "text" || info.plc || !sdtText(info.cont).trim()) { curP = c; emit([{ k: "fld", el: c, info }]); }
         else block(info.cont);                                   // 已有內容的外框：當一般內容走，不整包覆寫
       }
       else if (c.namespaceURI === NS_W && SKIP.has(c.localName)) continue;
       else if (isEl(c, NS_W, "tr")) { const a = curTr, b = curTc; curTr = c; curTc = null; block(c); curTr = a; curTc = b; }
-      else if (isEl(c, NS_W, "tc")) { const b = curTc; curTc = c; block(c); curTc = b; }
+      else if (isEl(c, NS_W, "tc")) { const b = curTc; curTc = c; if (blankCell(c)) emitCell(c); else block(c); curTc = b; }
       else block(c);
     }
   }
   block(body);
   gridMerge(blocks);
+  cellMerge(blocks);
+  photoSlots(blocks, fields);
   return { fields, blocks, integ: integrity(xmlDoc, fields) };
+}
+
+/* ── 題目文字裡的「甲/乙」：可以單獨把其中一邊框起來（跟在 Word 裡加「字元框線」一樣） ──
+   只認「短的、含中文字、用斜線隔開」的選項；「向前/後傾」這種只差一個方位字的，選項就是那一個字。 */
+const ALT_STOP = "\\s\\u3000\\u0001()（）\\[\\]【】「」:：，,、;；。□☐■☑☒✅▓_＿~～";
+const RE_ALT = new RegExp("[^/／" + ALT_STOP + "]+(?:[/／][^/／" + ALT_STOP + "]+)+", "g");
+const RE_ALT_CTX = new RegExp("([^/／" + ALT_STOP + "]{1,8})[(（]?$");   // 選項前面緊鄰的字（例如「中風偏癱(」），拿來標示這一組是誰的
+const ALT_DIR = "左右前後上下內外頸胸腰薦雙單";
+const RE_SECTION = /^[一二三四五六七八九十]+[、．.]|^【.+】$/;
+function runFramed(t) {
+  const r = t.parentNode, b = r && isEl(r, NS_W, "r") ? kid(kid(r, NS_W, "rPr"), NS_W, "bdr") : null;
+  if (!b) return false;
+  const v = wAttr(b, "val"); return v !== "none" && v !== "nil";
+}
+function altsOf(toks, tIdx) {
+  let str = ""; const map = [];                    // map[i]＝整段文字的第 i 個字，落在哪個文字節點的第幾個字
+  for (const k of toks) {
+    if (k.k !== "t") { str += "\u0001"; map.push(null); continue; }
+    const s = k.el.textContent || "";
+    for (let i = 0; i < s.length; i++) { str += s[i]; map.push({ t: k.el, off: i }); }
+  }
+  const out = []; let m;
+  RE_ALT.lastIndex = 0;
+  while ((m = RE_ALT.exec(str))) {
+    const raw = m[0], bits = []; let at = m.index;
+    for (const piece of raw.split(/[/／]/)) { bits.push({ text: piece, gs: at, ge: at + piece.length }); at += piece.length + 1; }
+    if (bits.length < 2 || bits.length > 6) continue;
+    const lead = /^[0-9０-９.．]+/.exec(bits[0].text);            // 「4手機/平板APP」：前面的題號不算選項的一部分
+    if (lead && lead[0].length < bits[0].text.length) { bits[0].gs += lead[0].length; bits[0].text = bits[0].text.slice(lead[0].length); }
+    if (bits.some(b => !b.text.length || b.text.length > 10 || !/[\u4e00-\u9fff]/.test(b.text))) continue;
+    const a = bits[0], z = bits[bits.length - 1], mid = bits.slice(1, -1);
+    const la = a.text[a.text.length - 1], fz = z.text[0];
+    if ((a.text.length > 1 || z.text.length > 1) && mid.every(b => b.text.length === 1) &&
+        ALT_DIR.includes(la) && ALT_DIR.includes(fz) && la !== fz) {
+      a.gs = a.ge - 1; a.text = la; z.ge = z.gs + 1; z.text = fz;
+    }
+    const parts = bits.map(b => {
+      const segs = [];
+      for (let i = b.gs; i < b.ge; i++) {
+        const e = map[i], last = segs[segs.length - 1];
+        if (!e) return null;
+        if (last && last.t === e.t && last.b === e.off) last.b++;
+        else segs.push({ t: e.t, a: e.off, b: e.off + 1, ti: tIdx.get(e.t) });
+      }
+      return { text: b.text, segs };
+    });
+    if (parts.some(x => !x || !x.segs.length)) continue;
+    const s0 = parts[0].segs[0];
+    const cm = RE_ALT_CTX.exec(str.slice(Math.max(0, m.index - 10), m.index));
+    out.push({ type: "alt", id: "a" + s0.ti + "." + s0.a, label: raw, ctx: cm ? cm[1] : "", parts,
+               orig: parts.map((x, i) => x.segs.every(g => runFramed(g.t)) ? i : -1).filter(i => i >= 0).join(",") });
+  }
+  return out;
 }
 
 /* ── 表格裡「一格只有一個方框」的勾選表：同一列併成一題，選項名稱取欄位標題 ── */
@@ -548,13 +648,7 @@ function gridMerge(blocks) {
     const cells = rowCells(b.tr), first = cells.find(x => x.tc === grp[0].tc);
     if (!rowsOf.has(b.tr)) rowsOf.set(b.tr, tblRows(b.tr));
     const rows = rowsOf.get(b.tr), at = rows.indexOf(b.tr);
-    const header = col => {
-      for (let r = at - 1; r >= 0; r--) {
-        const hit = rowCells(rows[r]).find(x => col >= x.col && col < x.col + x.span);
-        const t = hit && cellText(hit.tc); if (t) return t.slice(0, 24);
-      }
-      return "";
-    };
+    const header = col => colHeader(rows, at, col);
     const rowLab = first ? cells.filter(x => x.col < first.col).map(x => cellText(x.tc)).filter(Boolean).join(" ") : "";
     const nb = { kind: "q", text: rowLab || "（表格勾選）", items: [], tr: b.tr, tc: grp[0].tc, grid: true };
     for (const g of grp) {
@@ -564,6 +658,135 @@ function gridMerge(blocks) {
       it.block = nb; nb.items.push(it);
     }
     out.push(nb); i = j - 1;
+  }
+  blocks.length = 0; for (const b of out) blocks.push(b);
+}
+
+/* 空白格裡「我們寫的字」：第一段裡、被名稱以 af_c 開頭的書籤包住的那幾小段文字。
+   書籤在 Word 與 PDF 上都看不到；中間夾了別的東西就不認（當成使用者自己在 Word 改過）。 */
+const CELL_MARK = "af_c";
+function cellOurs(tc) {
+  const p = kid(tc, NS_W, "p"); if (!p) return null;
+  let start = null;
+  for (let c = p.firstElementChild; c; c = c.nextElementSibling)
+    if (isEl(c, NS_W, "bookmarkStart") && (wAttr(c, "name") || "").startsWith(CELL_MARK)) { start = c; break; }
+  if (!start) return null;
+  const id = wAttr(start, "id"), runs = [], ts = new Set(); let end = null, text = "";
+  for (let c = start.nextElementSibling; c; c = c.nextElementSibling) {
+    if (isEl(c, NS_W, "bookmarkEnd") && wAttr(c, "id") === id) { end = c; break; }
+    if (!isEl(c, NS_W, "r")) return null;
+    runs.push(c);
+    for (let k = c.firstElementChild; k; k = k.nextElementSibling) {
+      if (isEl(k, NS_W, "t")) { text += k.textContent || ""; ts.add(k); }
+      else if (isEl(k, NS_W, "br")) text += "\n";
+      else if (!isEl(k, NS_W, "rPr")) return null;
+    }
+  }
+  return end ? { start, end, runs, ts, text } : null;
+}
+function markCell(tc, hint) {                     // 在這一格留一組空的隱形書籤（已經有就不動）
+  const p = kid(tc, NS_W, "p"); if (!p || cellOurs(tc)) return;
+  const doc = p.ownerDocument, bm = newBookmark(doc, hint);
+  const bs = doc.createElementNS(NS_W, "w:bookmarkStart"), be = doc.createElementNS(NS_W, "w:bookmarkEnd");
+  bs.setAttributeNS(NS_W, "w:id", bm.id); bs.setAttributeNS(NS_W, "w:name", bm.name); be.setAttributeNS(NS_W, "w:id", bm.id);
+  p.appendChild(bs); p.appendChild(be);
+}
+function newBookmark(doc, hint) {                // 編號與名稱都避開文件裡現有的
+  let m = 0; const names = new Set(), bs = doc.getElementsByTagNameNS(NS_W, "bookmarkStart");
+  for (let i = 0; i < bs.length; i++) { const v = +wAttr(bs[i], "id"); if (v > m) m = v; names.add(wAttr(bs[i], "name") || ""); }
+  let n = +hint || 0, name;
+  do { name = CELL_MARK + n; n++; } while (names.has(name));
+  return { id: String(m + 1), name };
+}
+function colHeader(rows, at, col) {             // 往上找同一欄最近一格有字的，當欄標題
+  for (let r = at - 1; r >= 0; r--) {
+    const hit = rowCells(rows[r]).find(x => col >= x.col && col < x.col + x.span);
+    const t = hit && cellText(hit.tc); if (t) return t.slice(0, 24);
+  }
+  return "";
+}
+/* ── 表格裡的空白格：同一列相鄰的併成一題；題目用左邊的字，每格的名稱用欄標題 ── */
+function cellMerge(blocks) {
+  const out = [], rowsOf = new Map();
+  const cut = (t, n) => t.length > n ? t.slice(0, n) + "…" : t;
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (!b.cellFld) { out.push(b); continue; }
+    const grp = []; let j = i;
+    while (j < blocks.length && blocks[j].cellFld && blocks[j].tr === b.tr) grp.push(blocks[j++]);
+    const cells = rowCells(b.tr), first = cells.find(x => x.tc === grp[0].tc);
+    if (!rowsOf.has(b.tr)) rowsOf.set(b.tr, tblRows(b.tr));
+    const rows = rowsOf.get(b.tr), at = rows.indexOf(b.tr);
+    const before = first ? cells.filter(x => x.col < first.col).map(x => cellText(x.tc)).filter(Boolean) : [];
+    const left = before[before.length - 1] || "", lead = before[0] || "";
+    const rowLab = left && left.length <= 16 ? left : (lead || left);     // 「標題｜空格」取左邊那格；一整列項目取第一格
+    const labs = [];
+    for (const g of grp) {
+      const it = g.items[0], cell = cells.find(x => x.tc === g.tc);
+      it.label = (cell && colHeader(rows, at, cell.col)) || (cell ? "第 " + (cells.indexOf(cell) + 1) + " 欄" : "填寫");
+      labs.push(it.label);
+    }
+    if (!rowLab && labs.every(l => /^第 \d+ 欄$/.test(l))) { for (const g of grp) g.items[0].hidden = true; i = j - 1; continue; }   // 左邊、上面都沒有字可以說明這一格是什麼：不放到畫面上（多半是留白）
+    const nb = { kind: "q", text: cut(rowLab, 44) || (grp.length === 1 ? labs[0] : "（表格填寫）"), items: [], tr: b.tr, tc: grp[0].tc,
+                 cellFld: true, anchor: grp[0].anchor, find: rowLab + " " + labs.join(" ") };
+    for (const g of grp) { const it = g.items[0]; it.block = nb; nb.items.push(it); }
+    out.push(nb); i = j - 1;
+  }
+  blocks.length = 0; for (const b of out) blocks.push(b);
+}
+/* ── 可以附照片的位置 ─────────────────────────────────────
+   · 表格的空白格：照片放進那一格（接在你打的字後面）
+   · 其他每一題：照片接在那一題的後面
+   · 沒有格子可填、但標題寫著照片／圖片／平面圖／用印的地方：另外給一個只放照片的位置
+   表格勾選表（一格一個方框）不給放，格子太小。 */
+const RE_PHOTO = /照片|圖片|平面圖|示意圖|用印|簽章|蓋章/;
+const PH_MIN_DXA = 1400;                           // 可用寬度不到約 2.5 公分的地方不給放照片
+function cellOf(node) { for (let p = node.parentNode; p && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_W, "tc")) return p; return null; }
+const SDT_LEAF = [[NS_W, "text"], [NS_W, "date"], [NS_W, "comboBox"], [NS_W, "dropDownList"], [NS_W, "picture"], [NS_W14, "checkbox"]];
+function blockHost(node) {                         // 這個位置後面能不能再接一個段落
+  let p = node.parentNode;
+  for (let guard = 0; p && p.nodeType === 1 && guard < 12; guard++) {
+    if (isEl(p, NS_W, "body") || isEl(p, NS_W, "tc") || isEl(p, NS_W, "txbxContent")) return true;   // 內文、表格的格子、文字方塊（例如用印的框）
+    if (!isEl(p, NS_W, "sdtContent")) return false;                       // 表格的列、表格本身…：不行
+    const sdt = p.parentNode; if (!sdt || !isEl(sdt, NS_W, "sdt")) return false;
+    const pr = kid(sdt, NS_W, "sdtPr");
+    if (SDT_LEAF.some(([ns, n]) => kid(pr, ns, n))) return false;         // 純文字、日期、下拉這類控制項裡不能放圖
+    p = sdt.parentNode;
+  }
+  return false;
+}
+function photoOk(anchor) {
+  if (!anchor || !blockHost(anchor)) return false;
+  if (kid(kid(anchor, NS_W, "pPr"), NS_W, "sectPr")) return false;      // 這一段是一節的結尾：接在後面的照片會落到下一節
+  const tc = cellOf(anchor);
+  if (tc) {
+    let tr = tc.parentNode; while (tr && !isEl(tr, NS_W, "tr")) tr = tr.parentNode;
+    const h = kid(kid(tr, NS_W, "trPr"), NS_W, "trHeight");
+    if (h && wAttr(h, "hRule") === "exact") return false;       // 固定列高：照片會被切掉
+  }
+  return availDxa(anchor) >= PH_MIN_DXA;
+}
+function photoSlots(blocks, fields) {
+  const out = [], heads = new Set();               // 已經當成空白格欄標題的字：照片放進下面那一格，不另外在標題格給位置
+  for (const b of blocks) if (b.cellFld) for (const it of b.items) if (it.cell) heads.add(it.label);
+  const add = (blk, id, anchor, label) => {
+    if (!photoOk(anchor)) return false;
+    const it = { type: "ph", id, anchor, label, orig: "", block: blk, idx: fields.length };
+    fields.push(it); blk.items.push(it); return true;
+  };
+  const titled = b => b.anchor && b.ti >= 0 && b.text.length <= 70 && RE_PHOTO.test(b.text) &&
+                      !(b.tc && heads.has(b.text.replace(/[\s\u3000]+/g, " ").trim().slice(0, 24)));
+  for (const b of blocks) {
+    out.push(b);
+    if (b.kind === "head") {
+      if (titled(b)) {
+        const nb = { kind: "q", text: b.text, items: [], tr: b.tr, tc: b.tc, anchor: b.anchor, phOnly: true };
+        if (add(nb, "Pt" + b.ti, b.anchor, "")) out.push(nb);
+      }
+    } else if (b.grid) continue;
+    else if (b.cellFld) { for (const it of b.items.slice()) if (it.cell) add(b, "P" + it.id, kid(it.cell, NS_W, "p"), it.label); }
+    else if (b.altOnly) { if (titled(b)) add(b, "Pt" + b.ti, b.anchor, ""); }
+    else { const f0 = b.items.find(i => i.type !== "alt"); if (f0) add(b, "P" + f0.id, b.anchor, ""); }
   }
   blocks.length = 0; for (const b of out) blocks.push(b);
 }
@@ -704,6 +927,33 @@ function setText(f, val, plcStyle) {
       const rs = cont.getElementsByTagNameNS(NS_W, "rStyle");
       for (let i = rs.length - 1; i >= 0; i--) if (wAttr(rs[i], "val") === plcStyle) rs[i].parentNode.removeChild(rs[i]);
     }
+  } else if (f.cell) {
+    // 表格的空白格：在那一格的第一段加上文字，字型沿用那一段原本的設定（跟在 Word 裡直接打字一樣），
+    // 前後包一組隱形書籤，之後再打開這個檔還認得出來、可以改或清空
+    const p = kid(f.cell, NS_W, "p"); if (!p) return;
+    const doc = p.ownerDocument, old = cellOurs(f.cell);
+    if (old) for (const n of [old.start, ...old.runs, old.end]) p.removeChild(n);
+    if (val === "") {                                // 清空：這一格若有照片，留一組空書籤，之後還能再打字
+      if (f.cell.getElementsByTagNameNS(NS_W, "drawing").length) markCell(f.cell, f.id.slice(1));
+      return;
+    }
+    const r = doc.createElementNS(NS_W, "w:r");
+    const src = kid(kid(p, NS_W, "pPr"), NS_W, "rPr");
+    if (src) {
+      const pr = src.cloneNode(true);
+      for (let c = pr.firstElementChild, nx; c; c = nx) {      // 段落符號專用的修訂標記不能放在文字上；內文也不加粗（有的模板空白格的段落符號帶著粗體）
+        nx = c.nextElementSibling;
+        if (c.namespaceURI === NS_W && ["ins", "del", "moveFrom", "moveTo", "rPrChange", "b", "bCs"].includes(c.localName)) pr.removeChild(c);
+      }
+      if (pr.firstElementChild) r.appendChild(pr);
+    }
+    val.split("\n").forEach((line, k) => {
+      if (k) r.appendChild(doc.createElementNS(NS_W, "w:br"));
+      const t = doc.createElementNS(NS_W, "w:t"); t.textContent = line; t.setAttributeNS(NS_XML, "xml:space", "preserve"); r.appendChild(t);
+    });
+    const bs = doc.createElementNS(NS_W, "w:bookmarkStart"), be = doc.createElementNS(NS_W, "w:bookmarkEnd"), bm = newBookmark(doc, f.id.slice(1));
+    bs.setAttributeNS(NS_W, "w:id", bm.id); bs.setAttributeNS(NS_W, "w:name", bm.name); be.setAttributeNS(NS_W, "w:id", bm.id);
+    p.appendChild(bs); p.appendChild(r); p.appendChild(be);
   } else if (f.nodes) {
     // 舊式空白格：字寫進第一段空白，並從後面的空白吃掉等寬，版面不會被擠開
     const lens = f.nodes.map(n => colw(n.textContent || ""));
@@ -717,6 +967,219 @@ function setText(f, val, plcStyle) {
       f.nodes[j].setAttributeNS(NS_XML, "xml:space", "preserve");
     }
   }
+}
+
+/* ── 把「甲/乙」的其中一邊框起來／取消框 ───────────────────
+   做法跟在 Word 裡選字、加字元框線一樣：把那幾個字切成獨立的一小段，加上框線設定。
+   一律排在所有勾選與填字「之後」做，而且同一個文字節點從後面往前切，前面的位置才不會跑掉。 */
+const RPR_AFTER_BDR = ["shd", "fitText", "vertAlign", "rtl", "cs", "em", "lang", "eastAsianLayout", "specVanish", "oMath", "rPrChange"];
+function setFrame(r, on) {
+  const doc = r.ownerDocument; let pr = kid(r, NS_W, "rPr");
+  if (!pr) { if (!on) return; pr = doc.createElementNS(NS_W, "w:rPr"); r.insertBefore(pr, r.firstChild); }
+  const old = kid(pr, NS_W, "bdr"); if (old) pr.removeChild(old);
+  if (on) {
+    const b = doc.createElementNS(NS_W, "w:bdr");
+    b.setAttributeNS(NS_W, "w:val", "single"); b.setAttributeNS(NS_W, "w:sz", "4");
+    b.setAttributeNS(NS_W, "w:space", "0"); b.setAttributeNS(NS_W, "w:color", "auto");
+    let ref = null;
+    for (let c = pr.firstElementChild; c; c = c.nextElementSibling)
+      if (c.namespaceURI === NS_W && RPR_AFTER_BDR.includes(c.localName)) { ref = c; break; }
+    pr.insertBefore(b, ref);
+  } else if (!pr.firstElementChild) r.removeChild(pr);
+}
+function frameRange(t, a, b, on) {
+  const r = t.parentNode; if (!r || !isEl(r, NS_W, "r")) return;
+  const doc = r.ownerDocument, s = t.textContent || "";
+  if (a < 0 || b > s.length || a >= b) return;
+  const fresh = () => { const nr = doc.createElementNS(NS_W, "w:r"), pr = kid(r, NS_W, "rPr"); if (pr) nr.appendChild(pr.cloneNode(true)); return nr; };
+  const newT = (run, text) => { const nt = doc.createElementNS(NS_W, "w:t"); nt.textContent = text;
+                                nt.setAttributeNS(NS_XML, "xml:space", "preserve"); run.appendChild(nt); };
+  const mid = fresh(); newT(mid, s.slice(a, b)); setFrame(mid, on);
+  const tail = fresh(); let hasTail = false;
+  if (b < s.length) { newT(tail, s.slice(b)); hasTail = true; }
+  while (t.nextSibling) { tail.appendChild(t.nextSibling); hasTail = true; }       // 這個字後面同一小段裡的東西（定位點、換行）跟著搬到後段
+  r.parentNode.insertBefore(mid, r.nextSibling);
+  if (hasTail) r.parentNode.insertBefore(tail, mid.nextSibling);
+  if (a > 0) { t.textContent = s.slice(0, a); t.setAttributeNS(NS_XML, "xml:space", "preserve"); return; }
+  r.removeChild(t);                                                                // 前段沒有字了
+  let other = false;
+  for (let c = r.firstElementChild; c; c = c.nextElementSibling) if (!isEl(c, NS_W, "rPr")) other = true;
+  if (!other) r.parentNode.removeChild(r);
+}
+function applyFrames(fields, values) {
+  const ops = [];
+  for (const f of fields) {
+    if (f.type !== "alt" || !changed(f, values[f.id])) continue;
+    const want = new Set(String(values[f.id]).split(",").filter(Boolean).map(Number));
+    f.parts.forEach((part, i) => {
+      for (const g of part.segs) if (runFramed(g.t) !== want.has(i)) ops.push({ t: g.t, a: g.a, b: g.b, ti: g.ti, on: want.has(i) });
+    });
+  }
+  ops.sort((x, y) => x.ti - y.ti || y.a - x.a);
+  for (const o of ops) frameRange(o.t, o.a, o.b, o.on);
+}
+
+/* ── 照片 ──────────────────────────────────────────────────
+   值的格式：「一排幾張|照片代號,照片代號…」。照片本體另外存在手機，產檔時才取出來。
+   寫進 Word 的方式：在定位點後面加一段，照片一張接一張排，Word 會自己依寬度換行。 */
+const NS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const NS_WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
+const EMU_DXA = 635, EMU_CM = 360000;
+function phParse(v) {
+  const m = /^([123])\|(.*)$/.exec(String(v || ""));
+  return m ? { n: +m[1], ids: m[2].split(",").filter(Boolean) } : { n: 2, ids: [] };
+}
+const phJoin = (n, ids) => ids.length ? n + "|" + ids.join(",") : "";
+function availDxa(anchor) {                       // 定位點所在的那一格（或那一節的版面）可以放多寬
+  for (let p = anchor.parentNode; p && p.nodeType === 1; p = p.parentNode) {
+    if (isEl(p, NS_W, "tc")) break;
+    if (!isEl(p, NS_W, "txbxContent")) continue;
+    // 在文字方塊裡：寬度就是那個方塊的寬度（扣掉左右內距）；量不到就當作放不下
+    for (let q = p.parentNode; q && q.nodeType === 1; q = q.parentNode)
+      if (q.namespaceURI === NS_WP && (q.localName === "anchor" || q.localName === "inline")) {
+        const ex = q.getElementsByTagNameNS(NS_WP, "extent")[0], cx = ex ? +ex.getAttribute("cx") : 0;
+        return cx > 0 ? Math.round(cx / EMU_DXA) - 300 : 0;
+      }
+    return 0;
+  }
+  const doc = anchor.ownerDocument, tc = cellOf(anchor);
+  let page = 9000;
+  const sps = doc.getElementsByTagNameNS(NS_W, "sectPr");
+  let sec = sps[sps.length - 1];
+  for (let i = 0; i < sps.length; i++)             // 這一段屬於「在它之後第一個出現的節設定」
+    if (anchor.compareDocumentPosition(sps[i]) & 4) { sec = sps[i]; break; }
+  if (sec) {
+    const sz = kid(sec, NS_W, "pgSz"), mar = kid(sec, NS_W, "pgMar");
+    const w = +(wAttr(sz, "w") || 11906), l = +(wAttr(mar, "left") || 1800), rr = +(wAttr(mar, "right") || 1800);
+    if (w - l - rr > 2000) page = w - l - rr;
+  }
+  if (!tc) return page;
+  let tr = tc.parentNode; while (tr && !isEl(tr, NS_W, "tr")) tr = tr.parentNode;
+  let tbl = tr; while (tbl && !isEl(tbl, NS_W, "tbl")) tbl = tbl.parentNode;
+  const tw = kid(kid(tc, NS_W, "tcPr"), NS_W, "tcW");
+  let w = tw && wAttr(tw, "type") === "dxa" ? +wAttr(tw, "w") : 0;
+  if (!(w > 0)) {                                  // 沒寫寬度：用表格的欄寬加總
+    const cell = tr && rowCells(tr).find(x => x.tc === tc), grid = kid(tbl, NS_W, "tblGrid");
+    if (cell && grid) {
+      const cols = []; for (let g = grid.firstElementChild; g; g = g.nextElementSibling) if (isEl(g, NS_W, "gridCol")) cols.push(+(wAttr(g, "w") || 0));
+      w = cols.slice(cell.col, cell.col + cell.span).reduce((x, y) => x + y, 0);
+    }
+  }
+  if (!(w > 0)) return page;
+  const side = name => {                           // 格子左右的內距：先看這一格，再看整張表，都沒寫就用預設值
+    for (const box of [kid(kid(tc, NS_W, "tcPr"), NS_W, "tcMar"), kid(kid(tbl, NS_W, "tblPr"), NS_W, "tblCellMar")]) {
+      const e = kid(box, NS_W, name) || kid(box, NS_W, name === "left" ? "start" : "end");
+      if (e && (wAttr(e, "type") || "dxa") === "dxa" && wAttr(e, "w") != null) return +wAttr(e, "w");
+    }
+    return 108;
+  };
+  return Math.min(w - side("left") - side("right") - 30, page);
+}
+function drawingRun(doc, rid, cx, cy, uid) {
+  const xml = '<w:r xmlns:w="' + NS_W + '" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"' +
+    ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"' +
+    ' xmlns:r="' + NS_REL + '"><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+    '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:docPr id="' + uid + '" name="照片 ' + uid + '"/>' +
+    '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
+    '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic>' +
+    '<pic:nvPicPr><pic:cNvPr id="' + uid + '" name="photo' + uid + '.jpeg"/><pic:cNvPicPr/></pic:nvPicPr>' +
+    '<pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+    '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
+  const frag = new DOMParser().parseFromString(xml, "application/xml");
+  if (frag.getElementsByTagName("parsererror").length) throw new Error("照片寫入失敗");
+  return doc.importNode(frag.documentElement, true);
+}
+/* 把照片寫進文件；回傳要新增／改寫的壓縮檔項目。沒有照片就回傳 null（壓縮檔其餘部分完全不動）。 */
+const XML_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+function parseXml(text, what) {
+  const x = new DOMParser().parseFromString(text, "application/xml");
+  if (x.getElementsByTagName("parsererror").length || !x.documentElement) throw new Error("這份文件的" + what + "讀不懂，沒辦法附照片");
+  return x;
+}
+function addChildren(xdoc, tag, items, first) {      // 在根元素裡加幾個子元素，重新輸出整份（註解、宣告都照 XML 規則處理，不靠字串比對）
+  const root = xdoc.documentElement, made = [];
+  for (const a of items) {
+    const e = xdoc.createElementNS(root.namespaceURI, (root.prefix ? root.prefix + ":" : "") + tag);
+    for (const [k, v] of Object.entries(a)) e.setAttribute(k, v);
+    if (first) root.insertBefore(e, root.firstChild); else root.appendChild(e);
+    made.push(e);
+  }
+  let out = new XMLSerializer().serializeToString(xdoc);
+  if (!/^\s*<\?xml/.test(out)) out = XML_HEAD + out;
+  // 核對：重新讀一次，新加的每一筆都要真的在根元素底下
+  const back = parseXml(out, "內容"), kids = [...back.documentElement.children];
+  for (const a of items)
+    if (!kids.some(e => e.localName === tag && Object.entries(a).every(([k, v]) => e.getAttribute(k) === v))) throw new Error("照片的登記資料沒有寫成功，為了安全不匯出");
+  return out;
+}
+async function applyPhotos(d, values, getPhoto) {
+  const jobs = d.model.fields.filter(f => f.type === "ph" && phParse(values[f.id]).ids.length);
+  if (!jobs.length) return null;
+  if (!getPhoto) throw new Error("這份有附照片，但現在讀不到照片（請回個案裡再匯出）");
+  const dec = new TextDecoder("utf-8"), enc = new TextEncoder();
+  const relE = d.entries.find(x => x.name === "word/_rels/document.xml.rels"), ctE = d.entries.find(x => x.name === "[Content_Types].xml");
+  if (!relE || !ctE) throw new Error("這份文件的結構不完整，沒辦法附照片");
+  const rels = dec.decode(await entryBytes(relE)), ct = dec.decode(await entryBytes(ctE));
+  const relDoc = parseXml(rels, "關聯表"), ctDoc = parseXml(ct, "類型表");
+  // 類型表：找現成的 JPEG 副檔名；沒有就加一行；兩種副檔名都被別的類型佔用就不做
+  const defs = new Map();
+  for (const e of ctDoc.documentElement.children) if (e.localName === "Default")
+    defs.set((e.getAttribute("Extension") || "").toLowerCase(), (e.getAttribute("ContentType") || "").toLowerCase());
+  let ext = null, ctNew = null;
+  for (const x of ["jpeg", "jpg"]) if (defs.get(x) === "image/jpeg") { ext = x; break; }
+  if (!ext) {
+    ext = !defs.has("jpeg") ? "jpeg" : !defs.has("jpg") ? "jpg" : null;
+    if (!ext) throw new Error("這份文件的類型表很特殊，沒辦法附照片");
+    ctNew = addChildren(ctDoc, "Default", [{ Extension: ext, ContentType: "image/jpeg" }], true);
+  }
+  // 關聯編號、圖片編號：把現有的全部收起來，新的一律避開
+  const rids = new Set(); let rn = 0;
+  for (const e of relDoc.documentElement.children) { const id = e.getAttribute("Id"); if (id) { rids.add(id); const m = /^rId(\d+)$/.exec(id); if (m) rn = Math.max(rn, +m[1]); } }
+  const newRid = () => { let id; do { id = "rId" + (++rn); } while (rids.has(id)); rids.add(id); return id; };
+  const uids = new Set(); let un = 0;
+  const dps = d.doc.getElementsByTagNameNS(NS_WP, "docPr");
+  for (let i = 0; i < dps.length; i++) { const v = dps[i].getAttribute("id"); if (v != null) { uids.add(String(v)); if (/^\d+$/.test(v)) un = Math.max(un, +v); } }
+  const newUid = () => { let id; do { id = String(++un); } while (uids.has(id)); uids.add(id); return id; };
+  const names = new Set(d.entries.map(e => e.name.toLowerCase()));
+  const media = [], addRel = [];
+  let seq = 0;
+  for (const f of jobs) {
+    const v = phParse(values[f.id]), doc = f.anchor.ownerDocument;
+    const avail = Math.max(600, availDxa(f.anchor)) * EMU_DXA, gap = 0.12 * EMU_CM;
+    const wEach = Math.floor((avail - (v.n - 1) * gap) / v.n);
+    const p = doc.createElementNS(NS_W, "w:p"), pPr = doc.createElementNS(NS_W, "w:pPr");
+    const sp = doc.createElementNS(NS_W, "w:spacing");                 // 行距固定用「自動」：不然遇到固定行高的段落，照片會被切掉
+    for (const [k, val] of [["before", "40"], ["after", "40"], ["line", "240"], ["lineRule", "auto"]]) sp.setAttributeNS(NS_W, "w:" + k, val);
+    const ind = doc.createElementNS(NS_W, "w:ind");
+    for (const k of ["left", "right", "firstLine"]) ind.setAttributeNS(NS_W, "w:" + k, "0");
+    const snap = doc.createElementNS(NS_W, "w:snapToGrid"); snap.setAttributeNS(NS_W, "w:val", "0");
+    pPr.appendChild(snap); pPr.appendChild(sp); pPr.appendChild(ind); p.appendChild(pPr);
+    let k = 0;
+    for (const id of v.ids) {
+      const ph = await getPhoto(id);
+      if (!ph || !ph.bytes || !(ph.w > 0) || !(ph.h > 0)) throw new Error("有一張照片在手機裡找不到了，請回那一題把它移除再匯出");
+      seq++;
+      let name, dup = 0; do { name = "word/media/afphoto" + seq + (dup ? "_" + dup : "") + "." + ext; dup++; } while (names.has(name.toLowerCase()));
+      names.add(name.toLowerCase());
+      const bytes = new Uint8Array(ph.bytes), rid = newRid();
+      media.push({ name, method: 0, time: d.de.time, date: d.de.date, crc: crc32(bytes), usize: bytes.length, raw: bytes });
+      addRel.push({ Id: rid, Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", Target: name.slice(5) });
+      let cx = wEach, cy = Math.round(cx * ph.h / ph.w);
+      const maxH = 20 * EMU_CM; if (cy > maxH) { cy = maxH; cx = Math.round(cy * ph.w / ph.h); }
+      if (k++) { const s2 = doc.createElementNS(NS_W, "w:r"), t2 = doc.createElementNS(NS_W, "w:t");
+                 t2.textContent = " "; t2.setAttributeNS(NS_XML, "xml:space", "preserve"); s2.appendChild(t2); p.appendChild(s2); }
+      p.appendChild(drawingRun(doc, rid, cx, cy, newUid()));
+    }
+    if (!blockHost(f.anchor)) throw new Error("有一張照片放的位置，文件結構不允許放圖。請把它移到別的題目再匯出");
+    f.anchor.parentNode.insertBefore(p, f.anchor.nextSibling);
+    if (/^Pc\d+$/.test(f.id)) { const tc = cellOf(f.anchor); if (tc) markCell(tc, f.id.slice(2)); }   // 空白格放了照片：留記號，之後再打開這一格還能打字
+  }
+  const pack = async (e, bytes) => { const z = await deflateRaw(bytes);
+    return { ...e, method: z ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: z || bytes }; };
+  const swap = new Map([[relE, await pack(relE, enc.encode(addChildren(relDoc, "Relationship", addRel, false)))]]);
+  if (ctNew) swap.set(ctE, await pack(ctE, enc.encode(ctNew)));
+  return { swap, media };
 }
 
 /* ── 開檔、產檔 ─────────────────────────────────────────── */
@@ -740,8 +1203,9 @@ function changed(f, v) {
   if (v === undefined) return false;
   return f.type === "cb" ? !!v !== f.orig : String(v) !== f.orig;
 }
-/* 從「原檔」重新建一份，只寫有改動的格子。回傳 Uint8Array。 */
-async function buildDocx(origAb, values) {
+/* 從「原檔」重新建一份，只寫有改動的格子。回傳 Uint8Array。
+   getPhoto(照片代號) → { bytes, w, h }；沒附照片的報告不需要傳。 */
+async function buildDocx(origAb, values, getPhoto) {
   const d = await openDocx(origAb);
   if (!d.model.integ.ok) throw new Error("這份模板有對不上的勾選項，為了安全不匯出（請回報）");
   const plc = await placeholderStyle(d.entries);
@@ -749,14 +1213,17 @@ async function buildDocx(origAb, values) {
   for (const f of d.model.fields) {
     known.add(f.id);
     const v = values[f.id];
-    if (!changed(f, v)) continue;
+    if (f.type === "alt" || f.type === "ph" || !changed(f, v)) continue;
     if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc);
   }
   for (const k of Object.keys(values)) if (!known.has(k)) throw new Error("草稿與這份模板對不上（模板可能換過版），為了安全不匯出");
+  applyFrames(d.model.fields, values);              // 框線放在勾選與填字之後
+  const ph = await applyPhotos(d, values, getPhoto);  // 照片最後
   const bytes = new TextEncoder().encode(new XMLSerializer().serializeToString(d.doc));
   const packed = await deflateRaw(bytes);
-  return writeZip(d.entries.map(e => e !== d.de ? e :
-    { ...e, method: packed ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: packed || bytes }));
+  const out = d.entries.map(e => e === d.de ? { ...e, method: packed ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: packed || bytes }
+                                 : (ph && ph.swap.get(e)) || e);
+  return writeZip(ph ? out.concat(ph.media) : out);
 }
 </script>
 
@@ -819,8 +1286,14 @@ async function kvGet(k, d) { const v = await DB.get("kv", k); return v === undef
 
 /* ── 畫面切換 ───────────────────────────────────────────── */
 const VIEWS = ["v-home", "v-case", "v-basic", "v-tpl", "v-set"];
+function endSession() {                          // 離開填寫畫面：這一次開啟到此為止
+  if (!S.ses) return;
+  for (const u of S.ses.urls) URL.revokeObjectURL(u);
+  S.ses.urls.clear(); S.ses = null;
+}
 function show(view) {
   NAV++;
+  if (view !== "editor") endSession();
   for (const v of VIEWS) $(v).hidden = v !== view;
   const ed = view === "editor";
   $("bar").hidden = !ed; $("app").hidden = !ed; $("foot").hidden = !ed;
@@ -872,7 +1345,7 @@ $("sheet").onclick = e => { if (e.target === $("sheet")) closeSheet(); };
 
 /* ══ 填寫畫面 ═══════════════════════════════════════════════ */
 const S = { mode: "", ab: null, name: "", sha: "", model: null, values: {}, auto: {}, no: {},
-            caseId: "", rid: "", outName: "", dirty: false };
+            caseId: "", rid: "", outName: "", dirty: false, ses: null };
 const cur = f => S.values[f.id] !== undefined ? S.values[f.id] : f.orig;
 function setVal(f, v) {
   const a = S.auto[f.id];
@@ -888,6 +1361,11 @@ async function startEditor(o) {              // o: {mode, ab, name, values, auto
   if (!d.model.fields.length) throw new Error("這份文件裡找不到可勾選或可填寫的欄位");
   Object.assign(S, { mode: o.mode, ab: o.ab, name: o.name, model: d.model, values: o.values || {}, auto: o.auto || {}, no: o.no || {},
                      caseId: o.caseId || "", rid: o.rid || "", outName: o.outName || "", dirty: false });
+  endSession();
+  // 「這一次開啟」：照片的暫存、排隊中的照片作業、縮圖網址都掛在它身上；換個案或離開後，晚到的作業一律作廢
+  S.ses = { caseId: S.caseId, rid: S.rid, ph: new Map(), q: Promise.resolve(), urls: new Set(), lock: 0 };
+  if (o.mode !== "case") for (const f of d.model.fields) if (f.type === "ph") delete S.values[f.id];   // 照片只在個案裡才能附
+  document.body.classList.remove("phmode"); $("phmode").classList.remove("on"); $("phmode").hidden = o.mode !== "case";
   const ids = new Set(d.model.fields.map(f => f.id));     // 草稿裡對不上這份模板的項目一律丟掉，不亂套
   for (const k of Object.keys(S.values)) if (!ids.has(k)) delete S.values[k];
   for (const k of Object.keys(S.auto)) if (!ids.has(k)) delete S.auto[k];
@@ -895,11 +1373,13 @@ async function startEditor(o) {              // o: {mode, ab, name, values, auto
   $("fname").textContent = o.title || o.name.replace(/\.docx$/i, "");
   $("reset").hidden = o.mode === "case";
   $("search").value = "";
+  freezeEditor(false);
   show("editor"); render();
   $("status").textContent = d.model.integ.ok ? "—" : "";
 }
 function render() {
   const app = $("app"), jump = $("jump");
+  if (S.ses) { for (const u of S.ses.urls) URL.revokeObjectURL(u); S.ses.urls.clear(); }
   app.textContent = ""; jump.textContent = "";
   jump.appendChild(new Option("跳到章節…", ""));
   const frag = document.createDocumentFragment();
@@ -914,6 +1394,7 @@ function render() {
       d.id = id; frag.appendChild(d); jump.appendChild(new Option(b.text, id));
       continue;
     }
+    if (b.phOnly && S.mode !== "case") continue;
     frag.appendChild(card(b));
   }
   app.appendChild(frag);
@@ -921,9 +1402,10 @@ function render() {
 }
 function card(b) {
   const c = mk("div", "card");
-  c.dataset.txt = b.text;
+  c.dataset.txt = b.find || b.text;
   c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
   const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt");
+  const alts = b.items.filter(i => i.type === "alt"), phs = b.items.filter(i => i.type === "ph");
   if (cbs.length) {
     const wrap = mk("div", "chips");
     cbs.forEach(f => {
@@ -969,8 +1451,132 @@ function card(b) {
       mark(inp); c.appendChild(inp);
     }
   });
+  alts.forEach(f => c.appendChild(altRow(f)));
+  if (S.mode === "case") phs.forEach(f => c.appendChild(photoRow(f, b, phs.length > 1)));
   return c;
 }
+/* 「甲/乙」：點一下把那一邊框起來，再點一下取消 */
+function altRow(f) {
+  const row = mk("div", "altrow"); row.appendChild(mk("span", "", (f.ctx ? f.ctx + " " : "") + "框選："));
+  const sel = () => new Set(String(cur(f) || "").split(",").filter(Boolean).map(Number));
+  f.parts.forEach((part, i) => {
+    const el = mk("div", "chip alt", part.text); el.dataset.fid = f.id + ":" + i;
+    const paint = () => el.classList.toggle("on", sel().has(i));
+    el.onclick = () => { const s2 = sel(); if (s2.has(i)) s2.delete(i); else s2.add(i);
+                         setVal(f, [...s2].sort((a, b) => a - b).join(",")); paint(); };
+    paint(); row.appendChild(el);
+  });
+  return row;
+}
+/* 照片：只在個案裡才有。照片存在手機本機，縮小後才存（長邊 1600 點），匯出時放進 Word。 */
+const PH_MAX = 12 * 1024 * 1024;                  // 一份報告的照片總量上限（轉 PDF 的上傳上限是 15MB）
+const phKeyOf = (ses, id) => ses.caseId + "|" + ses.rid + "|" + id;
+/* 把排隊中的照片作業全部做完：等的途中如果又排進新的，就繼續等到真的沒有為止 */
+async function drainPhotos(ses) {
+  if (!ses) return;
+  let q;
+  do { q = ses.q; await q; } while (ses.q !== q);
+}
+async function getPhotoOf(ses, id) {
+  let ph = ses.ph.get(id);
+  if (!ph) { ph = await DB.get("files", phKeyOf(ses, id)); if (ph) ses.ph.set(id, ph); }
+  return ph;
+}
+async function photoTotal(ses) {
+  let n = 0;
+  for (const f of S.model.fields) if (f.type === "ph")
+    for (const id of phParse(cur(f)).ids) { const ph = await getPhotoOf(ses, id); if (ph) n += ph.bytes.byteLength; }
+  return n;
+}
+function shrinkPhoto(file) {                     // 用 <img> 讀：手機拍的方向資訊會自動轉正，HEIC 也讀得了
+  return new Promise((res, rej) => {
+    const im = new Image(), u = URL.createObjectURL(file);
+    const fail = e => { URL.revokeObjectURL(u); rej(e instanceof Error ? e : new Error("這張照片讀不了")); };
+    im.onerror = () => fail();
+    im.onload = () => {
+      try {
+        const W = im.naturalWidth, H = im.naturalHeight, k = Math.min(1, 1600 / Math.max(W, H));
+        if (!(W > 0) || !(H > 0)) return fail();
+        const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(W * k)); cv.height = Math.max(1, Math.round(H * k));
+        const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height);
+        cv.toBlob(b => {
+          if (!b) return fail(new Error("這張照片轉不出來"));
+          b.arrayBuffer().then(bytes => { URL.revokeObjectURL(u); res({ bytes, w: cv.width, h: cv.height }); }, fail);
+        }, "image/jpeg", 0.82);
+      } catch (e) { fail(e); }
+    };
+    im.src = u;
+  });
+}
+function photoRow(f, b, named) {
+  const ses = S.ses;                             // 這一列屬於哪一次開啟；之後每一步都先確認還是同一次
+  const live = () => S.ses === ses && !!S.model;
+  const row = mk("div", "phrow"), thumbs = mk("div", "phthumbs"), ctl = mk("div", "phctl");
+  const always = !!(b.cellFld || b.phOnly);
+  const st = () => phParse(cur(f));
+  const short = f.label && f.label.length > 12 ? f.label.slice(0, 12) + "…" : f.label;
+  const lab = mk("label", "btn sm"), lt = mk("span", "", "＋照片" + (named && short ? "（" + short + "）" : ""));
+  const idle = lt.textContent;
+  const inp = mk("input", "vh"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true; inp.dataset.fid = f.id;
+  lab.appendChild(lt); lab.appendChild(inp);
+  const nSel = mk("select"); [1, 2, 3].forEach(n => nSel.appendChild(new Option("一排 " + n + " 張", String(n))));
+  nSel.dataset.fid = f.id + ":n";
+  let mine = [];                                 // 這一列自己建的縮圖網址：重畫時先收掉
+  const paint = () => {
+    for (const u of mine) { URL.revokeObjectURL(u); ses.urls.delete(u); }
+    mine = [];
+    const v = st(); thumbs.textContent = ""; nSel.value = String(v.n); nSel.hidden = !v.ids.length;
+    row.classList.toggle("show", always || v.ids.length > 0);
+    for (const id of v.ids) {
+      const box = mk("div", "phthumb"), im = mk("img"), x = mk("button", "", "✕");
+      im.alt = "照片";
+      x.onclick = () => { if (ses.lock) return toast("正在匯出或離開，請稍候再調整照片"); enqueue(async () => {
+        if (!live()) return;
+        const w = st(); setVal(f, phJoin(w.n, w.ids.filter(k => k !== id))); paint();
+        const saved = await flush();             // 先把「不再引用這張」存進草稿，存成功才真的刪照片
+        if (!saved || !live()) return;
+        ses.ph.delete(id);
+        try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {}
+      }); };
+      box.appendChild(im); box.appendChild(x); thumbs.appendChild(box);
+      getPhotoOf(ses, id).then(ph => {
+        if (!live() || !box.isConnected) return;
+        if (!ph) { box.appendChild(mk("div", "fhint", "找不到")); return; }
+        const u = URL.createObjectURL(new Blob([ph.bytes], { type: "image/jpeg" })); mine.push(u); ses.urls.add(u); im.src = u;
+      }).catch(() => {});
+    }
+  };
+  // 照片作業一律排隊、一件一件做：容量檢查才準，匯出也才等得到「全部做完」
+  const enqueue = job => { ses.q = ses.q.then(job).catch(e => { if (live()) toast("照片沒處理成功：" + (e.message || e), true); }); return ses.q; };
+  nSel.onchange = () => { const v = st(); setVal(f, phJoin(+nSel.value, v.ids)); };
+  inp.onchange = () => {
+    const files = [...(inp.files || [])]; inp.value = "";
+    if (!files.length) return;
+    if (ses.lock) return toast("正在匯出或離開，請稍候再加照片");
+    lt.textContent = "處理中…";
+    enqueue(async () => {
+      for (const file of files) {
+        if (!live()) return;
+        let ph;
+        try { ph = await shrinkPhoto(file); } catch (e) { if (live()) toast("有一張照片讀不了，已略過", true); continue; }
+        if (!live()) return;
+        if (await photoTotal(ses) + ph.bytes.byteLength > PH_MAX) { if (live()) toast("這份報告的照片太多了（上限約 12MB），後面的沒有加進去", true); break; }
+        if (!live()) return;
+        const id = "ph_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        await DB.put("files", phKeyOf(ses, id), { bytes: ph.bytes, w: ph.w, h: ph.h, at: Date.now() });
+        if (!live()) { try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {} return; }   // 存好才發現已經離開：這張不留
+        ses.ph.set(id, ph);
+        const v = st(); setVal(f, phJoin(v.n, v.ids.concat(id)));
+      }
+    }).then(() => { if (live()) { lt.textContent = idle; paint(); } });
+  };
+  ctl.appendChild(lab); ctl.appendChild(nSel);
+  row.appendChild(thumbs); row.appendChild(ctl);
+  paint();
+  return row;
+}
+$("phmode").onclick = () => { const on = document.body.classList.toggle("phmode"); $("phmode").classList.toggle("on", on);
+                              toast(on ? "每一題下面都會出現「＋照片」" : "已收起（有照片的題目仍會顯示）"); };
 function grow(el) {
   if (el.tagName !== "TEXTAREA" || el.clientWidth < 60) return;      // 版面還沒算好就別量
   el.style.height = "auto";
@@ -981,7 +1587,7 @@ function growAll() {
 }
 function counts(model, values) {
   const v = f => values[f.id] !== undefined ? values[f.id] : f.orig;
-  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt");
+  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt" && !f.hidden);
   return { cb: cb.length, tx: tx.length, on: cb.filter(f => v(f)).length, fi: tx.filter(f => v(f)).length };
 }
 function refreshCount() {
@@ -990,7 +1596,7 @@ function refreshCount() {
 }
 const draftKey = () => S.mode === "case" ? S.caseId + "|" + S.rid : "af4:" + S.sha;
 let saveT = null;
-function save() { S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400); }
+function save() { if (!S.model) return; S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400); }
 /* 回傳 true＝草稿確實存進手機了（或本來就沒有要存的）；false＝沒存成功。一次只跑一個，後呼叫的排在前一個後面。 */
 let flushP = Promise.resolve(true);
 function flush() { flushP = flushP.then(doFlush, doFlush); return flushP; }
@@ -1030,38 +1636,56 @@ $("reset").onclick = () => {
   if (!confirm("清空這份的所有勾選與填寫？（原本的檔案不會變）")) return;
   S.values = {}; S.auto = {}; S.no = {}; S.dirty = true; flush(); render(); toast("已清空");
 };
+function freezeEditor(on) {                      // 鎖住／解開整個填寫畫面（鎖住時點不到、打不了字）
+  for (const id of ["bar", "app", "foot"]) $(id).inert = !!on;
+  if (on && document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
 $("ed-back").onclick = async () => {
-  if (!(await flush()) && !confirm("草稿沒有存進手機。現在離開，剛才改的內容會不見。\n\n建議按「取消」，先按「匯出 Word」把內容保住。\n\n確定要離開嗎？")) return;
+  const ses = S.ses;
+  freezeEditor(true);                              // 從這一刻起不能再改，才談得上「都存好了」
+  $("status").textContent = "正在存檔，請稍候…"; $("status").className = "st";
+  if (ses) { ses.lock++; await drainPhotos(ses); } // 先擋住新的照片操作，再把還在處理的做完
+  if (ses && S.ses !== ses) { freezeEditor(false); return; }
+  let ok = await flush();
+  while (ok && S.dirty) ok = await flush();        // 存檔途中才進來的修改：再存一次，直到沒有待存的
+  if (!ok && !confirm("草稿沒有存進手機。現在離開，剛才改的內容會不見。\n\n建議按「取消」，先按「匯出 Word」把內容保住。\n\n確定要離開嗎？")) { if (ses) ses.lock--; freezeEditor(false); $("status").textContent = "⚠️ 草稿沒存成功，請先按「匯出 Word」保住內容"; $("status").className = "st st-bad"; return; }
+  // 確定離開：畫面維持鎖住，直到下一次進填寫畫面才解開（個案頁還沒出現前的那一小段時間，不能再有修改進來）
   const mode = S.mode, cid = S.caseId;
   S.model = null; S.dirty = false;                 // 離開填寫畫面：之後不會再有東西把這份草稿寫回去
-  if (mode === "case") openCase(cid); else goHome();
+  if (mode === "case") openCase(cid).catch(() => goHome()); else goHome();
 };
 $("export").onclick = async () => {
   const btn = $("export"); btn.disabled = true; btn.textContent = "產生中…";
+  const ses = S.ses;
+  if (ses) ses.lock++;                             // 匯出期間不收新的照片操作
   try {
+    await drainPhotos(ses);                        // 還在處理的照片先做完，才不會匯出一份少照片的檔
+    if (ses && S.ses !== ses) return;
     const saved = await flush();
+    // 把「按下匯出這一刻」的內容整份固定住：產檔、存檔、判斷是不是最新版都用這一份；之後再改的算下一版
+    const snap = { values: { ...S.values }, auto: { ...S.auto }, no: { ...S.no } };
     if (S.mode === "case") {
-      // 一律用「畫面上當下的內容」產檔，不回頭讀手機裡可能沒存成功的舊草稿
       let f;
-      try { f = await exportReport(S.caseId, S.rid, { values: S.values, auto: S.auto, no: S.no }); }
+      try { f = await exportReport(S.caseId, S.rid, snap); }
       catch (e) {
         // 救援：手機的儲存讀不到或寫不進去時，直接用畫面上這份模板與內容產檔。
         // 模板本身對不上（完整性檢查沒過）時，buildDocx 會再丟一次錯，照樣不匯出。
-        const bytes = await buildDocx(S.ab, S.values);
+        const bytes = await buildDocx(S.ab, snap.values, ses ? id => getPhotoOf(ses, id) : null);
         f = { name: S.outName || (safeName(S.name) + ".docx"), bytes, type: DOCX_MIME, stored: false };
       }
       await offerShare([f]);
       if (!saved || !f.stored) { toast("Word 已用畫面上的內容產生，但手機裡沒存成功。請務必把這份 Word 存好。", true); return; }
     }
     else {
-      const bytes = await buildDocx(S.ab, S.values);
+      const bytes = await buildDocx(S.ab, snap.values);
       const sent = await offerShare([{ name: S.name.replace(/\.docx$/i, "").replace(/_已填寫$/, "") + "_已填寫.docx", bytes, type: DOCX_MIME }]);
-      if (sent) { clearTimeout(saveT); S.dirty = false; try { localStorage.removeItem(draftKey()); } catch (e) {}
+      if (sent && valsKey(S.values) === valsKey(snap.values)) {   // 匯出途中沒有再改，才把草稿收掉
+                  clearTimeout(saveT); S.dirty = false; try { localStorage.removeItem(draftKey()); } catch (e) {}
                   $("status").textContent = "已匯出。要接著改，請開剛才存下來的那個檔。"; }
     }
     toast("Word 已產生");
   } catch (err) { toast("匯出失敗：" + (err.message || err), true); }
-  finally { btn.disabled = false; btn.textContent = "匯出 Word"; }
+  finally { if (ses) ses.lock--; btn.disabled = false; btn.textContent = "匯出 Word"; }
 };
 
 /* 直接開一份 docx（Mac 先灌好的檔、或之前匯出想接著填的檔） */
@@ -1465,7 +2089,10 @@ async function loadReport(caseId, rid, live) {   // 取出模板、草稿（或�
   const before = valsKey(o.values) + valsKey(o.auto);
   o.model = (await openDocx(ab)).model;
   applyAuto(o.model, o.values, o.auto, o.no, mapBasic(o.model, c));
-  if (live || before !== valsKey(o.values) + valsKey(o.auto) || !dr.values) {
+  // live＝填寫畫面按下匯出那一刻的快照：只拿來產檔與記錄版本，不寫回草稿
+  // （草稿由填寫畫面自己的存檔流程負責；這裡若回寫，會把匯出途中才打的字蓋掉）
+  const editing = !!S.model && S.mode === "case" && S.caseId === caseId && S.rid === rid;   // 填寫畫面正開著這一份（例如背景在補轉 PDF）
+  if (!live && !editing && (before !== valsKey(o.values) + valsKey(o.auto) || !dr.values)) {
     try { await DB.put("drafts", caseId + "|" + rid, { values: o.values, auto: o.auto, no: o.no, sha: r.tplSha, at: Date.now() }); }
     catch (e) { o.saved = false; }
   }
@@ -1481,12 +2108,18 @@ async function openReport(rid) {
   S.sha = o.r.tplSha;
   await startEditor({ mode: "case", ab: o.ab, name: o.r.title, title: o.r.title, values: o.values, auto: o.auto, no: o.no, caseId: cid, rid,
                       outName: outName(o.c, o.r, "docx") });
+  try {                                          // 清掉沒有被任何題目用到的照片（例如加到一半 App 被關掉留下的）
+    const used = new Set(), pre = cid + "|" + rid + "|ph_";
+    for (const f of S.model.fields) if (f.type === "ph") for (const id of phParse(S.values[f.id]).ids) used.add(cid + "|" + rid + "|" + id);
+    const keys = await DB.tx("files", "readonly", st => st.getAllKeys(IDBKeyRange.bound(pre, pre + "\uffff")));
+    for (const k of keys || []) if (!used.has(String(k))) await DB.del("files", k);
+  } catch (e) {}
 }
 /* 產 Word，並把確切內容與雜湊值存在手機（PDF 就是用這一份轉）。
    live＝畫面上當下的內容（從填寫畫面按匯出時傳進來）；stored＝有沒有成功存進手機 */
 async function exportReport(caseId, rid, live) {
   const o = await loadReport(caseId, rid, live);
-  const bytes = await buildDocx(o.ab, o.values);
+  const bytes = await buildDocx(o.ab, o.values, id => DB.get("files", caseId + "|" + rid + "|" + id));
   const rec = { bytes: bytes.buffer, sha: await sha256(bytes), name: outName(o.c, o.r, "docx"), at: Date.now(),
                 vk: valsKey(o.values), brev: o.c.brev || 0 };
   let stored = o.saved;
