@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K4XaoEWYzdfSrFp4O/cUXBxRjtHXa29Kr1JUTfuKNVM=' 'sha256-UEcsyl8A3YishNHiL7J/FD0nfwdRcaKDQPJpWV4D510='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,106 +14,202 @@
 :root{
   --orange:#D65A31; --gold:#E6AF2E; --brown:#4B3621; --cream:#FAF6F0;
   --bg:#ffffff; --fg:#1c1917; --muted:#78716c; --line:#e7e5e4; --card:#ffffff;
-  --chip:#f5f5f4; --ok:#15803d;
+  --chip:#f5f5f4; --ok:#15803d; --bad:#b91c1c; --warn:#a16207;
 }
 @media (prefers-color-scheme:dark){
-  :root{--bg:#1c1917;--fg:#fafaf9;--muted:#a8a29e;--line:#44403c;--card:#292524;--chip:#3a3532;--cream:#292524}
+  :root{--bg:#1c1917;--fg:#fafaf9;--muted:#a8a29e;--line:#44403c;--card:#292524;--chip:#3a3532;--cream:#292524;
+        --ok:#4ade80;--bad:#f87171;--warn:#facc15}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
   font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
 body{padding-bottom:env(safe-area-inset-bottom)}
 button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
 
-/* ── 頂部 ── */
-header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
+/* ── 一般頁面 ── */
+.view{padding:calc(env(safe-area-inset-top) + 14px) 14px 40px;max-width:680px;margin:0 auto}
+.view h1{font-size:20px;margin:0 0 2px}
+.view h2{font-size:15px;margin:22px 0 8px;color:var(--orange);border-left:4px solid var(--gold);padding-left:9px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.top .title{font-weight:700;font-size:17px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.back{border:0;background:none;color:var(--orange);font-weight:600;padding:8px 6px 8px 0;cursor:pointer;white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 15px;
+  font-weight:600;cursor:pointer;white-space:nowrap;display:inline-block;text-align:center}
+.btn.pri{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.wide{display:block;width:100%;margin:8px 0}
+.btn.sm{padding:7px 11px;font-size:14px}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.btn:disabled{opacity:.5}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:8px 0}
+.box.tap{cursor:pointer}
+.box .t{font-weight:600;word-break:break-word}
+.box .s{font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-word}
+.rowbtns{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.note{font-size:13.5px;border-radius:11px;padding:10px 12px;margin:10px 0;background:var(--cream);line-height:1.65}
+.note.bad{background:color-mix(in srgb,var(--bad) 12%,var(--bg));color:var(--bad);font-weight:600}
+.note.warn{background:color-mix(in srgb,var(--gold) 18%,var(--bg))}
+.tag{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:1px;
+  background:color-mix(in srgb,var(--gold) 28%,var(--bg));color:var(--brown)}
+@media (prefers-color-scheme:dark){.tag{color:var(--gold)}}
+.st-ok{color:var(--ok)} .st-bad{color:var(--bad)} .st-warn{color:var(--warn)}
+.ver{margin-top:26px;font-size:11px;color:var(--muted);text-align:center}
+.frm label{display:block;font-size:13px;color:var(--muted);margin:11px 0 3px}
+.frm input[type=text],.frm input[type=tel],.frm input[type=date],.frm input[type=number],.frm textarea,.frm select{
+  display:block;width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.frm .inline{display:flex;gap:8px;align-items:center}
+.frm .inline input{flex:1;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1.5px solid var(--line);background:var(--chip);border-radius:999px;
+  padding:9px 14px;font-size:14.5px;cursor:pointer;user-select:none;-webkit-user-select:none;line-height:1.2}
+.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:600}
+.chip .bx{margin-right:5px;opacity:.65}
+.chip.on .bx{opacity:1}
+.grp{font-size:13px;color:var(--muted);margin:14px 0 4px;font-weight:600}
+
+/* ── 填寫畫面 ── */
+header#bar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
   padding:calc(env(safe-area-inset-top) + 8px) 12px 8px}
 .hrow{display:flex;align-items:center;gap:8px}
-.title{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrow .title{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{font-size:12px;color:var(--muted);white-space:nowrap}
 .tools{display:flex;gap:6px;margin-top:8px}
 .tools input,.tools select{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);
   border-radius:10px;background:var(--card)}
 .tools select{flex:0 0 42%}
-
-/* ── 起始畫面 ── */
-#start{padding:28px 18px;max-width:640px;margin:0 auto}
-#start h1{font-size:20px;margin:0 0 4px}
-#start p{color:var(--muted);font-size:14px;margin:0 0 20px}
-.drop{border:2px dashed var(--line);border-radius:16px;padding:30px 18px;text-align:center;background:var(--cream)}
-.big{display:inline-block;background:var(--orange);color:#fff;border:0;border-radius:12px;
-  padding:14px 22px;font-weight:700;font-size:16px;cursor:pointer}
-.big{-webkit-user-select:none;user-select:none}
-.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
-.alt{margin-top:16px;font-size:13px;color:var(--muted)}
-.alt input{display:block;margin-top:7px;width:100%}
-.ver{margin-top:18px;font-size:11px;color:var(--muted);text-align:center}
-.hint{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.7;text-align:left}
-.hint b{color:var(--fg)}
-
-/* ── 題目卡片 ── */
-main{padding:10px 12px 96px;max-width:760px;margin:0 auto}
+main#app{padding:10px 12px 96px;max-width:760px;margin:0 auto}
 .sec{margin:22px 0 8px;font-weight:700;color:var(--orange);font-size:15px;
   border-left:4px solid var(--gold);padding-left:9px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:13px;
-  padding:10px 12px;margin:7px 0}
-.q{font-size:14px;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;color:var(--fg)}
-.q .num{color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{border:1.5px solid var(--line);background:var(--chip);border-radius:999px;
-  padding:9px 14px;font-size:14.5px;cursor:pointer;user-select:none;line-height:1.2}
-.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:600}
-.chip .bx{margin-right:5px;opacity:.65}
-.chip.on .bx{opacity:1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin:7px 0}
+.q{font-size:14px;margin-bottom:7px;white-space:pre-wrap;word-break:break-word}
 .fld{display:block;width:100%;margin:5px 0 0;padding:8px 10px;border:1px solid var(--line);
-  border-radius:9px;background:var(--bg);resize:none;overflow:hidden;
-  min-height:40px;height:40px;line-height:1.5}
+  border-radius:9px;background:var(--bg);resize:none;overflow:hidden;min-height:40px;height:40px;line-height:1.5}
+select.fld,input.fld{height:42px}
 .fld.filled{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 6%,var(--bg))}
 .flab{font-size:12px;color:var(--muted);margin:8px 0 0}
-.flab[hidden]{display:none}
-.empty{padding:40px 16px;text-align:center;color:var(--muted)}
-
-/* ── 底部 ── */
-footer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);
+.fhint{font-size:12px;color:var(--muted);margin-top:3px}
+footer#foot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);
   border-top:1px solid var(--line);padding:9px 12px calc(env(safe-area-inset-bottom) + 9px);
   display:flex;gap:8px;align-items:center}
-footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35}
-.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 15px;
-  font-weight:600;cursor:pointer;white-space:nowrap}
-.btn.pri{background:var(--orange);border-color:var(--orange);color:#fff}
-header[hidden],footer[hidden]{display:none!important}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:40;
+footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:60;
   background:var(--brown);color:#fff;padding:11px 17px;border-radius:11px;font-size:14px;
   opacity:0;transition:opacity .2s;pointer-events:none;max-width:88vw;text-align:center}
-.toast.show{opacity:.96}
-.err{background:#7f1d1d}
+.toast.show{opacity:.97}
+.toast.err{background:#7f1d1d}
+/* ── 底部彈出（分享、挑模板） ── */
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet .in{background:var(--bg);width:100%;max-width:680px;max-height:86vh;overflow:auto;border-radius:16px 16px 0 0;
+  padding:14px 14px calc(env(safe-area-inset-bottom) + 16px)}
+.sheet h3{margin:0 0 8px;font-size:16px}
 </style>
 </head>
 <body>
 
-<div id="start">
+<!-- ══ 首頁 ══ -->
+<div class="view" id="v-home">
   <h1>輔具報告填寫器</h1>
-  <p>開啟已灌好基本資料的報告書，現場填完直接存回 Word 檔。</p>
-  <div class="drop">
-    <label class="big">選擇報告書（.docx）
-      <input type="file" id="file" class="vh"
-             accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-    </label>
-    <div class="alt">按了沒反應的話用這個：<input type="file" id="file2"></div>
-    <div class="hint">
-      <b>怎麼用</b><br>
-      1. 出門前在 Mac 灌好基本資料，把 .docx 存到手機「檔案」App<br>
-      2. 這裡選那個檔 → 逐題點選、填字<br>
-      3. 按「匯出 Word」存回「檔案」App<br>
-      4. 回家自己轉 PDF<br><br>
-      全程離線，不需要帳號，檔案不會離開這支手機。
-    </div>
-    <div class="ver" id="ver">v3</div>
+  <p class="sub">現場點選填寫，直接產出 Word、PDF 與爬梯機記錄表。</p>
+  <div class="note warn" id="needapp" hidden>
+    「個案」與「模板庫」要從<b>主畫面的圖示</b>開啟才會出現（Safari 分享鈕 →「加入主畫面」）。這樣個案資料只會留在這支手機的 App 裡。<br>
+    現在這個畫面只能「直接開一份報告書」填寫。
   </div>
+  <div id="appbox" hidden>
+    <div class="note bad" id="dberr" hidden></div>
+    <div class="note warn" id="notpl" hidden>模板庫是空的。請先到「模板庫」把空白報告書匯入一次（之後就不用了）。</div>
+    <h2>個案</h2>
+    <div id="case-list"></div>
+    <button class="btn pri wide" id="btn-new-case">＋ 新個案</button>
+    <div class="note" id="pend-box" hidden></div>
+    <h2>工具</h2>
+    <button class="btn wide" id="btn-tpl">模板庫</button>
+    <button class="btn wide" id="btn-set">PDF 連線設定</button>
+  </div>
+  <h2>直接開一份報告書</h2>
+  <p class="sub">已經在 Mac 灌好基本資料的檔、或之前匯出過想接著填的檔，從這裡開。</p>
+  <label class="btn wide">選擇報告書（.docx）
+    <input type="file" id="file" class="vh" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+  </label>
+  <div class="sub" style="margin-top:8px">按了沒反應的話用這個：<input type="file" id="file2"></div>
+  <div class="ver" id="ver"></div>
 </div>
 
+<!-- ══ 個案 ══ -->
+<div class="view" id="v-case" hidden>
+  <div class="top"><button class="back" data-go="home">‹ 首頁</button><div class="title" id="case-title"></div></div>
+  <div class="box" id="case-sum"></div>
+  <button class="btn sm" id="btn-edit-basic">改基本資料</button>
+  <h2>報告</h2>
+  <div id="rep-list"></div>
+  <button class="btn wide" id="btn-add-rep">＋ 加一份報告</button>
+  <h2>其他檔案</h2>
+  <button class="btn wide" id="btn-stair">領一份爬梯機記錄表</button>
+  <button class="btn pri wide" id="btn-share-all">整案分享（Word＋PDF）</button>
+  <h2>清理</h2>
+  <button class="btn danger wide" id="btn-del-case">刪除這個個案在手機裡的資料</button>
+</div>
+
+<!-- ══ 基本資料 ══ -->
+<div class="view frm" id="v-basic" hidden>
+  <div class="top"><button class="back" id="basic-back">‹ 返回</button><div class="title">基本資料</div></div>
+  <p class="sub">填一次，這個個案的每一份報告都會自動帶入（帶入後在報告裡還可以改）。</p>
+  <label>1. 姓名</label><input type="text" id="b-name" autocomplete="off">
+  <label>2. 身分證字號</label><input type="text" id="b-idno" autocomplete="off" autocapitalize="characters">
+  <label>3. 生日（民國）</label>
+  <div class="inline"><input type="number" id="b-by" inputmode="numeric" placeholder="年"><input type="number" id="b-bm" inputmode="numeric" placeholder="月"><input type="number" id="b-bd" inputmode="numeric" placeholder="日"></div>
+  <label>4. 聯絡人姓名</label><input type="text" id="b-cname" autocomplete="off">
+  <label>與個案關係</label><input type="text" id="b-rel" autocomplete="off">
+  <label>聯絡電話</label><input type="tel" id="b-phone" autocomplete="off">
+  <label>5. 戶籍地址</label><input type="text" id="b-house" autocomplete="off">
+  <label>6. 居住（修繕）地址</label>
+  <div class="chips"><div class="chip" id="b-livesame"><span class="bx">□</span>同戶籍地</div></div>
+  <input type="text" id="b-live" autocomplete="off" placeholder="不同才填" style="margin-top:7px">
+  <label>7. 聯絡（公文寄送）地址</label>
+  <div class="chips" id="b-mailsel"></div>
+  <input type="text" id="b-mail" autocomplete="off" placeholder="都不同才填" style="margin-top:7px">
+  <label>8. 是否領有身心障礙證明</label>
+  <div class="chips" id="b-cert"></div>
+  <label>9. 身心障礙類別（可複選）</label>
+  <div class="chips" id="b-cats"></div>
+  <input type="text" id="b-catother" autocomplete="off" placeholder="其他（有才填）" style="margin-top:7px">
+  <label>10. 身心障礙程度分級</label>
+  <div class="chips" id="b-level"></div>
+  <h2>評估</h2>
+  <label>評估日期</label><input type="date" id="b-evaldate">
+  <label>評估人員</label><input type="text" id="b-evaluator" autocomplete="off">
+  <button class="btn pri wide" id="basic-save" style="margin-top:18px">儲存</button>
+</div>
+
+<!-- ══ 模板庫 ══ -->
+<div class="view" id="v-tpl" hidden>
+  <div class="top"><button class="back" data-go="home">‹ 首頁</button><div class="title">模板庫</div></div>
+  <p class="sub">空白報告書只存在這支手機的 App 裡，不會上傳到任何地方。</p>
+  <label class="btn pri wide">匯入模板包（.zip）或單一檔案
+    <input type="file" id="tpl-file" class="vh" multiple>
+  </label>
+  <div class="sub" id="tpl-stat"></div>
+  <div id="tpl-list"></div>
+  <button class="btn danger wide" id="tpl-clear" style="margin-top:18px">清空模板庫</button>
+</div>
+
+<!-- ══ PDF 連線設定 ══ -->
+<div class="view frm" id="v-set" hidden>
+  <div class="top"><button class="back" data-go="home">‹ 首頁</button><div class="title">PDF 連線設定</div></div>
+  <p class="sub">PDF 由家裡的 Mac 轉。手機要開著 Tailscale，Mac 要醒著。設定只存在這支手機。</p>
+  <label>把 Mac 產生的「連線設定」整段貼在這裡（或用模板庫的匯入鈕選 連線設定.json）</label>
+  <textarea id="set-text" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  <button class="btn pri wide" id="set-save">儲存設定</button>
+  <button class="btn wide" id="set-test">測試連線</button>
+  <div class="note" id="set-stat"></div>
+  <button class="btn danger wide" id="set-clear">清除連線設定</button>
+</div>
+
+<!-- ══ 填寫畫面 ══ -->
 <header id="bar" hidden>
   <div class="hrow">
+    <button class="back" id="ed-back">‹</button>
     <div class="title" id="fname">—</div>
     <div class="badge" id="count">—</div>
   </div>
@@ -121,29 +218,34 @@ header[hidden],footer[hidden]{display:none!important}
     <input id="search" type="search" placeholder="搜尋題目…" autocomplete="off">
   </div>
 </header>
-
-<main id="app"></main>
-
+<main id="app" hidden></main>
 <footer id="foot" hidden>
   <div class="st" id="status">—</div>
   <button class="btn" id="reset">清空</button>
   <button class="btn pri" id="export">匯出 Word</button>
 </footer>
 
+<div class="sheet" id="sheet" hidden><div class="in" id="sheet-in"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
 /* ══════════════════════════════════════════════════════════
-   輔具報告填寫器
-   讀 .docx → 把裡面的核取方塊與填空格攤成手機表單 → 填完寫回 .docx
+   輔具報告填寫器 v4 ── 第一段：讀寫引擎
+   讀 .docx → 把核取方塊與填空格攤成手機表單 → 填完寫回 .docx
    不綁模板：官方模板改版、換編號都不用改這支程式。
+   鐵則：只換 word/document.xml；沒動過的格子原樣保留；
+         每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
    ══════════════════════════════════════════════════════════ */
-
+const VERSION = "v4";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
-const BOXES  = "□☐";              // □ ☐  未勾
-const TICKS  = "■☑☒✅";  // ■ ☑ ☒  已勾
+const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+const NS_XML = "http://www.w3.org/XML/1998/namespace";
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const BOXES = "□☐";      // 純文字方框：未勾
+const TICKS = "■☑☒✅";   // 純文字方框：已勾
 
 /* ── ZIP：只換掉 document.xml，其餘原封不動搬過去 ───────── */
 const CRC_T = (() => { const t = new Uint32Array(256);
@@ -153,25 +255,27 @@ const CRC_T = (() => { const t = new Uint32Array(256);
 function crc32(buf) { let c = 0xFFFFFFFF;
   for (let i = 0; i < buf.length; i++) c = CRC_T[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
   return (c ^ 0xFFFFFFFF) >>> 0; }
-
 async function inflateRaw(bytes) {
-  const ds = new DecompressionStream("deflate-raw");
-  const ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
-  return new Uint8Array(ab);
+  let ds;
+  try { ds = new DecompressionStream("deflate-raw"); }
+  catch (e) { throw new Error("這支手機的系統太舊，讀不了 Word 檔（需要 iOS 16.4 以上）"); }
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer());
 }
 async function deflateRaw(bytes) {
-  if (typeof CompressionStream === "undefined") return null;
-  const cs = new CompressionStream("deflate-raw");
-  const ab = await new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer();
-  return new Uint8Array(ab);
+  let cs;
+  try { cs = new CompressionStream("deflate-raw"); } catch (e) { return null; }   // 不支援就不壓縮，檔案大一點但內容相同
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer());
 }
-
+async function sha256(bytes) {
+  const d = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  let s = ""; for (const b of d) s += b.toString(16).padStart(2, "0"); return s;
+}
 function readZip(ab) {
-  const u8 = new Uint8Array(ab), dv = new DataView(ab);
+  const u8 = new Uint8Array(ab), dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   let eo = -1;
   for (let i = u8.length - 22; i >= 0 && i > u8.length - 65558; i--)
     if (dv.getUint32(i, true) === 0x06054b50) { eo = i; break; }
-  if (eo < 0) throw new Error("不是有效的 .docx（找不到壓縮檔結尾）");
+  if (eo < 0) throw new Error("不是有效的壓縮檔（找不到結尾）");
   const n = dv.getUint16(eo + 10, true);
   let p = dv.getUint32(eo + 16, true);
   const entries = [];
@@ -185,20 +289,19 @@ function readZip(ab) {
     const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
     const lnl = dv.getUint16(lho + 26, true), lel = dv.getUint16(lho + 28, true);
     const dstart = lho + 30 + lnl + lel;
-    entries.push({ name, method, time, date, crc, usize,
-                   raw: u8.subarray(dstart, dstart + csize) });
+    entries.push({ name, method, time, date, crc, usize, raw: u8.subarray(dstart, dstart + csize) });
     p += 46 + nlen + elen + clen;
   }
   return entries;
 }
-
-async function writeZip(entries) {
+async function entryBytes(e) { return e.method === 8 ? await inflateRaw(e.raw) : e.raw; }
+function writeZip(entries) {
   const enc = new TextEncoder(), parts = [], dir = [];
   let off = 0;
   for (const e of entries) {
     const nb = enc.encode(e.name);
     const lh = new Uint8Array(30 + nb.length), lv = new DataView(lh.buffer);
-    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0, true);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
     lv.setUint16(8, e.method, true); lv.setUint16(10, e.time, true); lv.setUint16(12, e.date, true);
     lv.setUint32(14, e.crc, true); lv.setUint32(18, e.raw.length, true);
     lv.setUint32(22, e.usize, true); lv.setUint16(26, nb.length, true); lv.setUint16(28, 0, true);
@@ -206,7 +309,7 @@ async function writeZip(entries) {
     parts.push(lh, e.raw);
     const ch = new Uint8Array(46 + nb.length), cv = new DataView(ch.buffer);
     cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
-    cv.setUint16(8, 0, true); cv.setUint16(10, e.method, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, e.method, true);
     cv.setUint16(12, e.time, true); cv.setUint16(14, e.date, true);
     cv.setUint32(16, e.crc, true); cv.setUint32(20, e.raw.length, true);
     cv.setUint32(24, e.usize, true); cv.setUint16(28, nb.length, true);
@@ -218,75 +321,251 @@ async function writeZip(entries) {
   const eo = new Uint8Array(22), ev = new DataView(eo.buffer);
   ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, dir.length, true);
   ev.setUint16(10, dir.length, true); ev.setUint32(12, dlen, true); ev.setUint32(16, off, true);
-  return new Blob([...parts, ...dir, eo],
-    { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  const all = [...parts, ...dir, eo];
+  let total = 0; for (const a of all) total += a.length;
+  const out = new Uint8Array(total); let o = 0;
+  for (const a of all) { out.set(a, o); o += a.length; }
+  return out;
+}
+
+/* ── XML 小工具 ─────────────────────────────────────────── */
+function isEl(n, ns, name) { return n.namespaceURI === ns && n.localName === name; }
+function kid(n, ns, name) {
+  if (!n) return null;
+  for (let c = n.firstElementChild; c; c = c.nextElementSibling) if (isEl(c, ns, name)) return c;
+  return null;
+}
+function wAttr(el, name) { return el ? el.getAttributeNS(NS_W, name) : null; }
+function colw(s) { let n = 0; for (const ch of s) n += ch.codePointAt(0) <= 0xff ? 1 : 2; return n; }
+
+function sdtInfo(sdt) {
+  const pr = kid(sdt, NS_W, "sdtPr"), cont = kid(sdt, NS_W, "sdtContent");
+  const cb = kid(pr, NS_W14, "checkbox");
+  const date = kid(pr, NS_W, "date"), combo = kid(pr, NS_W, "comboBox"), drop = kid(pr, NS_W, "dropDownList");
+  return { pr, cont, cb, date, list: combo || drop,
+           kind: cb ? "cb" : date ? "date" : combo ? "combo" : drop ? "drop" : "text",
+           wid: wAttr(kid(pr, NS_W, "id"), "val"), plc: !!kid(pr, NS_W, "showingPlcHdr") };
+}
+function sdtText(cont) {
+  let out = "";
+  (function walk(n) {
+    for (let c = n.firstElementChild; c; c = c.nextElementSibling) {
+      if (isEl(c, NS_W, "t")) out += c.textContent || "";
+      else if (isEl(c, NS_W, "cr") || (isEl(c, NS_W, "br") && (!wAttr(c, "type") || wAttr(c, "type") === "textWrapping"))) out += "\n";
+      else if (isEl(c, NS_W, "p")) { if (out && !out.endsWith("\n")) out += "\n"; walk(c); }
+      else walk(c);
+    }
+  })(cont);
+  return out;
+}
+function inFallback(n) {
+  for (let p = n.parentNode; p && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_MC, "Fallback")) return true;
+  return false;
+}
+
+/* ── 日期控制項 ─────────────────────────────────────────── */
+function dateFmt(dateEl) {
+  return { fmt: wAttr(kid(dateEl, NS_W, "dateFormat"), "val") || "yyyy/M/d",
+           tw: wAttr(kid(dateEl, NS_W, "calendar"), "val") === "taiwan" };
+}
+function fmtDate(iso, f) {
+  const [y, m, d] = iso.split("-").map(Number), ey = y - 1911, yy = f.tw ? ey : y;
+  return f.fmt.replace(/yyyy|yy|ee|e|MM|M|dd|d/g, k =>
+    k === "yyyy" ? String(yy) : k === "yy" ? String(yy).slice(-2) :
+    k === "ee" ? String(ey).padStart(2, "0") : k === "e" ? String(ey) :
+    k === "MM" ? String(m).padStart(2, "0") : k === "M" ? String(m) :
+    k === "dd" ? String(d).padStart(2, "0") : String(d));
+}
+function parseDateText(s) {
+  const m = /^(?:民國)?\s*(\d{2,4})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})\s*日?$/.exec((s || "").trim());
+  if (!m) return "";
+  let y = +m[1]; if (y < 1911) y += 1911;
+  if (+m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 31) return "";
+  return y + "-" + String(+m[2]).padStart(2, "0") + "-" + String(+m[3]).padStart(2, "0");
 }
 
 /* ── 從 document.xml 抽出所有欄位 ─────────────────────────
-   規則（已對 10 份官方模板驗證）：
    · 核取方塊 = w14:checkbox 控制項，或內文裡的純文字 □
-   · 選項名稱 = 方框「後面」緊接的文字
-   · 填空格   = 文字內容控制項，或標籤後面的空白 run
+   · 填空格   = 「最內層」的文字／日期／下拉控制項，或標籤後面連續的空白
+   · 外層控制項若還包著別的控制項，只當容器，往裡面走
+   · 每個欄位有固定身分（控制項自己的編號），草稿與匯出都靠它對號
    ──────────────────────────────────────────────────────── */
 function parseDoc(xmlDoc) {
   const body = xmlDoc.getElementsByTagNameNS(NS_W, "body")[0];
   if (!body) throw new Error("這個檔案不是 Word 文件內容");
-  const paras = body.getElementsByTagNameNS(NS_W, "p");
-  const fields = [], blocks = [];
+  const tAll = xmlDoc.getElementsByTagNameNS(NS_W, "t"), tIdx = new Map();
+  for (let i = 0; i < tAll.length; i++) tIdx.set(tAll[i], i);
+  const fields = [], blocks = [], seenWid = new Map();
+  let anon = 0, prevText = "", curTr = null, curTc = null;
+  const fid = info => {
+    if (info.wid == null) return "x" + (anon++);
+    const n = (seenWid.get(info.wid) || 0) + 1; seenWid.set(info.wid, n);
+    return n === 1 ? "s" + info.wid : "s" + info.wid + "~" + n;
+  };
 
-  for (let pi = 0; pi < paras.length; pi++) {
-    const toks = tokenize(paras[pi]);
-    if (!toks.length) continue;
+  function inline(node, out, nested) {
+    for (let c = node.firstElementChild; c; c = c.nextElementSibling) {
+      if (isEl(c, NS_MC, "Fallback")) continue;
+      if (isEl(c, NS_W, "sdt")) {
+        const info = sdtInfo(c);
+        if (info.kind === "cb") out.push({ k: "cb", el: c, info });
+        else if (info.cont && info.cont.getElementsByTagNameNS(NS_W, "sdt").length) inline(info.cont, out, nested);
+        else out.push({ k: "fld", el: c, info });
+      } else if (isEl(c, NS_W, "t")) out.push({ k: "t", el: c });
+      else if (isEl(c, NS_W, "p")) nested.push(c);          // 文字方塊裡的段落：另外成一段，不重複走
+      else inline(c, out, nested);
+    }
+  }
+  function emit(toks) {
+    if (!toks.length) return;
     const items = [], text = [];
-
+    let ctx = "";
     for (let i = 0; i < toks.length; i++) {
       const t = toks[i];
       if (t.k === "cb") {
-        items.push({ type: "cb", sdt: t.el, label: labelAfter(toks, i) });
-        text.push("□");
+        const ck = kid(t.info.cb, NS_W14, "checked"), v = ck ? ck.getAttributeNS(NS_W14, "val") : null;
+        items.push({ type: "cb", sdt: t.el, id: fid(t.info), label: labelAfter(toks, i) || "（未命名）",
+                     orig: v === "1" || v === "true" });
+        text.push("□"); ctx = "";
       } else if (t.k === "fld") {
-        items.push({ type: "txt", sdt: t.el, label: labelBefore(toks, i) });
-        text.push("＿");
+        const raw = t.info.plc || !t.info.cont ? "" : sdtText(t.info.cont);
+        const it = { type: "txt", kind: t.info.kind, sdt: t.el, id: fid(t.info), ctx, next: peekText(toks, i + 1),
+                     label: fieldLabel(ctx, text, prevText), orig: raw.trim() ? raw.replace(/[\s\u3000]+$/, "") : "" };
+        if (it.kind === "date") {
+          it.fmt = dateFmt(t.info.date);
+          const iso = parseDateText(it.orig);
+          if (it.orig && !iso) it.kind = "text"; else it.orig = iso;      // 看不懂的既有日期當一般文字
+        }
+        if (t.info.list) {
+          it.opts = [];
+          for (let li = t.info.list.firstElementChild; li; li = li.nextElementSibling) {
+            if (!isEl(li, NS_W, "listItem")) continue;
+            const o = wAttr(li, "displayText") || wAttr(li, "value") || "";
+            if (o.trim()) it.opts.push(o);
+          }
+        }
+        items.push(it); text.push("＿"); ctx = "";
       } else {
         const s = t.el.textContent || "";
-        // 純文字方框：一個 □ 就是一個選項
-        if ([...s].some(c => BOXES.includes(c) || TICKS.includes(c))) {
+        if (/[□☐■☑☒✅]/.test(s)) {                               // 純文字方框：一個 □ 就是一個選項
           const segs = splitBoxes(s);
           segs.forEach((seg, k) => {
-            if (seg.box) items.push({ type: "cb", node: t.el, charIdx: seg.at, label: seg.label });
-            text.push(seg.box ? "□" + seg.label : seg.label);
+            if (seg.box) {
+              let lab = seg.label;
+              if (!lab && k === segs.length - 1) lab = labelAfter(toks, i);
+              items.push({ type: "cb", node: t.el, charIdx: seg.at, id: "t" + tIdx.get(t.el) + "." + seg.at,
+                           label: lab || "（未命名）", orig: TICKS.includes(s[seg.at]) });
+              text.push("□" + seg.label); ctx = seg.label;
+            } else { text.push(seg.label); ctx += seg.label; }
           });
-        } else {
-          text.push(s);
-          // 標籤後的空白 run 也是可填的格子（舊式模板）
-          if (!s.trim() && s.length >= 4 && text.join("").trim())
-            items.push({ type: "txt", node: t.el, label: labelBeforeText(text) });
-        }
+        } else if (!s.trim() && s.length) {                       // 連續的空白：合併成一格（舊式模板的填空）
+          let j = i, total = 0; const nodes = [];
+          while (j < toks.length && toks[j].k === "t" && !(toks[j].el.textContent || "").trim()
+                 && (toks[j].el.textContent || "").length) {
+            total += colw(toks[j].el.textContent); nodes.push(toks[j].el); j++;
+          }
+          const run = nodes.map(n => n.textContent).join("");
+          const more = toks.slice(j).some(x => x.k !== "t" || (x.el.textContent || "").trim());
+          if (total >= 4 && text.join("").trim() && (/[：:]\s*$/.test(ctx) || more)) {
+            items.push({ type: "txt", kind: "text", nodes, id: "r" + tIdx.get(nodes[0]), ctx, next: peekText(toks, j),
+                         label: fieldLabel(ctx, text, prevText), orig: "", blank: true });
+            ctx = "";
+          } else ctx += run;
+          text.push(run); i = j - 1;
+        } else { text.push(s); ctx += s; }
       }
     }
     const full = text.join("").trim();
-    if (!items.length) { if (full) blocks.push({ kind: "head", text: full }); continue; }
-    const blk = { kind: "q", text: full, items: [] };
-    for (const it of items) { it.idx = fields.length; fields.push(it); blk.items.push(it); }
+    if (!items.length) { if (full) { blocks.push({ kind: "head", text: full, tr: curTr, tc: curTc }); prevText = full; } return; }
+    const blk = { kind: "q", text: full, items: [], tr: curTr, tc: curTc };
+    for (const it of items) { it.idx = fields.length; it.block = blk; fields.push(it); blk.items.push(it); }
     blocks.push(blk);
+    if (full.replace(/[□＿\s]/g, "")) prevText = full;
   }
-  return { fields, blocks };
+  function para(p) { const toks = [], nested = []; inline(p, toks, nested); emit(toks); nested.forEach(para); }
+  const SKIP = new Set(["sdtPr", "sdtEndPr", "tblPr", "tblGrid", "trPr", "tcPr", "sectPr", "pPr", "rPr"]);
+  function block(node) {
+    for (let c = node.firstElementChild; c; c = c.nextElementSibling) {
+      if (isEl(c, NS_MC, "Fallback")) continue;
+      if (isEl(c, NS_W, "p")) para(c);
+      else if (isEl(c, NS_W, "sdt")) {
+        const info = sdtInfo(c);
+        if (info.kind === "cb") emit([{ k: "cb", el: c, info }]);
+        else if (!info.cont) continue;
+        else if (info.cont.getElementsByTagNameNS(NS_W, "sdt").length) block(info.cont);
+        else if (info.kind !== "text" || info.plc || !sdtText(info.cont).trim()) emit([{ k: "fld", el: c, info }]);
+        else block(info.cont);                                   // 已有內容的外框：當一般內容走，不整包覆寫
+      }
+      else if (c.namespaceURI === NS_W && SKIP.has(c.localName)) continue;
+      else if (isEl(c, NS_W, "tr")) { const a = curTr, b = curTc; curTr = c; curTc = null; block(c); curTr = a; curTc = b; }
+      else if (isEl(c, NS_W, "tc")) { const b = curTc; curTc = c; block(c); curTc = b; }
+      else block(c);
+    }
+  }
+  block(body);
+  gridMerge(blocks);
+  return { fields, blocks, integ: integrity(xmlDoc, fields) };
 }
 
-function tokenize(p) {
-  const out = [];
-  (function walk(node) {
-    for (let c = node.firstElementChild; c; c = c.nextElementSibling) {
-      if (c.namespaceURI === NS_W && c.localName === "sdt") {
-        const pr = c.getElementsByTagNameNS(NS_W, "sdtPr")[0];
-        const cb = pr && pr.getElementsByTagNameNS(NS_W14, "checkbox")[0];
-        out.push({ k: cb ? "cb" : "fld", el: c });
-      } else if (c.namespaceURI === NS_W && c.localName === "t") {
-        out.push({ k: "t", el: c });
-      } else walk(c);
+/* ── 表格裡「一格只有一個方框」的勾選表：同一列併成一題，選項名稱取欄位標題 ── */
+function rowCells(tr) {
+  const out = []; let col = +(wAttr(kid(kid(tr, NS_W, "trPr"), NS_W, "gridBefore"), "val") || 0);
+  (function walk(n) {
+    for (let c = n.firstElementChild; c; c = c.nextElementSibling) {
+      if (isEl(c, NS_W, "tc")) { const span = +(wAttr(kid(kid(c, NS_W, "tcPr"), NS_W, "gridSpan"), "val") || 1);
+                                  out.push({ tc: c, col, span }); col += span; }
+      else if (isEl(c, NS_W, "sdt") || isEl(c, NS_W, "sdtContent")) walk(c);
     }
-  })(p);
+  })(tr);
   return out;
+}
+function tblRows(tr) {
+  let tbl = tr.parentNode;
+  while (tbl && !isEl(tbl, NS_W, "tbl")) tbl = tbl.parentNode;
+  const out = [];
+  if (tbl) (function walk(n) {
+    for (let c = n.firstElementChild; c; c = c.nextElementSibling) {
+      if (isEl(c, NS_W, "tr")) out.push(c);
+      else if (isEl(c, NS_W, "sdt") || isEl(c, NS_W, "sdtContent")) walk(c);
+    }
+  })(tbl);
+  return out;
+}
+function cellText(tc) {
+  let s = ""; const ts = tc.getElementsByTagNameNS(NS_W, "t");
+  for (let i = 0; i < ts.length; i++) s += ts[i].textContent || "";
+  return s.replace(/[□☐■☑☒✅▓]/g, "").replace(/[\s\u3000]+/g, " ").trim();
+}
+function gridMerge(blocks) {
+  const lone = b => b.kind === "q" && b.tr && b.tc && b.items.length === 1 && b.items[0].type === "cb" &&
+                    b.items[0].sdt && !b.text.replace(/[□\s\u3000]/g, "");
+  const out = [], rowsOf = new Map();
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (!lone(b)) { out.push(b); continue; }
+    const grp = []; let j = i;
+    while (j < blocks.length && lone(blocks[j]) && blocks[j].tr === b.tr) grp.push(blocks[j++]);
+    const cells = rowCells(b.tr), first = cells.find(x => x.tc === grp[0].tc);
+    if (!rowsOf.has(b.tr)) rowsOf.set(b.tr, tblRows(b.tr));
+    const rows = rowsOf.get(b.tr), at = rows.indexOf(b.tr);
+    const header = col => {
+      for (let r = at - 1; r >= 0; r--) {
+        const hit = rowCells(rows[r]).find(x => col >= x.col && col < x.col + x.span);
+        const t = hit && cellText(hit.tc); if (t) return t.slice(0, 24);
+      }
+      return "";
+    };
+    const rowLab = first ? cells.filter(x => x.col < first.col).map(x => cellText(x.tc)).filter(Boolean).join(" ") : "";
+    const nb = { kind: "q", text: rowLab || "（表格勾選）", items: [], tr: b.tr, tc: grp[0].tc, grid: true };
+    for (const g of grp) {
+      const it = g.items[0], cell = cells.find(x => x.tc === g.tc);
+      const own = cellText(g.tc);
+      it.label = (cell && header(cell.col)) || own || (cell ? "第 " + (cells.indexOf(cell) + 1) + " 欄" : it.label);
+      it.block = nb; nb.items.push(it);
+    }
+    out.push(nb); i = j - 1;
+  }
+  blocks.length = 0; for (const b of out) blocks.push(b);
 }
 
 function splitBoxes(s) {
@@ -303,305 +582,1122 @@ function splitBoxes(s) {
   else if (cur) segs.push({ box: false, label: cur });
   return segs;
 }
-
+function peekText(toks, k) {                    // 從第 k 個起，緊接著的文字（到下一個格子或方框為止，最多幾個字）
+  let out = "";
+  for (; k < toks.length && out.length < 8; k++) { if (toks[k].k !== "t") break; out += toks[k].el.textContent || ""; }
+  return out;
+}
 function labelAfter(toks, i) {
   let out = "";
   for (let k = i + 1; k < toks.length && out.length < 30; k++) {
     if (toks[k].k !== "t") break;
     out += toks[k].el.textContent || "";
   }
-  out = out.replace(/^[\s　]+/, "");
-  const cut = out.search(/[\s　]{2,}/);
-  return (cut > 0 ? out.slice(0, cut) : out).trim() || "（未命名）";
+  out = out.replace(/^[\s\u3000]+/, "");
+  const cut = out.search(/[\s\u3000]{2,}/);
+  return (cut > 0 ? out.slice(0, cut) : out).trim().replace(/[\s)）:：，,、;；]+$/, "").replace(/^[（(]+(?![^）)]*[）)])/, "");
 }
-function labelBefore(toks, i) {
-  let out = "";
-  for (let k = i - 1; k >= 0 && out.length < 40; k--) {
-    if (toks[k].k !== "t") break;
-    out = (toks[k].el.textContent || "") + out;
+function fieldLabel(ctx, text, prevText) {
+  if (/^[^(（]*[)）]/.test(ctx)) {                     // 例：「6.居住地址(□同戶籍地)：＿」→ 用「6.居住地址」
+    const all = text.join(""), k = Math.max(all.lastIndexOf("("), all.lastIndexOf("（"));
+    if (k > 0) return tailLabel(all.slice(0, k));
   }
-  return tailLabel(out);
+  return tailLabel(ctx || prevText);
 }
-function labelBeforeText(text) { return tailLabel(text.join("")); }
 function tailLabel(s) {
-  s = s.replace(/[\s　]+$/, "");
-  const m = s.match(/([^\s　：:）)]{1,14}[：:]?)$/);
+  s = (s || "").replace(/[\s\u3000]+$/, "");
+  const m = s.match(/([^\s\u3000：:）)]{1,14}[：:]?)$/);
   return (m ? m[1] : s.slice(-14)).trim() || "填寫";
+}
+
+/* ── 完整性檢查：檔案裡每一個核取方塊，都要剛好對到畫面上一格 ── */
+function integrity(xmlDoc, fields) {
+  const all = [];
+  const sd = xmlDoc.getElementsByTagNameNS(NS_W, "sdt");
+  for (let i = 0; i < sd.length; i++) if (sdtInfo(sd[i]).kind === "cb" && !inFallback(sd[i])) all.push(sd[i]);
+  const seen = new Map(), ids = new Set();
+  let dupId = 0;
+  for (const f of fields) {
+    if (ids.has(f.id)) dupId++; ids.add(f.id);
+    if (f.type === "cb" && f.sdt) seen.set(f.sdt, (seen.get(f.sdt) || 0) + 1);
+  }
+  let missing = 0, dup = 0;
+  for (const s of all) { const n = seen.get(s) || 0; if (!n) missing++; else if (n > 1) dup++; }
+  const allSet = new Set(all); let extra = 0;
+  for (const s of seen.keys()) if (!allSet.has(s)) extra++;
+  return { ok: !missing && !dup && !extra && !dupId, total: all.length, missing, dup, extra, dupId };
+}
+
+/* ── 寫回 ───────────────────────────────────────────────── */
+function setRunFont(t, font) {
+  const r = t.parentNode; if (!r || !isEl(r, NS_W, "r")) return;
+  const doc = r.ownerDocument;
+  let rPr = kid(r, NS_W, "rPr");
+  if (!rPr) { rPr = doc.createElementNS(NS_W, "w:rPr"); r.insertBefore(rPr, r.firstChild); }
+  let rf = kid(rPr, NS_W, "rFonts");
+  if (!rf) { rf = doc.createElementNS(NS_W, "w:rFonts");
+             const st = kid(rPr, NS_W, "rStyle"); rPr.insertBefore(rf, st ? st.nextSibling : rPr.firstChild); }
+  for (const a of ["ascii", "eastAsia", "hAnsi"]) rf.setAttributeNS(NS_W, "w:" + a, font);
+  rf.setAttributeNS(NS_W, "w:hint", "eastAsia");
+}
+function setCheckbox(f, on) {
+  if (f.sdt) {
+    // 控制項：狀態、顯示字元、字型三樣一起改（跟在 Word 裡點一下的結果相同）
+    const info = sdtInfo(f.sdt), doc = f.sdt.ownerDocument;
+    let chk = kid(info.cb, NS_W14, "checked");
+    if (!chk) { chk = doc.createElementNS(NS_W14, "w14:checked"); info.cb.insertBefore(chk, info.cb.firstChild); }
+    chk.setAttributeNS(NS_W14, "w14:val", on ? "1" : "0");
+    const st = kid(info.cb, NS_W14, on ? "checkedState" : "uncheckedState");
+    const hex = st && st.getAttributeNS(NS_W14, "val"), font = st && st.getAttributeNS(NS_W14, "font");
+    let ch = on ? "☒" : "☐";
+    if (hex) { try { ch = String.fromCodePoint(parseInt(hex, 16)); } catch (e) {} }
+    if (!info.cont) return;
+    const ts = info.cont.getElementsByTagNameNS(NS_W, "t");
+    let t0 = ts[0];
+    if (!t0) { const r = doc.createElementNS(NS_W, "w:r"); t0 = doc.createElementNS(NS_W, "w:t");
+               r.appendChild(t0); info.cont.appendChild(r); }
+    for (let i = 1; i < ts.length; i++) ts[i].textContent = "";
+    t0.textContent = ch;
+    if (font) setRunFont(t0, font);
+  } else if (f.node) {
+    const s = f.node.textContent || "";
+    f.node.textContent = s.slice(0, f.charIdx) + (on ? "☑" : "□") + s.slice(f.charIdx + 1);
+  }
+}
+function setText(f, val, plcStyle) {
+  if (f.sdt) {
+    const info = sdtInfo(f.sdt), doc = f.sdt.ownerDocument, cont = info.cont;
+    if (!cont) return;
+    if (info.plc && val !== "") info.pr.removeChild(kid(info.pr, NS_W, "showingPlcHdr"));
+    if (info.date && f.kind === "date") {
+      if (val) info.date.setAttributeNS(NS_W, "w:fullDate", val + "T00:00:00Z");
+      else info.date.removeAttributeNS(NS_W, "fullDate");
+      val = val ? fmtDate(val, f.fmt) : "";
+    }
+    // 只拿掉「文字換行」（之後照新內容重建）；分頁、分欄這類結構性的符號一律保留
+    for (const tag of ["br", "cr"]) {
+      const brs = cont.getElementsByTagNameNS(NS_W, tag);
+      for (let i = brs.length - 1; i >= 0; i--) {
+        const ty = wAttr(brs[i], "type");
+        if (!ty || ty === "textWrapping") brs[i].parentNode.removeChild(brs[i]);
+      }
+    }
+    const ts = cont.getElementsByTagNameNS(NS_W, "t");
+    let t0 = ts[0];
+    for (let i = 1; i < ts.length; i++) ts[i].textContent = "";
+    if (!t0) {                                              // 空殼控制項：自己造 run，字型沿用控制項的設定
+      const host = cont.getElementsByTagNameNS(NS_W, "p")[0] || cont;
+      const r = doc.createElementNS(NS_W, "w:r");
+      const src = kid(kid(f.sdt, NS_W, "sdtEndPr"), NS_W, "rPr") || kid(info.pr, NS_W, "rPr");
+      if (src) r.appendChild(src.cloneNode(true));
+      t0 = doc.createElementNS(NS_W, "w:t"); r.appendChild(t0); host.appendChild(r);
+    }
+    const lines = val.split("\n");
+    t0.textContent = lines[0]; t0.setAttributeNS(NS_XML, "xml:space", "preserve");
+    let after = t0;
+    for (let k = 1; k < lines.length; k++) {
+      const br = doc.createElementNS(NS_W, "w:br"), t = doc.createElementNS(NS_W, "w:t");
+      t.textContent = lines[k]; t.setAttributeNS(NS_XML, "xml:space", "preserve");
+      after.parentNode.insertBefore(br, after.nextSibling); br.parentNode.insertBefore(t, br.nextSibling); after = t;
+    }
+    if (plcStyle && val !== "") {                            // 拿掉灰色的提示字樣式
+      const rs = cont.getElementsByTagNameNS(NS_W, "rStyle");
+      for (let i = rs.length - 1; i >= 0; i--) if (wAttr(rs[i], "val") === plcStyle) rs[i].parentNode.removeChild(rs[i]);
+    }
+  } else if (f.nodes) {
+    // 舊式空白格：字寫進第一段空白，並從後面的空白吃掉等寬，版面不會被擠開
+    const lens = f.nodes.map(n => colw(n.textContent || ""));
+    let need = colw(val) - lens[0];
+    f.nodes[0].textContent = val + (need < 0 ? " ".repeat(-need) : "");
+    f.nodes[0].setAttributeNS(NS_XML, "xml:space", "preserve");
+    for (let j = 1; j < f.nodes.length; j++) {
+      const cut = need > 0 ? Math.min(lens[j], need) : 0; need -= cut;
+      const keep = Math.max(lens[j] - cut, j === f.nodes.length - 1 && need > 0 && lens[j] ? 1 : 0);
+      f.nodes[j].textContent = " ".repeat(keep);
+      f.nodes[j].setAttributeNS(NS_XML, "xml:space", "preserve");
+    }
+  }
+}
+
+/* ── 開檔、產檔 ─────────────────────────────────────────── */
+async function openDocx(ab) {
+  const entries = readZip(ab);
+  const de = entries.find(x => x.name === "word/document.xml");
+  if (!de) throw new Error("這個檔裡沒有 Word 內容，可能不是報告書");
+  const xml = new TextDecoder("utf-8").decode(await entryBytes(de));
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("Word 內容解析失敗");
+  return { entries, de, doc, model: parseDoc(doc) };
+}
+async function placeholderStyle(entries) {
+  const se = entries.find(x => x.name === "word/styles.xml");
+  if (!se) return null;
+  const m = /<w:style\b[^>]*w:styleId="([^"]+)"[^>]*>\s*<w:name w:val="Placeholder Text"/.exec(
+    new TextDecoder("utf-8").decode(await entryBytes(se)));
+  return m ? m[1] : null;
+}
+function changed(f, v) {
+  if (v === undefined) return false;
+  return f.type === "cb" ? !!v !== f.orig : String(v) !== f.orig;
+}
+/* 從「原檔」重新建一份，只寫有改動的格子。回傳 Uint8Array。 */
+async function buildDocx(origAb, values) {
+  const d = await openDocx(origAb);
+  if (!d.model.integ.ok) throw new Error("這份模板有對不上的勾選項，為了安全不匯出（請回報）");
+  const plc = await placeholderStyle(d.entries);
+  const known = new Set();
+  for (const f of d.model.fields) {
+    known.add(f.id);
+    const v = values[f.id];
+    if (!changed(f, v)) continue;
+    if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc);
+  }
+  for (const k of Object.keys(values)) if (!known.has(k)) throw new Error("草稿與這份模板對不上（模板可能換過版），為了安全不匯出");
+  const bytes = new TextEncoder().encode(new XMLSerializer().serializeToString(d.doc));
+  const packed = await deflateRaw(bytes);
+  return writeZip(d.entries.map(e => e !== d.de ? e :
+    { ...e, method: packed ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: packed || bytes }));
 }
 </script>
 
 <script>
 "use strict";
-/* ── 寫回 docx ───────────────────────────────────────────── */
-function cbChar(sdt, on) {
-  const cb = sdt.getElementsByTagNameNS(NS_W14, "checkbox")[0];
-  const st = cb && cb.getElementsByTagNameNS(NS_W14, on ? "checkedState" : "uncheckedState")[0];
-  const v = st && st.getAttributeNS(NS_W14, "val");
-  if (v) { try { return String.fromCodePoint(parseInt(v, 16)); } catch (e) {} }
-  return on ? "■" : "□";
-}
-function setCheckbox(f, on) {
-  if (f.sdt) {
-    // 控制項：狀態與顯示字元一定要一起改，只改一個 Word 會不一致
-    const cb = f.sdt.getElementsByTagNameNS(NS_W14, "checkbox")[0];
-    const chk = cb && cb.getElementsByTagNameNS(NS_W14, "checked")[0];
-    if (chk) chk.setAttributeNS(NS_W14, "w14:val", on ? "1" : "0");
-    const ch = cbChar(f.sdt, on);
-    const cont = f.sdt.getElementsByTagNameNS(NS_W, "sdtContent")[0];
-    const ts = cont ? cont.getElementsByTagNameNS(NS_W, "t") : [];
-    for (let i = 0; i < ts.length; i++) ts[i].textContent = i === 0 ? ch : "";
-  } else if (f.node) {
-    const s = f.node.textContent || "";
-    const ch = on ? "☑" : "□";
-    f.node.textContent = s.slice(0, f.charIdx) + ch + s.slice(f.charIdx + 1);
-  }
-}
-function setText(f, val) {
-  if (f.sdt) {
-    const pr = f.sdt.getElementsByTagNameNS(NS_W, "sdtPr")[0];
-    if (pr) { const plc = pr.getElementsByTagNameNS(NS_W, "showingPlcHdr")[0];
-              if (plc) plc.parentNode.removeChild(plc); }
-    const cont = f.sdt.getElementsByTagNameNS(NS_W, "sdtContent")[0];
-    if (!cont) return;
-    const ts = cont.getElementsByTagNameNS(NS_W, "t");
-    if (ts.length) { for (let i = 0; i < ts.length; i++) {
-        ts[i].textContent = i === 0 ? val : "";
-        ts[i].setAttribute("xml:space", "preserve"); } return; }
-    // 空殼控制項：自己造 run，字型沿用 sdtEndPr
-    const doc = f.sdt.ownerDocument;
-    let r = cont.getElementsByTagNameNS(NS_W, "r")[0];
-    if (!r) { r = doc.createElementNS(NS_W, "w:r");
-      const end = f.sdt.getElementsByTagNameNS(NS_W, "sdtEndPr")[0];
-      const rpr = end && end.getElementsByTagNameNS(NS_W, "rPr")[0];
-      if (rpr) r.appendChild(rpr.cloneNode(true));
-      cont.appendChild(r); }
-    const t = doc.createElementNS(NS_W, "w:t");
-    t.setAttribute("xml:space", "preserve"); t.textContent = val; r.appendChild(t);
-  } else if (f.node) {
-    f.node.textContent = val;
-    f.node.setAttribute("xml:space", "preserve");
-  }
-}
-
-/* ── 狀態 ─────────────────────────────────────────────────── */
-const S = { entries: null, xmlDoc: null, docEntry: null, model: null,
-            values: {}, fname: "", key: "" };
+/* ══════════════════════════════════════════════════════════
+   第二段：畫面、個案、模板庫、PDF
+   ══════════════════════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
+const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls;
+                                if (txt != null) e.textContent = txt; return e; };
 let toastT = null;
 function toast(msg, bad) {
   const el = $("toast"); el.textContent = msg;
   el.className = "toast show" + (bad ? " err" : "");
-  clearTimeout(toastT); toastT = setTimeout(() => el.className = "toast", 2400);
+  clearTimeout(toastT); toastT = setTimeout(() => el.className = "toast", bad ? 4200 : 2400);
 }
+const LOCAL = location.hostname === "127.0.0.1" || location.hostname === "localhost";   // 只有開發測試時為真
+const APP = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches || LOCAL;
+let NAV = 0;                                  // 每換一次畫面加一；晚到的載入結果或回呼對不上就作廢
+const pad2 = n => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+const hm = ts => { const d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+const safeName = s => String(s || "").replace(/[\/\\:*?"<>|\u0000-\u001f]/g, "_").trim();
 
-/* ── 載入 ─────────────────────────────────────────────────── */
-for (const id of ["file", "file2"]) {
-  const el = $(id);
-  if (el) el.addEventListener("change", e => {
-    const f = e.target.files && e.target.files[0];
-    if (f) load(f);
-  });
-}
-
-async function load(file) {
-  try {
-    const ab = await file.arrayBuffer();
-    const entries = readZip(ab);
-    const de = entries.find(x => x.name === "word/document.xml");
-    if (!de) throw new Error("這個 .docx 裡沒有內容檔，可能不是 Word 文件");
-    const raw = de.method === 8 ? await inflateRaw(de.raw) : de.raw;
-    const xml = new TextDecoder("utf-8").decode(raw);
-    const doc = new DOMParser().parseFromString(xml, "application/xml");
-    if (doc.getElementsByTagName("parsererror").length) throw new Error("Word 內容解析失敗");
-    const model = parseDoc(doc);
-    if (!model.fields.length) throw new Error("這份文件裡找不到可勾選或可填寫的欄位");
-
-    S.entries = entries; S.xmlDoc = doc; S.docEntry = de; S.model = model;
-    S.fname = file.name; S.key = "af:" + file.name + ":" + raw.length;
-    S.values = {};
-    try { const saved = localStorage.getItem(S.key);
-          if (saved) { S.values = JSON.parse(saved);
-            toast("已回復上次填到一半的內容"); } } catch (e) {}
-    // 讀回文件裡本來就已經勾好/填好的（例如 Mac 灌好的基本資料）
-    model.fields.forEach(f => {
-      if (S.values[f.idx] !== undefined) return;
-      if (f.type === "cb") {
-        let on = false;
-        if (f.sdt) { const cb = f.sdt.getElementsByTagNameNS(NS_W14, "checkbox")[0];
-          const chk = cb && cb.getElementsByTagNameNS(NS_W14, "checked")[0];
-          on = !!chk && chk.getAttributeNS(NS_W14, "val") === "1"; }
-        else if (f.node) { const c = (f.node.textContent || "")[f.charIdx]; on = TICKS.includes(c); }
-        if (on) S.values[f.idx] = true;
-      } else {
-        let v = "";
-        if (f.sdt) { const pr = f.sdt.getElementsByTagNameNS(NS_W, "sdtPr")[0];
-          const plc = pr && pr.getElementsByTagNameNS(NS_W, "showingPlcHdr")[0];
-          const cont = f.sdt.getElementsByTagNameNS(NS_W, "sdtContent")[0];
-          if (!plc && cont) v = (cont.textContent || "").trim(); }
-        if (v) S.values[f.idx] = v;
-      }
+/* ── 手機本機資料庫（IndexedDB） ─────────────────────────── */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open("af4", 1);
+      r.onupgradeneeded = () => {            // 之後改版要加欄位，在這裡依舊版號升級
+        const d = r.result;
+        for (const s of ["tpl", "cases", "drafts", "files", "kv"])
+          if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
+      };
+      r.onsuccess = () => { DB.db = r.result; res(); };
+      r.onerror = () => rej(r.error || new Error("資料庫打不開"));
+      r.onblocked = () => rej(new Error("資料庫被另一個視窗佔住"));
     });
-    $("start").hidden = true; $("bar").hidden = false; $("foot").hidden = false;
-    $("fname").textContent = file.name.replace(/\.docx$/i, "");
-    render();
-  } catch (err) { toast(err.message || String(err), true); }
-}
+  },
+  tx(store, mode, fn) {                      // 等「整筆交易完成」才算成功
+    return new Promise((res, rej) => {
+      let out;
+      const t = DB.db.transaction(store, mode);
+      t.oncomplete = () => res(out);
+      t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+      const rq = fn(t.objectStore(store));
+      if (rq) rq.onsuccess = () => { out = rq.result; };
+    });
+  },
+  get: (s, k) => DB.tx(s, "readonly", o => o.get(k)),
+  put: (s, k, v) => DB.tx(s, "readwrite", o => o.put(v, k)),
+  del: (s, k) => DB.tx(s, "readwrite", o => o.delete(k)),
+  keys: s => DB.tx(s, "readonly", o => o.getAllKeys()),
+  all: s => DB.tx(s, "readonly", o => o.getAll()),
+  delPrefix: (s, prefix) => DB.tx(s, "readwrite", o => o.delete(IDBKeyRange.bound(prefix, prefix + "\uffff"))),   // 一筆交易清掉整個前綴
+};
+async function kvGet(k, d) { const v = await DB.get("kv", k); return v === undefined ? d : v; }
 
-/* ── 畫面 ─────────────────────────────────────────────────── */
-function isSection(t) {
-  return /^[一二三四五六七八九十]+[、．.]/.test(t) || /^【.+】$/.test(t);
+/* ── 畫面切換 ───────────────────────────────────────────── */
+const VIEWS = ["v-home", "v-case", "v-basic", "v-tpl", "v-set"];
+function show(view) {
+  NAV++;
+  for (const v of VIEWS) $(v).hidden = v !== view;
+  const ed = view === "editor";
+  $("bar").hidden = !ed; $("app").hidden = !ed; $("foot").hidden = !ed;
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-go=home]").forEach(b => b.onclick = () => goHome());
+
+/* ── 分享／存檔 ─────────────────────────────────────────── */
+function download(file) {
+  const url = URL.createObjectURL(file), a = document.createElement("a");
+  a.href = url; a.download = file.name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+}
+/* 回傳 true＝檔案確實交出去了（分享完成或已下載）；false＝被取消，或還要使用者在彈出的清單再點一次 */
+async function offerShare(list) {            // list: [{name, bytes, type}]
+  if (LOCAL && window.__afTestSink) { await window.__afTestSink(list); return true; }
+  const files = list.map(f => new File([f.bytes], f.name, { type: f.type }));
+  const can = fs => navigator.canShare && navigator.canShare({ files: fs });
+  if (can(files)) {
+    try { await navigator.share({ files }); return true; }
+    catch (e) {
+      if (e && e.name === "AbortError") return false;
+      if (!(e && e.name === "NotAllowedError")) { toast("分享失敗：" + (e.message || e), true); return false; }
+    }
+  } else if (files.length === 1 && !navigator.canShare) { download(files[0]); return true; }
+  // 檔案備好了但需要再點一下（iPhone 規定），或這支手機不能一次分享多個檔
+  const box = $("sheet-in"); box.textContent = "";
+  box.appendChild(mk("h3", "", "檔案備好了"));
+  if (files.length > 1 && can(files)) {
+    const b = mk("button", "btn pri wide", "一次分享 " + files.length + " 個檔案");
+    b.onclick = async () => { try { await navigator.share({ files }); closeSheet(); } catch (e) {} };
+    box.appendChild(b);
+  }
+  for (const f of files) {
+    const b = mk("button", "btn wide", (files.length > 1 ? "只要這個：" : "分享／存檔：") + f.name);
+    b.style.whiteSpace = "normal";
+    b.onclick = async () => {
+      if (can([f])) { try { await navigator.share({ files: [f] }); } catch (e) {} }
+      else download(f);
+    };
+    box.appendChild(b);
+  }
+  const c = mk("button", "btn wide", "關閉"); c.onclick = closeSheet; box.appendChild(c);
+  $("sheet").hidden = false;
+  return false;
+}
+function closeSheet() { $("sheet").hidden = true; $("sheet-in").textContent = ""; }
+$("sheet").onclick = e => { if (e.target === $("sheet")) closeSheet(); };
+
+/* ══ 填寫畫面 ═══════════════════════════════════════════════ */
+const S = { mode: "", ab: null, name: "", sha: "", model: null, values: {}, auto: {}, no: {},
+            caseId: "", rid: "", outName: "", dirty: false };
+const cur = f => S.values[f.id] !== undefined ? S.values[f.id] : f.orig;
+function setVal(f, v) {
+  const a = S.auto[f.id];
+  if (f.type === "cb" ? !!v === f.orig : String(v) === f.orig) delete S.values[f.id]; else S.values[f.id] = v;
+  if (a !== undefined && S.values[f.id] === a) delete S.no[f.id];        // 改回跟自動帶入一樣：仍算自動帶入
+  else S.no[f.id] = 1;                                                   // 自動帶入的值留著當紀錄（點回來才認得），是否交給你只看 S.no
+  save();
+}
+function isSection(t) { return /^[一二三四五六七八九十]+[、．.]/.test(t) || /^【.+】$/.test(t); }
+
+async function startEditor(o) {              // o: {mode, ab, name, values, auto, caseId, rid, outName}
+  const d = await openDocx(o.ab);
+  if (!d.model.fields.length) throw new Error("這份文件裡找不到可勾選或可填寫的欄位");
+  Object.assign(S, { mode: o.mode, ab: o.ab, name: o.name, model: d.model, values: o.values || {}, auto: o.auto || {}, no: o.no || {},
+                     caseId: o.caseId || "", rid: o.rid || "", outName: o.outName || "", dirty: false });
+  const ids = new Set(d.model.fields.map(f => f.id));     // 草稿裡對不上這份模板的項目一律丟掉，不亂套
+  for (const k of Object.keys(S.values)) if (!ids.has(k)) delete S.values[k];
+  for (const k of Object.keys(S.auto)) if (!ids.has(k)) delete S.auto[k];
+  for (const k of Object.keys(S.no)) if (!ids.has(k)) delete S.no[k];
+  $("fname").textContent = o.title || o.name.replace(/\.docx$/i, "");
+  $("reset").hidden = o.mode === "case";
+  $("search").value = "";
+  show("editor"); render();
+  $("status").textContent = d.model.integ.ok ? "—" : "";
 }
 function render() {
   const app = $("app"), jump = $("jump");
-  app.innerHTML = ""; jump.innerHTML = '<option value="">跳到章節…</option>';
+  app.textContent = ""; jump.textContent = "";
+  jump.appendChild(new Option("跳到章節…", ""));
   const frag = document.createDocumentFragment();
+  const ig = S.model.integ;
+  if (!ig.ok) frag.appendChild(mk("div", "note bad",
+    "這份模板有 " + (ig.missing + ig.dup + ig.extra + ig.dupId) + " 個勾選項對不上，為了不弄壞文件，這一份不能匯出。請把這份模板的編號告訴 Claude。"));
   let sn = 0;
   for (const b of S.model.blocks) {
     if (b.kind === "head") {
       if (!isSection(b.text) || b.text.length > 40) continue;
-      const id = "s" + (sn++);
-      const d = document.createElement("div");
-      d.className = "sec"; d.id = id; d.textContent = b.text;
-      frag.appendChild(d);
-      const o = document.createElement("option"); o.value = id; o.textContent = b.text;
-      jump.appendChild(o);
+      const id = "s" + (sn++), d = mk("div", "sec", b.text);
+      d.id = id; frag.appendChild(d); jump.appendChild(new Option(b.text, id));
       continue;
     }
     frag.appendChild(card(b));
   }
   app.appendChild(frag);
-  refreshCount();
-  growAll();
+  refreshCount(); growAll();
 }
 function card(b) {
-  const c = document.createElement("div");
-  c.className = "card";
+  const c = mk("div", "card");
   c.dataset.txt = b.text;
-  const q = document.createElement("div");
-  q.className = "q";
-  q.textContent = b.text.replace(/\s{3,}/g, "  ");
-  c.appendChild(q);
-  const cbs = b.items.filter(i => i.type === "cb");
-  const txs = b.items.filter(i => i.type === "txt");
+  c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
+  const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt");
   if (cbs.length) {
-    const wrap = document.createElement("div"); wrap.className = "chips";
+    const wrap = mk("div", "chips");
     cbs.forEach(f => {
-      const el = document.createElement("div");
-      el.className = "chip" + (S.values[f.idx] ? " on" : "");
-      el.innerHTML = '<span class="bx">□</span>';
-      el.appendChild(document.createTextNode(f.label));
-      el.onclick = () => { S.values[f.idx] = !S.values[f.idx];
-        if (!S.values[f.idx]) delete S.values[f.idx];
-        el.classList.toggle("on"); el.querySelector(".bx").textContent = S.values[f.idx] ? "■" : "□";
-        save(); };
-      el.querySelector(".bx").textContent = S.values[f.idx] ? "■" : "□";
-      wrap.appendChild(el);
+      const el = mk("div", "chip"), bx = mk("span", "bx");
+      const paint = () => { const on = !!cur(f); el.classList.toggle("on", on); bx.textContent = on ? "■" : "□"; };
+      el.dataset.fid = f.id;
+      el.appendChild(bx); el.appendChild(document.createTextNode(f.label));
+      el.onclick = () => { setVal(f, !cur(f)); paint(); };
+      paint(); wrap.appendChild(el);
     });
     c.appendChild(wrap);
   }
   txs.forEach(f => {
-    const lab = document.createElement("div");
-    lab.className = "flab"; lab.textContent = f.label;
-    // 題目本身已經寫了這個欄位名稱就不重覆顯示（單欄位的卡片最常見）
+    const lab = mk("div", "flab", f.label);
     if (txs.length === 1 && b.text.includes(f.label)) lab.hidden = true;
-    const inp = document.createElement("textarea");
-    inp.className = "fld" + (S.values[f.idx] ? " filled" : "");
-    inp.rows = 1; inp.value = S.values[f.idx] || "";
-    inp.placeholder = "填寫…";
-    inp.oninput = () => { const v = inp.value;
-      if (v) S.values[f.idx] = v; else delete S.values[f.idx];
-      inp.classList.toggle("filled", !!v); grow(inp); save(); };
-    c.appendChild(lab); c.appendChild(inp);
+    const tag = mk("span", "tag", "自動帶入"); tag.hidden = S.auto[f.id] === undefined || !!S.no[f.id]; lab.appendChild(tag);
+    if (!tag.hidden) lab.hidden = false;
+    c.appendChild(lab);
+    const mark = el => el.classList.toggle("filled", !!cur(f));
+    const onch = (el, v) => { setVal(f, v); tag.hidden = true; mark(el); };
+    if (f.kind === "date") {
+      const inp = mk("input", "fld"); inp.type = "date"; inp.value = cur(f) || ""; inp.dataset.fid = f.id;
+      const hint = mk("div", "fhint");
+      const ph = () => { hint.textContent = cur(f) ? "報告上會印成：" + fmtDate(cur(f), f.fmt) : ""; };
+      inp.onchange = inp.oninput = () => { onch(inp, inp.value); ph(); };
+      mark(inp); ph(); c.appendChild(inp); c.appendChild(hint);
+    } else if (f.opts && f.opts.length) {
+      const sel = mk("select", "fld"); sel.dataset.fid = f.id;
+      const free = f.kind === "combo", v0 = cur(f) || "";
+      sel.appendChild(new Option("（未選）", ""));
+      f.opts.forEach(o => sel.appendChild(new Option(o, o)));
+      if (free) sel.appendChild(new Option("自行輸入…", "__free__"));
+      const inp = mk("textarea", "fld"); inp.rows = 1; inp.placeholder = "自行輸入…"; inp.dataset.fid = f.id + ":free";
+      const custom = v0 && !f.opts.includes(v0);
+      sel.value = custom ? (free ? "__free__" : "") : v0; inp.value = custom ? v0 : ""; inp.hidden = !(custom && free);
+      sel.onchange = () => { inp.hidden = sel.value !== "__free__";
+        onch(sel, sel.value === "__free__" ? inp.value : sel.value); if (!inp.hidden) inp.focus(); };
+      inp.oninput = () => { onch(sel, inp.value); grow(inp); };
+      mark(sel); c.appendChild(sel); c.appendChild(inp);
+    } else {
+      const inp = mk("textarea", "fld"); inp.rows = 1; inp.value = cur(f) || ""; inp.placeholder = "填寫…"; inp.dataset.fid = f.id;
+      inp.oninput = () => { onch(inp, f.blank ? inp.value.replace(/\n/g, " ") : inp.value); grow(inp); };
+      mark(inp); c.appendChild(inp);
+    }
   });
   return c;
 }
 function grow(el) {
-  if (el.clientWidth < 60) return;          // 版面還沒算好就別量
+  if (el.tagName !== "TEXTAREA" || el.clientWidth < 60) return;      // 版面還沒算好就別量
   el.style.height = "auto";
   el.style.height = Math.min(el.scrollHeight + 2, 260) + "px";
 }
 function growAll() {
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.querySelectorAll(".fld").forEach(grow);
-  }));
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll("textarea.fld").forEach(grow)));
+}
+function counts(model, values) {
+  const v = f => values[f.id] !== undefined ? values[f.id] : f.orig;
+  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt");
+  return { cb: cb.length, tx: tx.length, on: cb.filter(f => v(f)).length, fi: tx.filter(f => v(f)).length };
 }
 function refreshCount() {
-  const cb = S.model.fields.filter(f => f.type === "cb").length;
-  const tx = S.model.fields.filter(f => f.type === "txt").length;
-  const on = S.model.fields.filter(f => f.type === "cb" && S.values[f.idx]).length;
-  const fi = S.model.fields.filter(f => f.type === "txt" && S.values[f.idx]).length;
-  $("count").textContent = `${on}/${cb} 勾　${fi}/${tx} 填`;
+  const n = counts(S.model, S.values);
+  $("count").textContent = n.on + "/" + n.cb + " 勾\u3000" + n.fi + "/" + n.tx + " 填";
 }
+const draftKey = () => S.mode === "case" ? S.caseId + "|" + S.rid : "af4:" + S.sha;
 let saveT = null;
-function save() {
-  refreshCount();
+function save() { S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400); }
+/* 回傳 true＝草稿確實存進手機了（或本來就沒有要存的）；false＝沒存成功。一次只跑一個，後呼叫的排在前一個後面。 */
+let flushP = Promise.resolve(true);
+function flush() { flushP = flushP.then(doFlush, doFlush); return flushP; }
+async function doFlush() {
   clearTimeout(saveT);
-  saveT = setTimeout(() => {
-    try { localStorage.setItem(S.key, JSON.stringify(S.values));
-          $("status").textContent = "草稿已自動儲存 " + new Date().toLocaleTimeString("zh-TW", {hour:"2-digit",minute:"2-digit"});
-    } catch (e) { $("status").textContent = "⚠️ 草稿存不進去（瀏覽器空間不足）"; }
-  }, 400);
+  if (!S.dirty || !S.model) return true;
+  S.dirty = false;
+  const rec = { values: S.values, auto: S.auto, no: S.no, sha: S.sha, at: Date.now() };
+  try {
+    if (S.mode === "case") {
+      const c = await DB.get("cases", S.caseId);
+      if (!c || !c.reports.some(r => r.rid === S.rid)) return true;       // 這份報告已經被移除：不把草稿寫回去
+      await DB.put("drafts", draftKey(), rec);
+    }
+    else localStorage.setItem(draftKey(), JSON.stringify(rec));
+    $("status").textContent = "草稿已自動儲存 " + new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    $("status").className = "st";
+    return true;
+  } catch (e) {
+    S.dirty = true;
+    $("status").textContent = "⚠️ 草稿沒存成功，請先按「匯出 Word」保住內容";
+    $("status").className = "st st-bad";
+    return false;
+  }
 }
+document.addEventListener("visibilitychange", () => { if (document.hidden) flush(); else retryPending(false); });
+addEventListener("pagehide", flush);
 
 $("jump").onchange = e => { const el = document.getElementById(e.target.value);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); e.target.value = ""; };
 $("search").oninput = e => {
   const q = e.target.value.trim();
-  document.querySelectorAll(".card").forEach(c => {
-    c.hidden = !!q && !c.dataset.txt.includes(q);
-  });
+  document.querySelectorAll(".card").forEach(c => { c.hidden = !!q && !c.dataset.txt.includes(q); });
   document.querySelectorAll(".sec").forEach(s => { s.hidden = !!q; });
 };
 $("reset").onclick = () => {
-  if (!confirm("清空這份的所有勾選與填寫？（文件本身不會變）")) return;
-  S.values = {}; try { localStorage.removeItem(S.key); } catch (e) {}
-  render(); toast("已清空");
+  if (!confirm("清空這份的所有勾選與填寫？（原本的檔案不會變）")) return;
+  S.values = {}; S.auto = {}; S.no = {}; S.dirty = true; flush(); render(); toast("已清空");
 };
-
-/* ── 匯出 ─────────────────────────────────────────────────── */
+$("ed-back").onclick = async () => {
+  if (!(await flush()) && !confirm("草稿沒有存進手機。現在離開，剛才改的內容會不見。\n\n建議按「取消」，先按「匯出 Word」把內容保住。\n\n確定要離開嗎？")) return;
+  const mode = S.mode, cid = S.caseId;
+  S.model = null; S.dirty = false;                 // 離開填寫畫面：之後不會再有東西把這份草稿寫回去
+  if (mode === "case") openCase(cid); else goHome();
+};
 $("export").onclick = async () => {
   const btn = $("export"); btn.disabled = true; btn.textContent = "產生中…";
   try {
-    S.model.fields.forEach(f => {
-      const v = S.values[f.idx];
-      if (f.type === "cb") setCheckbox(f, !!v);
-      else if (v) setText(f, v);
-    });
-    const xml = new XMLSerializer().serializeToString(S.xmlDoc);
-    const bytes = new TextEncoder().encode(xml);
-    const packed = await deflateRaw(bytes);
-    const out = S.entries.map(e => e.name === "word/document.xml"
-      ? { ...e, method: packed ? 8 : 0, crc: crc32(bytes),
-          usize: bytes.length, raw: packed || bytes }
-      : e);
-    const blob = await writeZip(out);
-    const name = S.fname.replace(/\.docx$/i, "") + "_已填寫.docx";
-    const file = new File([blob], name, { type: blob.type });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file] }); toast("已匯出"); return; }
-      catch (e) { if (e && e.name === "AbortError") return; }
+    const saved = await flush();
+    if (S.mode === "case") {
+      // 一律用「畫面上當下的內容」產檔，不回頭讀手機裡可能沒存成功的舊草稿
+      let f;
+      try { f = await exportReport(S.caseId, S.rid, { values: S.values, auto: S.auto, no: S.no }); }
+      catch (e) {
+        // 救援：手機的儲存讀不到或寫不進去時，直接用畫面上這份模板與內容產檔。
+        // 模板本身對不上（完整性檢查沒過）時，buildDocx 會再丟一次錯，照樣不匯出。
+        const bytes = await buildDocx(S.ab, S.values);
+        f = { name: S.outName || (safeName(S.name) + ".docx"), bytes, type: DOCX_MIME, stored: false };
+      }
+      await offerShare([f]);
+      if (!saved || !f.stored) { toast("Word 已用畫面上的內容產生，但手機裡沒存成功。請務必把這份 Word 存好。", true); return; }
     }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = name; document.body.appendChild(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
-    toast("已匯出：" + name);
+    else {
+      const bytes = await buildDocx(S.ab, S.values);
+      const sent = await offerShare([{ name: S.name.replace(/\.docx$/i, "").replace(/_已填寫$/, "") + "_已填寫.docx", bytes, type: DOCX_MIME }]);
+      if (sent) { clearTimeout(saveT); S.dirty = false; try { localStorage.removeItem(draftKey()); } catch (e) {}
+                  $("status").textContent = "已匯出。要接著改，請開剛才存下來的那個檔。"; }
+    }
+    toast("Word 已產生");
   } catch (err) { toast("匯出失敗：" + (err.message || err), true); }
   finally { btn.disabled = false; btn.textContent = "匯出 Word"; }
 };
 
-/* 離線用：把整包存進瀏覽器快取，之後沒網路也打得開（本機開檔時不註冊） */
-if ("serviceWorker" in navigator && location.protocol.startsWith("http"))
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+/* 直接開一份 docx（Mac 先灌好的檔、或之前匯出想接著填的檔） */
+for (const id of ["file", "file2"]) $(id).addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = "";
+  if (f) openDirect(f);
+});
+async function openDirect(file) {
+  try {
+    const ab = await file.arrayBuffer();
+    S.sha = await sha256(ab);
+    let rec = null;
+    try { rec = JSON.parse(localStorage.getItem("af4:" + S.sha) || "null"); } catch (e) {}
+    if (rec && rec.values && Object.keys(rec.values).length &&
+        !confirm("這份檔有 " + hm(rec.at || Date.now()) + " 填到一半、還沒匯出的內容。\n\n要接著填嗎？\n（如果這次是另一位個案，請按「取消」，會丟掉那份草稿、從檔案本身重新開始）")) {
+      rec = null; try { localStorage.removeItem("af4:" + S.sha); } catch (e) {}
+    }
+    await startEditor({ mode: "direct", ab, name: file.name, values: rec && rec.values, auto: {}, no: rec && rec.no });
+    if (rec && Object.keys(S.values).length) toast("已接著上次的內容");
+  } catch (err) { toast(err.message || String(err), true); }
+}
 
-/* 開發測試用：?demo=檔名.docx 直接載入同資料夾的檔 */
+/* ══ 模板庫 ═════════════════════════════════════════════════ */
+async function tplIndex() { return await kvGet("tplIndex", []); }
+function tplMeta(path, size, sha) {
+  const parts = path.split("/"), base = parts[parts.length - 1];
+  const kind = /\.xlsx$/i.test(base) ? "xlsx" : "docx";
+  const m = /編號\s*0*(\d+)/.exec(base);
+  let cat = parts.length > 1 ? parts[parts.length - 2] : "";
+  if (/^新版報告書/.test(cat) || /^單檔$/.test(cat)) cat = "";
+  const title = base.replace(/\.(docx|xlsx)$/i, "").replace(/^【報告書】/, "").replace(/^●/, "");
+  return { key: path, kind, cat: kind === "xlsx" ? "爬梯機" : (cat || "其他"), num: m ? +m[1] : 999, title, size, sha, at: Date.now() };
+}
+async function importFiles(fileList) {
+  let added = 0, bad = 0, cfg = false, pages0 = null, skipCfg = false;
+  const idx = await tplIndex(), byKey = new Map(idx.map(x => [x.key, x]));
+  const putOne = async (path, bytes) => {
+    const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    if (/\.docx$/i.test(path)) { const d = await openDocx(ab); if (!d.model.fields.length) throw new Error("沒有可填欄位"); }
+    else readZip(ab);
+    const old = byKey.get(path), meta = tplMeta(path, bytes.length, await sha256(ab));
+    if (old) { meta.fav = old.fav; if (old.sha === meta.sha) meta.pages0 = old.pages0; }
+    await DB.put("tpl", path, ab); byKey.set(path, meta); added++;
+  };
+  for (const file of fileList) {
+    const name = file.name, ab = await file.arrayBuffer();
+    try {
+      if (/\.json$/i.test(name)) { await saveSetting(new TextDecoder().decode(ab)); cfg = true; }
+      else if (/\.zip$/i.test(name)) {
+        for (const e of readZip(ab)) {
+          const base = e.name.split("/").pop();
+          if (!base || base.startsWith("~$") || base.startsWith(".") || e.name.startsWith("__MACOSX/")) continue;
+          if (/\.json$/i.test(base) && /連線設定/.test(base)) { skipCfg = true; continue; }   // 包裡夾帶的連線設定不收（防止被默默改掉 PDF 送去哪）
+          if (/\.json$/i.test(base) && /頁數基準/.test(base)) {
+            try { pages0 = JSON.parse(new TextDecoder().decode(await entryBytes(e))); } catch (x) { bad++; }
+            continue;
+          }
+          if (!/\.(docx|xlsx)$/i.test(base)) continue;
+          try { await putOne(e.name, await entryBytes(e)); } catch (x) { bad++; }
+        }
+      }
+      else if (/\.(docx|xlsx)$/i.test(name)) await putOne("單檔/" + name, new Uint8Array(ab));
+      else bad++;
+    } catch (x) { bad++; }
+  }
+  if (pages0) for (const m of byKey.values()) {
+    const b = pages0[m.key];
+    if (b && typeof b.pages === "number" && b.sha === m.sha) m.pages0 = b.pages;   // 同一份內容才算數
+  }
+  await DB.put("kv", "tplIndex", [...byKey.values()]);
+  if (navigator.storage && navigator.storage.persist) { try { await navigator.storage.persist(); } catch (e) {} }
+  return { added, bad, cfg, skipCfg };
+}
+const CAT_ORDER = ["長照3.0", "甲類", "其他", "乙類", "丙類", "戊類", "爬梯機"];
+function tplSorted(idx) {
+  return idx.slice().sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) ||
+    (CAT_ORDER.indexOf(a.cat) + 99) % 99 - (CAT_ORDER.indexOf(b.cat) + 99) % 99 || a.num - b.num || a.title.localeCompare(b.title, "zh-Hant"));
+}
+function tplLabel(t) { return (t.num < 999 ? "編號 " + t.num + "｜" : "") + t.title.replace(/^編號\s*0*\d+[-_ ]*/, ""); }
+async function showTpl() {
+  const idx = await tplIndex(), list = $("tpl-list"); list.textContent = "";
+  $("tpl-stat").textContent = idx.length ? "目前有 " + idx.length + " 份（" + idx.filter(x => x.kind === "docx").length + " 份報告書）" : "目前是空的。";
+  let cat = null;
+  for (const t of tplSorted(idx)) {
+    const g = t.fav ? "★ 常用" : t.cat;
+    if (g !== cat) { cat = g; list.appendChild(mk("div", "grp", g)); }
+    const b = mk("div", "box");
+    b.appendChild(mk("div", "t", tplLabel(t)));
+    b.appendChild(mk("div", "s", (t.fav ? t.cat + "｜" : "") + Math.round(t.size / 1024) + " KB｜" + hm(t.at) + " 匯入"));
+    if (t.kind === "docx") {
+      const r = mk("div", "rowbtns"), s = mk("button", "btn sm", t.fav ? "取消常用" : "設為常用");
+      s.onclick = async () => { const i2 = await tplIndex(); const x = i2.find(y => y.key === t.key); if (x) x.fav = !x.fav;
+                                await DB.put("kv", "tplIndex", i2); showTpl(); };
+      r.appendChild(s); b.appendChild(r);
+    }
+    list.appendChild(b);
+  }
+  show("v-tpl");
+}
+$("btn-tpl").onclick = showTpl;
+$("tpl-file").onchange = async e => {
+  const fs = [...e.target.files]; e.target.value = "";
+  if (!fs.length) return;
+  toast("匯入中…");
+  try {
+    const r = await importFiles(fs);
+    toast("匯入 " + r.added + " 份" + (r.cfg ? "，連線設定已存" : "") + (r.bad ? "；" + r.bad + " 個檔看不懂或沒收" : "") +
+          (r.skipCfg ? "；模板包裡夾帶的連線設定沒有收，要設定請單獨匯入" : ""), !!r.bad && !r.added && !r.cfg);
+  } catch (err) { toast("匯入失敗：" + (err.message || err), true); }
+  showTpl();
+};
+$("tpl-clear").onclick = async () => {
+  if (!confirm("清空模板庫？（個案與已填的草稿不受影響，但要重新匯入才能開報告）")) return;
+  for (const k of await DB.keys("tpl")) await DB.del("tpl", k);
+  await DB.put("kv", "tplIndex", []); showTpl();
+};
+
+/* ══ 個案 ═══════════════════════════════════════════════════ */
+const LEVELS = ["輕度", "中度", "重度", "極重度"];
+const CATS = ["第一類", "第二類", "第三類", "第四類", "第五類", "第六類", "第七類", "第八類"];
+let C = null;                                 // 目前開著的個案
+async function saveCase() { C.upd = Date.now(); await DB.put("cases", C.id, C); }
+function birthText(b) { return b.by && b.bm && b.bd ? "民國" + (+b.by) + "/" + pad2(+b.bm) + "/" + pad2(+b.bd) : ""; }
+
+async function goHome() {
+  C = null; S.model = null; S.dirty = false;
+  $("ver").textContent = VERSION + (APP ? "" : "（瀏覽器分頁模式）");
+  $("needapp").hidden = APP; $("appbox").hidden = !APP;
+  show("v-home");
+  const my = NAV;
+  if (!APP || !DB.db) return;
+  const idx = await tplIndex(); $("notpl").hidden = idx.some(x => x.kind === "docx");
+  $("btn-tpl").textContent = "模板庫（" + idx.length + " 份）";
+  const cfg = await kvGet("pdf"); $("btn-set").textContent = "PDF 連線設定（" + (cfg ? "已設定" : "尚未設定") + "）";
+  const list = $("case-list"); list.textContent = "";
+  const cases = (await DB.all("cases")).sort((a, b) => b.upd - a.upd);
+  if (my !== NAV) return;
+  if (!cases.length) list.appendChild(mk("div", "sub", "還沒有個案。"));
+  for (const c of cases) {
+    const b = mk("div", "box tap");
+    b.appendChild(mk("div", "t", c.basic.name || "（未填姓名）"));
+    const old = Date.now() - c.upd > 30 * 864e5;
+    const s = mk("div", "s", "評估日 " + (c.evalDate || "—") + "｜" + c.reports.length + " 份報告｜" + hm(c.upd) + " 更新");
+    if (old) s.appendChild(mk("span", "tag", "超過 30 天，建議清理"));
+    b.appendChild(s); b.onclick = () => openCase(c.id); list.appendChild(b);
+  }
+  await paintPending();
+}
+$("btn-new-case").onclick = async () => {
+  C = { id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: Date.now(), upd: Date.now(),
+        basic: {}, evalDate: today(), evaluator: await kvGet("evaluator", ""), reports: [] };
+  editBasic(true);
+};
+async function openCase(id) {
+  const my = ++NAV, c = await DB.get("cases", id);
+  if (my !== NAV) return;
+  if (!c) { toast("找不到這個個案", true); return goHome(); }
+  C = c; S.model = null; S.dirty = false;
+  $("case-title").textContent = C.basic.name || "（未填姓名）";
+  const b = C.basic, sum = $("case-sum"); sum.textContent = "";
+  sum.appendChild(mk("div", "t", (b.name || "（未填姓名）") + (b.idno ? "\u3000" + b.idno : "")));
+  sum.appendChild(mk("div", "s", [birthText(b), b.cname && "聯絡人 " + b.cname + (b.rel ? "（" + b.rel + "）" : ""), b.phone].filter(Boolean).join("｜") || "基本資料還沒填"));
+  sum.appendChild(mk("div", "s", "評估日期 " + (C.evalDate || "—") + "｜評估人員 " + (C.evaluator || "—")));
+  const list = $("rep-list"); list.textContent = "";
+  if (!C.reports.length) list.appendChild(mk("div", "sub", "還沒有報告，按下面的「加一份報告」。"));
+  const idx = await tplIndex(), rows = [];
+  for (const r of c.reports) { rows.push(await repRow(c, r, idx)); if (my !== NAV) return; }
+  rows.forEach(x => list.appendChild(x));
+  show("v-case");
+}
+async function repRow(c, r, idx) {
+  const cid = c.id, key = cid + "|" + r.rid, b = mk("div", "box");
+  b.dataset.rid = r.rid;
+  b.appendChild(mk("div", "t", r.title));
+  const dx = await DB.get("files", key + "|docx"), pdf = await DB.get("files", key + "|pdf"),
+        job = await DB.get("files", key + "|pdfjob"), dr = await DB.get("drafts", key);
+  const s = mk("div", "s");
+  const edited = !!dx && wordStale(dx, dr, c);
+  const fresh = !!(pdf && dx && pdf.srcSha === dx.sha && !edited);       // PDF 與「現在的內容」對得上
+  s.appendChild(document.createTextNode(dx ? "Word " + hm(dx.at) + (edited ? "（之後又改過）" : "") : "還沒匯出 Word"));
+  let pst = "", cls = "";
+  if (job && job.state === "pending") { pst = "PDF 待轉（" + (job.err || "等 Mac") + "）"; cls = "st-warn"; }
+  else if (job && job.state === "failed") { pst = "PDF 轉檔失敗：" + (job.err || ""); cls = "st-bad"; }
+  else if (fresh) {
+    const t0 = idx.find(t => t.key === r.tplKey), p0 = t0 && t0.pages0;
+    const diff = pdf.pages && p0 && pdf.pages !== p0;
+    pst = "PDF 好了" + (pdf.pages ? "（" + pdf.pages + " 頁" + (diff ? "；空白模板是 " + p0 + " 頁，請看一眼" : "") + "）" : "") +
+          (pdf.oddFonts ? "\u3000⚠️ 這份 PDF 用到沒有對應好的字型，版面可能跑掉；送件前一定要打開看，並回報 Claude" : "");
+    cls = pdf.oddFonts ? "st-bad" : diff ? "st-warn" : "st-ok";
+  }
+  else if (pdf) { pst = "PDF 已過期（Word 之後改過）"; cls = "st-warn"; }
+  if (pst) { s.appendChild(document.createTextNode("｜")); s.appendChild(mk("span", cls, pst)); }
+  b.appendChild(s);
+  if (!idx.some(t => t.key === r.tplKey && t.sha === r.tplSha))
+    b.appendChild(mk("div", "s st-bad", "模板庫裡找不到這份模板（可能清過或換過版）。請重新匯入同一版模板。"));
+  const row = mk("div", "rowbtns");
+  const still = () => C && C.id === cid && !$("v-case").hidden;           // 做完事回來，畫面還停在這個個案的頁面才重畫（在填別份或改資料時不打擾）
+  const add = (txt, cls2, fn) => { const x = mk("button", "btn sm " + cls2, txt);
+    x.onclick = async () => { x.disabled = true; try { await fn(); } catch (e) { toast(e.message || String(e), true); } x.disabled = false; };
+    row.appendChild(x); return x; };
+  add("填寫", "pri", () => openReport(r.rid));
+  add("Word", "", async () => { const f = await exportReport(cid, r.rid); await offerShare([f]); if (still()) openCase(cid); });
+  add("轉 PDF", "", async () => { await exportIfStale(cid, r.rid); toast("送去轉檔…"); const st = await convertPdf(cid, r.rid); pdfToast(st); if (still()) openCase(cid); });
+  if (fresh) add("分享 PDF", "", () => offerShare([{ name: pdf.name, bytes: pdf.bytes, type: "application/pdf" }]));
+  add("移除", "danger", async () => {
+    if (!confirm("移除這份報告？（這份填的內容、Word、PDF 都會從手機刪掉）")) return;
+    const cc = await DB.get("cases", cid); if (!cc) return;
+    cc.reports = cc.reports.filter(x => x.rid !== r.rid); cc.upd = Date.now(); await DB.put("cases", cid, cc);
+    await DB.del("drafts", key); await DB.delPrefix("files", key + "|"); if (still()) openCase(cid);
+  });
+  b.appendChild(row);
+  return b;
+}
+$("btn-del-case").onclick = async () => {
+  const id = C.id;
+  if (!confirm("刪除這個個案在手機裡的全部資料？（基本資料、填寫內容、Word、PDF、待轉的 PDF。已存到「檔案」App 的檔不受影響）")) return;
+  await DB.del("cases", id);                    // 先刪個案本身，之後晚回來的轉檔結果就找不到東西可以寫
+  await DB.delPrefix("drafts", id + "|"); await DB.delPrefix("files", id + "|");
+  toast("已刪除"); goHome();
+};
+
+/* ── 基本資料表單 ───────────────────────────────────────── */
+const B = { liveSame: false, mail: "", cert: null, cats: [], level: "" };
+function chipSet(box, opts, get, set, multi) {
+  box.textContent = "";
+  opts.forEach(([val, lab]) => {
+    const el = mk("div", "chip"), bx = mk("span", "bx");
+    const paint = () => { const on = multi ? get().includes(val) : get() === val; el.classList.toggle("on", on); bx.textContent = on ? "■" : "□"; };
+    el.appendChild(bx); el.appendChild(document.createTextNode(lab)); el.dataset.v = String(val);
+    el.onclick = () => { set(val); box.querySelectorAll(".chip").forEach(x => x._paint()); };
+    el._paint = paint; paint(); box.appendChild(el);
+  });
+}
+let basicIsNew = false;
+function editBasic(isNew) {
+  basicIsNew = isNew;
+  const b = C.basic;
+  for (const [id, k] of [["b-name", "name"], ["b-idno", "idno"], ["b-by", "by"], ["b-bm", "bm"], ["b-bd", "bd"], ["b-cname", "cname"],
+                         ["b-rel", "rel"], ["b-phone", "phone"], ["b-house", "house"], ["b-live", "live"], ["b-mail", "mailAddr"], ["b-catother", "catOther"]])
+    $(id).value = b[k] || "";
+  $("b-evaldate").value = C.evalDate || ""; $("b-evaluator").value = C.evaluator || "";
+  Object.assign(B, { liveSame: !!b.liveSame, mail: b.mail || "", cert: b.cert === undefined ? null : b.cert, cats: (b.cats || []).slice(), level: b.level || "" });
+  const ls = $("b-livesame"), lp = () => { ls.classList.toggle("on", B.liveSame); ls.querySelector(".bx").textContent = B.liveSame ? "■" : "□"; };
+  ls.onclick = () => { B.liveSame = !B.liveSame; lp(); }; lp();
+  chipSet($("b-mailsel"), [["house", "同戶籍地"], ["live", "同居住（修繕）地"]], () => B.mail, v => { B.mail = B.mail === v ? "" : v; });
+  chipSet($("b-cert"), [[false, "無"], [true, "有"]], () => B.cert, v => { B.cert = B.cert === v ? null : v; });
+  chipSet($("b-cats"), CATS.map((c, i) => [i + 1, c]), () => B.cats, v => { B.cats = B.cats.includes(v) ? B.cats.filter(x => x !== v) : [...B.cats, v]; }, true);
+  chipSet($("b-level"), LEVELS.map(l => [l, l]), () => B.level, v => { B.level = B.level === v ? "" : v; });
+  show("v-basic");
+}
+$("btn-edit-basic").onclick = () => editBasic(false);
+$("basic-back").onclick = () => { if (basicIsNew) goHome(); else openCase(C.id); };
+$("basic-save").onclick = async () => {
+  const g = id => $(id).value.trim();
+  C.basic = { name: g("b-name"), idno: g("b-idno").toUpperCase(), by: g("b-by"), bm: g("b-bm"), bd: g("b-bd"), cname: g("b-cname"), rel: g("b-rel"),
+              phone: g("b-phone"), house: g("b-house"), liveSame: B.liveSame, live: g("b-live"), mail: B.mail, mailAddr: g("b-mail"),
+              cert: B.cert, cats: B.cats.slice().sort(), catOther: g("b-catother"), level: B.level };
+  C.evalDate = $("b-evaldate").value; C.evaluator = g("b-evaluator"); C.brev = Date.now();
+  try { await saveCase(); if (C.evaluator) await DB.put("kv", "evaluator", C.evaluator); }
+  catch (e) { toast("沒存成功：" + (e.message || e), true); return; }
+  openCase(C.id);
+};
+
+/* ── 把基本資料對到這份模板的欄位（對不上的不猜、留空） ──
+   規則（寧可不帶，也不帶錯）：
+   · 標籤要剛好是那幾個字、後面接冒號，而且標籤前面不能緊接中文字
+     （「原評估人員：」「下次評估日期：」「聯絡人姓名：」都不會被當成 評估人員／評估日期／姓名）
+   · 每一項只帶第一個對到的格子
+   · 格子後面緊接「年」的（分成 年／月／日 三格的寫法）不帶
+   · 地址那兩行，整行剛好只有一個填空才帶 */
+const NC = "(?:^|[^\\u4e00-\\u9fff])";
+const BASIC_TXT = [
+  ["cname", new RegExp(NC + "聯絡人姓名\\s*[：:]\\s*$")],
+  ["rel",   new RegExp(NC + "與個案關係\\s*[：:]\\s*$")],
+  ["phone", new RegExp(NC + "聯絡電話\\s*[：:]\\s*$")],
+  ["house", new RegExp(NC + "戶籍地址\\s*[：:]\\s*$")],
+  ["idno",  new RegExp(NC + "身[分份]證(?:字號|號碼|統一編號)?\\s*[：:]\\s*$")],
+  ["birth", new RegExp(NC + "(?:生日|出生日期|出生年月日)\\s*[：:]\\s*$")],
+  ["name",  new RegExp(NC + "姓名\\s*[：:]\\s*$")],
+];
+const TAIL_WHO = new RegExp(NC + "(?:評估人員|適配、檢核人員)\\s*[：:]\\s*$");
+const TAIL_DATE = new RegExp(NC + "評估日期\\s*[：:]\\s*$");
+function mapBasic(model, c) {
+  const b = c.basic || {}, out = {}, used = new Set();
+  const val = { cname: b.cname, rel: b.rel, phone: b.phone, house: b.house, idno: b.idno, birth: birthText(b), name: b.name };
+  const split = f => /^[\s\u3000]*年/.test(f.next || "");               // 後面緊接「年」＝年月日分格
+  const put = (key, f, v) => {
+    if (v === "" || v == null || v === false || out[f.id] !== undefined) return;
+    if (key) { if (used.has(key)) return; used.add(key); }
+    out[f.id] = v;
+  };
+  let inBasic = false, done = false;
+  for (const blk of model.blocks) {
+    const t = blk.text;
+    if (!inBasic) { if (/基本資料/.test(t)) inBasic = true; if (blk.kind === "head") continue; }
+    if (inBasic && !done) {
+      if (blk.kind === "head") { if (isSection(t) && !/基本資料/.test(t)) done = true; continue; }
+      if (/^二[、．.]/.test(t)) { done = true; }
+      else {
+        const mailBlk = /公文寄送/.test(t), liveBlk = !mailBlk && /(居住|修繕)地址/.test(t);
+        const texts = blk.items.filter(f => f.type === "txt");
+        for (const f of blk.items) {
+          if (f.type === "cb") {
+            const L = f.label;
+            if (liveBlk && /^同戶籍地$/.test(L)) put("cbLive", f, !!b.liveSame);
+            else if (mailBlk && /^同戶籍地$/.test(L)) put("cbMailH", f, b.mail === "house");
+            else if (mailBlk && /^同(居住|修繕)地$/.test(L)) put("cbMailL", f, b.mail === "live");
+            else if (/是否領有身心障礙證明/.test(t) && L === "無") put("cbNo", f, b.cert === false);
+            else if (/是否領有身心障礙證明/.test(t) && L === "有") put("cbYes", f, b.cert === true);
+            else if (/程度分級/.test(t) && LEVELS.includes(L)) put("lv" + L, f, b.level === L);
+            else if (CATS.includes(L)) put("cat" + L, f, (b.cats || []).includes(CATS.indexOf(L) + 1));
+            else if (L === "其他" && /第[七八]類|身心障礙類別/.test(t)) put("cbOther", f, !!b.catOther);
+          } else if (f.kind === "text" && !split(f)) {
+            const x = f.ctx || "";
+            if (mailBlk) { if (!b.mail && texts.length === 1 && /[：:]\s*$/.test(x)) put("mail", f, b.mailAddr); }
+            else if (liveBlk) { if (!b.liveSame && texts.length === 1 && /[：:]\s*$/.test(x)) put("live", f, b.live); }
+            else if (/第[七八]類|身心障礙類別/.test(t)) { if (/其他\s*[：:]\s*$/.test(x)) put("catOther", f, b.catOther); }
+            else for (const [key, re] of BASIC_TXT) if (re.test(x)) { put(key, f, val[key]); break; }
+          }
+        }
+        if (/程度分級/.test(t)) done = true;
+      }
+    }
+    if (blk.kind !== "q") continue;
+    for (const f of blk.items) {                              // 文末：評估人員、評估日期
+      if (f.type !== "txt" || split(f)) continue;
+      const x = f.ctx || "";
+      if (f.kind === "text" && TAIL_WHO.test(x)) put("who", f, c.evaluator);
+      else if (TAIL_DATE.test(x) && c.evalDate) put("when", f, f.kind === "date" ? c.evalDate : fmtDate(c.evalDate, { fmt: "e/MM/dd", tw: true }));
+    }
+  }
+  return out;
+}
+/* 帶入規則：格子是空的、或上次也是自動帶入且你沒改過，才會帶；你手動改過的不動 */
+function applyAuto(model, values, auto, no, mapped) {
+  const byId = new Map(model.fields.map(f => [f.id, f]));
+  // 同一題（同一段）的勾選只要你自己動過任何一個，這一題就整個交給你，之後改基本資料也不再自動勾或取消
+  const taken = new Set();
+  for (const f of model.fields) if (f.type === "cb" && no[f.id]) taken.add(f.block);
+  const mine = f => f.type === "cb" && taken.has(f.block);
+  for (const id of Object.keys(auto)) {
+    const f = byId.get(id);
+    if (!f || no[id] || values[id] !== auto[id] || mine(f)) { delete auto[id]; continue; }
+    if (mapped[id] === undefined) { delete values[id]; delete auto[id]; }
+  }
+  for (const [id, v] of Object.entries(mapped)) {
+    const f = byId.get(id); if (!f || no[id] || mine(f)) continue;
+    const own = values[id] !== undefined && auto[id] === undefined;
+    const hasOrig = f.type === "cb" ? f.orig : !!f.orig;
+    if (own || (hasOrig && auto[id] === undefined)) continue;
+    if (f.type === "cb" ? !!v === f.orig : String(v) === f.orig) { delete values[id]; delete auto[id]; continue; }
+    values[id] = v; auto[id] = v;
+  }
+}
+
+/* ── 報告：加入、開啟、匯出 ─────────────────────────────── */
+$("btn-add-rep").onclick = async () => {
+  const idx = tplSorted((await tplIndex()).filter(t => t.kind === "docx"));
+  if (!idx.length) { toast("模板庫是空的，請先匯入", true); return; }
+  const box = $("sheet-in"); box.textContent = "";
+  box.appendChild(mk("h3", "", "選要寫的報告（可多選）"));
+  const q = mk("input"); q.type = "search"; q.placeholder = "搜尋編號或名稱…"; q.className = "fld"; q.style.marginBottom = "8px"; box.appendChild(q);
+  const picked = new Set(), listEl = mk("div"); box.appendChild(listEl);
+  const paint = () => {
+    listEl.textContent = ""; let cat = null; const kw = q.value.trim();
+    for (const t of idx) {
+      const lab = tplLabel(t);
+      if (kw && !(lab + t.cat).includes(kw)) continue;
+      const g = t.fav ? "★ 常用" : t.cat;
+      if (g !== cat) { cat = g; listEl.appendChild(mk("div", "grp", g)); }
+      const el = mk("div", "chip" + (picked.has(t.key) ? " on" : "")); el.style.cssText = "display:block;border-radius:12px;margin:5px 0";
+      el.dataset.key = t.key;
+      el.appendChild(mk("span", "bx", picked.has(t.key) ? "■" : "□")); el.appendChild(document.createTextNode(lab + (t.fav ? "（" + t.cat + "）" : "")));
+      el.onclick = () => { picked.has(t.key) ? picked.delete(t.key) : picked.add(t.key); paint(); };
+      listEl.appendChild(el);
+    }
+    ok.textContent = "加入 " + picked.size + " 份";
+  };
+  const ok = mk("button", "btn pri wide", "加入"); ok.id = "pick-ok";
+  const cid0 = C.id;
+  ok.onclick = async () => {
+    if (!C || C.id !== cid0) { closeSheet(); return; }
+    for (const t of idx) if (picked.has(t.key))
+      C.reports.push({ rid: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), tplKey: t.key, tplSha: t.sha,
+                       num: t.num, cat: t.cat, title: tplLabel(t) + "（" + t.cat + "）" });
+    try { await saveCase(); } catch (e) { toast("沒存成功", true); }
+    closeSheet(); openCase(C.id);
+  };
+  q.oninput = paint; box.appendChild(ok);
+  const c = mk("button", "btn wide", "取消"); c.onclick = closeSheet; box.appendChild(c);
+  paint(); $("sheet").hidden = false;
+};
+const valsKey = v => JSON.stringify(Object.keys(v).sort().map(k => [k, v[k]]));
+async function loadReport(caseId, rid, live) {   // 取出模板、草稿（或畫面上當下的內容），並套上最新的基本資料
+  const c = await DB.get("cases", caseId), r = c && c.reports.find(x => x.rid === rid);
+  if (!r) throw new Error("找不到這份報告");
+  const ab = await DB.get("tpl", r.tplKey);
+  if (!ab || await sha256(ab) !== r.tplSha) throw new Error("模板庫裡找不到這份模板的同一版，請重新匯入");
+  const dr = live || (await DB.get("drafts", caseId + "|" + rid)) || {};
+  const o = { c, r, ab, values: dr.values || {}, auto: dr.auto || {}, no: dr.no || {}, saved: true };
+  const before = valsKey(o.values) + valsKey(o.auto);
+  o.model = (await openDocx(ab)).model;
+  applyAuto(o.model, o.values, o.auto, o.no, mapBasic(o.model, c));
+  if (live || before !== valsKey(o.values) + valsKey(o.auto) || !dr.values) {
+    try { await DB.put("drafts", caseId + "|" + rid, { values: o.values, auto: o.auto, no: o.no, sha: r.tplSha, at: Date.now() }); }
+    catch (e) { o.saved = false; }
+  }
+  return o;
+}
+function outName(c, r, ext) {
+  const num = r.num < 999 ? pad2(r.num) : r.title.replace(/（.*$/, "").slice(0, 12);
+  return safeName([num, c.basic.name || "未填姓名", c.evaluator, (c.evalDate || today()).replace(/-/g, "")].filter(Boolean).join("_")) + "." + ext;
+}
+async function openReport(rid) {
+  const cid = C.id, o = await loadReport(cid, rid);
+  if (!C || C.id !== cid) return;                 // 載入途中已經切到別的個案：這份不開
+  S.sha = o.r.tplSha;
+  await startEditor({ mode: "case", ab: o.ab, name: o.r.title, title: o.r.title, values: o.values, auto: o.auto, no: o.no, caseId: cid, rid,
+                      outName: outName(o.c, o.r, "docx") });
+}
+/* 產 Word，並把確切內容與雜湊值存在手機（PDF 就是用這一份轉）。
+   live＝畫面上當下的內容（從填寫畫面按匯出時傳進來）；stored＝有沒有成功存進手機 */
+async function exportReport(caseId, rid, live) {
+  const o = await loadReport(caseId, rid, live);
+  const bytes = await buildDocx(o.ab, o.values);
+  const rec = { bytes: bytes.buffer, sha: await sha256(bytes), name: outName(o.c, o.r, "docx"), at: Date.now(),
+                vk: valsKey(o.values), brev: o.c.brev || 0 };
+  let stored = o.saved;
+  try {
+    const c2 = await DB.get("cases", caseId);                          // 產檔途中個案或報告被刪了：不把檔案寫回去
+    if (c2 && c2.reports.some(x => x.rid === rid)) await DB.put("files", caseId + "|" + rid + "|docx", rec);
+  } catch (e) { stored = false; }
+  return { name: rec.name, bytes: rec.bytes, type: DOCX_MIME, stored };
+}
+/* Word 是不是最新：匯出後填的內容或基本資料有沒有再變 */
+function wordStale(dx, dr, c) { return !dx || dx.vk !== valsKey((dr && dr.values) || {}) || (dx.brev || 0) !== (c.brev || 0); }
+async function exportIfStale(caseId, rid) {
+  const key = caseId + "|" + rid, c = await DB.get("cases", caseId);
+  if (wordStale(await DB.get("files", key + "|docx"), await DB.get("drafts", key), c)) await exportReport(caseId, rid);
+}
+$("btn-stair").onclick = async () => {
+  const c = C, xs = (await tplIndex()).filter(t => t.kind === "xlsx");
+  if (!xs.length) { toast("模板庫裡沒有爬梯機記錄表，請先匯入", true); return; }
+  const t = xs[0], ab = await DB.get("tpl", t.key);
+  if (!ab || await sha256(ab) !== t.sha) { toast("爬梯機原檔對不上當初匯入的內容，請重新匯入", true); return; }
+  const name = safeName(["爬梯機記錄表", c.basic.name || "未填姓名", (c.evalDate || today()).replace(/-/g, "")].join("_")) + ".xlsx";
+  await offerShare([{ name, bytes: ab, type: XLSX_MIME }]);   // 原檔位元組原樣送出，不經任何重存
+};
+$("btn-share-all").onclick = async () => {
+  const btn = $("btn-share-all"); btn.disabled = true; btn.textContent = "準備檔案中…";
+  const c = C;
+  try {
+    const out = [];
+    for (const r of c.reports) {
+      const key = c.id + "|" + r.rid;
+      await exportIfStale(c.id, r.rid);
+      const dx = await DB.get("files", key + "|docx"), pdf = await DB.get("files", key + "|pdf");
+      if (!dx) continue;
+      out.push({ name: dx.name, bytes: dx.bytes, type: DOCX_MIME });
+      if (pdf && pdf.srcSha === dx.sha) out.push({ name: pdf.name, bytes: pdf.bytes, type: "application/pdf" });
+    }
+    if (!out.length) toast("這個個案還沒有報告", true); else await offerShare(out);
+  } catch (e) { toast("準備失敗：" + (e.message || e), true); }
+  btn.disabled = false; btn.textContent = "整案分享（Word＋PDF）";
+  if (C && C.id === c.id && !$("v-case").hidden) openCase(c.id);
+};
+
+/* ══ PDF：送家裡的 Mac 轉 ═══════════════════════════════════ */
+async function saveSetting(text) {
+  const o = JSON.parse(String(text).trim());
+  if (!o || typeof o.url !== "string" || typeof o.token !== "string" || o.token.length < 32) throw new Error("設定內容不對");
+  const u = new URL(o.url);
+  const local = LOCAL && u.origin === location.origin;      // 只有本機測試才允許
+  if (!(u.protocol === "https:" && /\.ts\.net$/.test(u.hostname)) && !local) throw new Error("位址必須是 Tailscale 的 https 位址");
+  const old = await kvGet("pdf");
+  if (old && new URL(old.url).host !== u.host &&
+      !confirm("PDF 會改成送到另一台主機：\n\n原本：" + new URL(old.url).host + "\n新的：" + u.host + "\n\n這是你自己剛在 Mac 上產生的設定嗎？不確定請按「取消」。"))
+    throw new Error("已取消，沿用原本的設定");
+  await DB.put("kv", "pdf", { url: o.url.replace(/\/+$/, ""), token: o.token });
+}
+async function pdfFetch(path, init) {
+  const cfg = await kvGet("pdf"); if (!cfg) throw Object.assign(new Error("還沒設定 PDF 連線"), { nocfg: true });
+  const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), (init && init.timeout) || 20000);
+  try {
+    return await fetch(cfg.url + path, { ...init, signal: ctl.signal, cache: "no-store", credentials: "omit",
+                                         headers: { ...(init && init.headers), "X-Filler-Token": cfg.token } });
+  } finally { clearTimeout(tm); }
+}
+/* 同一筆交易裡：確認手機裡的 Word 還是送去轉的那一份 → 才存 PDF；並且只清「自己那一筆」待轉。回傳有沒有存 */
+function commitPdf(key, dxSha, rec) {
+  return new Promise((res, rej) => {
+    let ok = false;
+    const t = DB.db.transaction("files", "readwrite"), o = t.objectStore("files");
+    t.oncomplete = () => res(ok); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    const g = o.get(key + "|docx");
+    g.onsuccess = () => {
+      const j = o.get(key + "|pdfjob");
+      j.onsuccess = () => {
+        if (j.result && j.result.srcSha === dxSha) o.delete(key + "|pdfjob");
+        if (g.result && g.result.sha === dxSha) { o.put(rec, key + "|pdf"); ok = true; }
+      };
+    };
+  });
+}
+/* 只有「手機裡的 Word 還是那一份」才寫待轉狀態；報告或個案已經刪掉就不寫（不留孤兒） */
+function setJob(key, dxSha, state, err) {
+  return new Promise((res, rej) => {
+    const t = DB.db.transaction("files", "readwrite"), o = t.objectStore("files");
+    t.oncomplete = () => res(); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    const g = o.get(key + "|docx");
+    g.onsuccess = () => { if (g.result && g.result.sha === dxSha) o.put({ state, srcSha: dxSha, at: Date.now(), err }, key + "|pdfjob"); };
+  });
+}
+/* 回傳：ok／stale（已有新版 Word，舊結果丟掉）／offline（連不上，排隊）／failed／nocfg／busy（這份正在轉） */
+const PDF_BUSY = new Set();
+async function convertPdf(caseId, rid) {
+  const key = caseId + "|" + rid;
+  if (PDF_BUSY.has(key)) return "busy";
+  PDF_BUSY.add(key);
+  try { return await convertOne(key); } finally { PDF_BUSY.delete(key); }
+}
+async function convertOne(key) {
+  const dx = await DB.get("files", key + "|docx");
+  if (!dx) { await DB.del("files", key + "|pdfjob"); return "failed"; }       // 報告已不在：殘留的待轉一併清掉
+  if (!(await kvGet("pdf"))) return "nocfg";
+  await setJob(key, dx.sha, "pending", "轉檔中");
+  let r;
+  try { r = await pdfFetch("/convert", { method: "POST", body: dx.bytes, timeout: 200000, headers: { "Content-Type": DOCX_MIME } }); }
+  catch (e) { await setJob(key, dx.sha, "pending", "連不到家裡的 Mac"); return "offline"; }
+  if (!r.ok) {
+    let msg = ""; try { msg = (await r.text()).slice(0, 80); } catch (e) {}
+    if (r.status === 502 || r.status === 503 || r.status === 504) {
+      await setJob(key, dx.sha, "pending", r.status === 503 && msg ? msg : "Mac 上的轉檔服務沒回應"); return "offline"; }
+    if (r.status === 429) { await setJob(key, dx.sha, "pending", "Mac 正在忙，稍後會再試"); return "offline"; }
+    await setJob(key, dx.sha, "failed", r.status === 401 || r.status === 403 ? "通行碼或身分不符，請重新貼連線設定" : (msg || "代碼 " + r.status));
+    return "failed";
+  }
+  const buf = await r.arrayBuffer(), head = new Uint8Array(buf, 0, Math.min(5, buf.byteLength));
+  if (String.fromCharCode(...head) !== "%PDF-") { await setJob(key, dx.sha, "failed", "回來的不是 PDF"); return "failed"; }
+  const ok = await commitPdf(key, dx.sha, { bytes: buf, name: dx.name.replace(/\.docx$/i, ".pdf"), at: Date.now(), srcSha: dx.sha,
+                                             pages: +(r.headers.get("X-Pages") || 0), oddFonts: r.headers.get("X-Fonts-Ok") === "0" });
+  return ok ? "ok" : "stale";
+}
+function pdfToast(st) {
+  if (st === "ok") toast("PDF 好了，按「分享 PDF」");
+  else if (st === "offline") toast("連不到家裡的 Mac，先排隊；Word 不受影響", true);
+  else if (st === "nocfg") toast("還沒設定 PDF 連線（首頁 → PDF 連線設定）", true);
+  else if (st === "stale") toast("Word 已經有新版，請再按一次轉 PDF");
+  else if (st === "busy") toast("這份正在轉，請稍等");
+  else toast("PDF 轉檔失敗，看這份報告下面的說明", true);
+}
+async function pendingJobs() {
+  const out = [], keys = (await DB.keys("files")).map(String);
+  for (const k of keys) if (k.endsWith("|pdfjob")) {
+    const base = k.slice(0, -"|pdfjob".length);
+    if (!keys.includes(base + "|docx")) { await DB.del("files", k); continue; }   // 報告已刪、待轉還留著：清掉
+    const j = await DB.get("files", k); if (j && j.state === "pending") out.push(base.split("|"));
+  }
+  return out;
+}
+let retrying = false, lastRetry = 0;
+async function retryPending(manual) {
+  if (!APP || !DB.db || retrying || (!manual && Date.now() - lastRetry < 60000)) return;
+  retrying = true; lastRetry = Date.now();
+  try {
+    const jobs = await pendingJobs(); let ok = 0;
+    for (const [cid, rid] of jobs) {
+      try { await exportIfStale(cid, rid); } catch (e) { continue; }       // 排隊期間內容若又改過，補轉的是最新那一份
+      const st = await convertPdf(cid, rid);
+      if (st === "ok") ok++;
+      if (st === "offline" || st === "nocfg") break;
+    }
+    if (manual || ok) toast(ok ? "補轉好 " + ok + " 份 PDF" : (jobs.length ? "還是連不到家裡的 Mac" : "沒有待轉的 PDF"), !ok && !!jobs.length);
+    if (!$("v-home").hidden) await paintPending();
+    else if (ok && C && !$("v-case").hidden) openCase(C.id);
+  } finally { retrying = false; }
+}
+async function paintPending() {
+  const jobs = await pendingJobs(), box = $("pend-box");
+  box.hidden = !jobs.length; box.textContent = "";
+  if (!jobs.length) return;
+  box.appendChild(document.createTextNode("有 " + jobs.length + " 份 PDF 還在排隊等家裡的 Mac。"));
+  const b = mk("button", "btn sm", "現在補轉"); b.style.marginLeft = "8px"; b.id = "btn-retry";
+  b.onclick = () => retryPending(true); box.appendChild(b);
+}
+$("btn-set").onclick = async () => {
+  const cfg = await kvGet("pdf");
+  $("set-text").value = "";
+  $("set-stat").textContent = cfg ? "已設定：" + new URL(cfg.url, location.href).host : "尚未設定。";
+  show("v-set");
+};
+$("set-save").onclick = async () => {
+  try { await saveSetting($("set-text").value); $("set-text").value = ""; $("set-stat").textContent = "已儲存。按「測試連線」確認。"; }
+  catch (e) { $("set-stat").textContent = "存不進去：" + (e.message || e); }
+};
+$("set-test").onclick = async () => {
+  $("set-stat").textContent = "測試中…";
+  try {
+    const r = await pdfFetch("/health", { method: "GET" });
+    let hz = null; if (r.ok) { try { hz = await r.json(); } catch (e) {} }
+    $("set-stat").textContent = r.ok ? (hz && hz.ready === false ? "連得到 Mac，但暫時不會轉 PDF：" + (hz.why || "服務還沒準備好") + "。" : "連得到，轉檔服務正常。") :
+      (r.status === 401 || r.status === 403 ? "連得到 Mac，但通行碼或身分不符（代碼 " + r.status + "）。" : "連得到 Mac，但服務回應異常（代碼 " + r.status + "）。");
+  } catch (e) { $("set-stat").textContent = e.nocfg ? "還沒貼設定。" : "連不到。請確認：手機的 Tailscale 有打開、家裡的 Mac 醒著。"; }
+};
+$("set-clear").onclick = async () => { if (confirm("清除連線設定？")) { await DB.del("kv", "pdf"); $("set-stat").textContent = "已清除。"; } };
+
+/* 清掉沒有主人的草稿、Word、PDF、待轉（個案或報告已刪，但刪除當下剛好有東西晚一步寫進來） */
+async function sweepOrphans() {
+  const alive = new Set();
+  for (const c of await DB.all("cases")) for (const r of c.reports) alive.add(c.id + "|" + r.rid);
+  for (const k of await DB.keys("drafts")) if (!alive.has(String(k))) await DB.del("drafts", k);
+  for (const k of await DB.keys("files")) { const s2 = String(k); if (!alive.has(s2.slice(0, s2.lastIndexOf("|")))) await DB.del("files", k); }
+}
+
+/* ══ 啟動 ═══════════════════════════════════════════════════ */
 (async () => {
-  const d = new URLSearchParams(location.search).get("demo");
-  if (!d) return;
-  try { const r = await fetch(d); const b = await r.blob();
-        await load(new File([b], d.split("/").pop(), { type: b.type })); }
-  catch (e) { toast("demo 載入失敗：" + e.message, true); }
+  if (APP) {
+    try { await DB.open(); try { await sweepOrphans(); } catch (e) {} }
+    catch (e) { $("dberr").hidden = false; $("dberr").textContent = "這支手機的本機儲存打不開（" + (e.message || e) + "）。個案功能暫時不能用，仍可「直接開一份報告書」。"; }
+  }
+  await goHome();
+  retryPending(false);
+  const d = LOCAL && new URLSearchParams(location.search).get("demo");     // 只有本機開發測試：?demo=網址 直接載入
+  if (d) { try { const r = await fetch(d), b = await r.blob();
+                 await openDirect(new File([b], decodeURIComponent(d.split("/").pop()), { type: b.type })); }
+           catch (e) { toast("demo 載入失敗：" + e.message, true); } }
 })();
+
+/* 離線用：把網頁本體存進快取，沒網路也打得開；有新版時提醒，不在填到一半時自己換版 */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (had) toast("填寫器有新版。把手上這份存好後，關掉 App 再開就會更新。");
+  });
+}
 </script>
 </body>
 </html>
