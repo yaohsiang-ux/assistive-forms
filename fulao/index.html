@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dQlggr2a02JKvi8wDM2W9a6agXJj89F/o9AIG4hIgdE='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>扶老圖片工具</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#D65A31">
+<meta name="apple-mobile-web-app-title" content="扶老圖片">
+<style>
+:root{--orange:#D65A31;--gold:#E6AF2E;--brown:#4B3621;--cream:#FAF6F0;--bg:#fff;--fg:#1c1917;--muted:#78716c;--line:#e7e5e4;--card:#fff;--chip:#f5f5f4;--bad:#b91c1c}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1917;--fg:#fafaf9;--muted:#a8a29e;--line:#44403c;--card:#292524;--chip:#3a3532;--cream:#292524;--bad:#f87171}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;overscroll-behavior:none}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.view{max-width:640px;margin:0 auto;padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.top .title{font-size:19px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.back{border:0;background:none;color:var(--orange);font-size:16px;padding:8px 4px;white-space:nowrap}
+.sub{color:var(--muted);font-size:13.5px;margin:4px 0 10px}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--card);border-radius:11px;padding:11px 14px;font-size:15px;line-height:1.3}
+.btn.pri{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:600}
+.btn.wide{display:block;width:100%;margin:8px 0;text-align:center}
+.btn.sm{padding:7px 10px;font-size:13.5px}
+.btn.danger{color:var(--bad)}
+.box{border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0;background:var(--card)}
+.box .t{font-weight:600}.box .s{color:var(--muted);font-size:13px}
+label{display:block;font-size:13.5px;color:var(--muted);margin:10px 0 3px}
+input[type=text],input[type=date]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}
+.pages{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.pg{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;position:relative}
+.pg canvas{display:block;width:100%;height:auto;background:#fff}
+.pg .n{position:absolute;left:6px;top:4px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;border-radius:8px;padding:0 7px}
+.pg .ops{display:flex;gap:4px;padding:5px;background:var(--card)}
+.pg .ops button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:12.5px;padding:5px 0;color:var(--fg)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;background:var(--brown);color:#fff;padding:11px 17px;border-radius:11px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{opacity:.97}.toast.err{background:#991b1b}
+#ed:not([hidden]) ~ .toast{bottom:auto;top:calc(104px + env(safe-area-inset-top))}   /* 編輯畫面開著時，提示改顯示在上面，不要蓋住下面的工具鈕 */
+/* ── 編輯畫面（照片頁與平面圖共用） ── */
+#ed{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:40;background:#111;display:flex;flex-direction:column;touch-action:none}
+.ed-top{display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:#1c1917;color:#fff}
+.ed-top button{border:0;background:#3a3532;color:#fff;border-radius:9px;padding:8px 13px;font-size:15px}
+.ed-top button.pri{background:var(--orange);font-weight:600}
+.ed-top .sp{flex:1}
+.ed-hint{padding:0 12px 6px;background:#1c1917;font-size:12.5px;color:#d6d3d1;line-height:1.35;min-height:40px}
+.ed-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px;overflow:hidden}
+.ed-stage canvas{max-width:100%;max-height:100%;background:#fff;touch-action:none}
+.ed-stage.zoom{display:block;overflow:auto}
+.ed-stage.zoom canvas{max-width:none;max-height:none;display:block;margin:0 auto}
+.ed-ask{display:flex;gap:6px;padding:8px 10px;background:#292524}
+.ed-ask input{flex:1;min-width:0;border:0;border-radius:9px;padding:10px;font-size:16px;color:#111;background:#fff}
+.ed-ask button{border:0;border-radius:9px;padding:9px 13px;background:#57534e;color:#fff}
+.ed-ask button.pri{background:var(--orange)}
+.ed-tools{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#1c1917}
+.ed-tools button{flex:1 0 auto;border:0;background:#3a3532;color:#fff;border-radius:9px;padding:9px 10px;font-size:14px;white-space:nowrap}
+.ed-tools button.on{background:var(--gold);color:#111;font-weight:600}
+.ed-tools .sep{flex-basis:100%;height:0}
+.sheet{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:flex-end}
+.sheet .in{background:var(--bg);width:100%;max-width:640px;margin:0 auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));max-height:86%;overflow:auto}
+.sheet h3{margin:0 0 8px;font-size:17px}
+.vh{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+/* ── 評估紀錄 ── */
+.rec-tab{font-size:17px;font-weight:700;margin:18px 0 2px;color:var(--orange)}
+.rec-h{font-weight:600;margin-bottom:8px}
+.rec-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 10px}
+.rec-f{display:flex;align-items:center;gap:6px;margin:0;min-width:0;color:var(--fg);font-size:15px;border:1px solid var(--line);border-radius:10px;padding:2px 10px;background:var(--bg)}
+.rec-f span{white-space:nowrap}.rec-f .u{color:var(--muted);font-size:13px}
+.rec-f input{flex:1 1 0;min-width:0;width:0;border:0;padding:9px 0;background:none;text-align:right;font-size:17px;outline:none}
+.rec-in{margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 14px;font-size:15px;line-height:1.25;text-align:left}
+.chip.on{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:600}
+textarea{display:block;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);font:inherit;color:inherit;min-height:84px;resize:vertical}
+</style>
+</head>
+<body>
+<!-- ══ 首頁：個案清單 ══ -->
+<div class="view" id="v-home">
+  <div class="top"><div class="title">扶老圖片工具</div><div class="sub" id="ver" style="margin:0"></div></div>
+  <p class="sub">照片加扶手線、尺寸、說明，再畫一張平面圖，匯出成圖片上傳；評估的量測與勾選也可以先記在這裡。資料只存在這支手機。</p>
+  <button class="btn pri wide" id="btn-new">＋ 新個案</button>
+  <div id="case-list"></div>
+</div>
+<!-- ══ 個案：頁面清單 ══ -->
+<div class="view" id="v-case" hidden>
+  <div class="top"><button class="back" id="case-back">‹ 個案清單</button><div class="title" id="case-title"></div></div>
+  <div class="sub" id="case-sub"></div>
+  <div style="display:flex;gap:8px">
+    <label class="btn" style="flex:1;text-align:center;margin:0;color:var(--fg)">＋ 照片頁<input class="vh" type="file" id="add-photo" accept="image/*" multiple></label>
+    <button class="btn" style="flex:1" id="add-plan">＋ 平面圖</button>
+  </div>
+  <button class="btn wide" id="case-rec"></button>
+  <div class="pages" id="pages"></div>
+  <button class="btn pri wide" id="share-all">全部匯出（分享圖片）</button>
+  <button class="btn wide" id="case-crop"></button>
+  <button class="btn wide" id="case-fmt"></button>
+  <button class="btn wide" id="case-edit">改個案名稱或日期</button>
+  <button class="btn danger wide" id="case-del">刪除這個個案</button>
+</div>
+<!-- ══ 評估紀錄：照扶老系統的欄位排，只是記錄，不連線 ══ -->
+<div class="view" id="v-rec" hidden>
+  <div class="top"><button class="back" id="rec-back">‹ 回個案</button><div class="title">評估紀錄</div><div class="sub" id="rec-state" style="margin:0"></div></div>
+  <p class="sub">扶老系統要填的那幾格，照它畫面上的順序排。現場先點選、打字記在這裡，回頭再照著填進系統。只存在這支手機。</p>
+  <div id="rec-body"></div>
+  <button class="btn pri wide" id="rec-copy">把紀錄複製成文字（不含姓名）</button>
+</div>
+<!-- ══ 編輯畫面 ══ -->
+<div id="ed" hidden>
+  <div class="ed-top"><button id="ed-cancel">返回</button><span class="sp"></span><button id="ed-zoom">放大</button><button id="ed-undo">復原</button><button class="pri" id="ed-done">完成</button></div>
+  <div class="ed-hint" id="ed-hint"></div>
+  <div class="ed-ask" id="ed-ask" hidden><input id="ed-input" type="text" autocomplete="off"><button class="pri" id="ed-ok">確定</button><button id="ed-no">取消</button></div>
+  <div class="ed-stage" id="ed-stage"><canvas id="ed-cv"></canvas></div>
+  <div class="ed-tools" id="ed-tools"></div>
+</div>
+<div class="sheet" id="sheet" hidden><div class="in" id="sheet-in"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════
+   扶老圖片工具 v1
+   做什麼用：扶老的案子以前用 Keynote 修圖、畫平面圖再匯出上傳。這個工具讓你在手機上邊評估邊完成：
+             照片頁（16:9 白底，一到兩張照片，紅色扶手線、黃色尺寸箭頭、黃底說明框、黑色箭頭）與
+             平面圖（房間方框、牆、門弧、馬桶／洗手台／浴缸等符號），匯出成圖片從手機分享出去。
+   資料：只存在這支手機（IndexedDB），不上傳到任何地方；沒有連網功能。
+   ══════════════════════════════════════════════════════════ */
+const VERSION = "v1";
+const $ = id => document.getElementById(id);
+const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+let toastT = null;
+function toast(msg, bad) { const el = $("toast"); el.textContent = msg; el.className = "toast show" + (bad ? " err" : ""); clearTimeout(toastT); toastT = setTimeout(() => el.className = "toast", bad ? 4200 : 2400); }
+const LOCAL = location.hostname === "127.0.0.1" || location.hostname === "localhost";   // 只有開發測試時為真
+const pad2 = n => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+const safeName = s => String(s || "").replace(/[\/\\:*?"<>|\u0000-\u001f]/g, "_").trim();
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const clone = o => JSON.parse(JSON.stringify(o));
+const FONT = "'Helvetica Neue','PingFang TC',-apple-system,sans-serif";      // 跟負責人 Keynote 的預設字體一樣：英數 Helvetica Neue、中文蘋方
+
+/* ── 手機本機資料庫 ── */
+const DB = {
+  db: null,
+  open() { return new Promise((res, rej) => { const r = indexedDB.open("fulao1", 1);
+    r.onupgradeneeded = () => { for (const s of ["cases", "pages", "blobs"]) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s); };
+    r.onsuccess = () => { DB.db = r.result; res(); }; r.onerror = () => rej(r.error || new Error("資料庫打不開")); r.onblocked = () => rej(new Error("資料庫被另一個視窗佔住")); }); },
+  tx(store, mode, fn) { return new Promise((res, rej) => { let out; const t = DB.db.transaction(store, mode);
+    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    const rq = fn(t.objectStore(store)); if (rq) rq.onsuccess = () => { out = rq.result; }; }); },
+  get: (s, k) => DB.tx(s, "readonly", o => o.get(k)),
+  put: (s, k, v) => DB.tx(s, "readwrite", o => o.put(v, k)),
+  del: (s, k) => DB.tx(s, "readwrite", o => o.delete(k)),
+  all: s => DB.tx(s, "readonly", o => o.getAll()),
+  /* 改個案：讀最新的那一筆 → 改 → 連同頁面與照片寫回，全部在「同一筆交易」裡——全部成功才算數；另一個分頁同時在改也不會互相蓋掉。
+     fn(c, t)：直接改 c；要一起寫或刪的頁面、照片，用 t.objectStore(...) 在這同一筆交易裡做（不能在裡面等別的事，交易會自己結束） */
+  mutate(cid, fn) { return new Promise((res, rej) => { let out = null, err = null; const t = DB.db.transaction(["cases", "pages", "blobs"], "readwrite");
+    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(err || t.error || new Error("沒存成功"));
+    const rq = t.objectStore("cases").get(cid);
+    rq.onsuccess = () => { try { const c = rq.result; if (!c) throw new Error("找不到這個個案"); fn(c, t); c.at = Date.now(); t.objectStore("cases").put(c, cid); out = c; } catch (e) { err = e; try { t.abort(); } catch (x) {} } }; }); },
+  /* 刪掉整個個案：個案、它的每一頁、每一頁的照片，同一筆交易 */
+  dropCase(cid) { return new Promise((res, rej) => { const t = DB.db.transaction(["cases", "pages", "blobs"], "readwrite"), pages = t.objectStore("pages"), blobs = t.objectStore("blobs");
+    t.oncomplete = () => res(); t.onerror = t.onabort = () => rej(t.error || new Error("沒刪成功"));
+    const rq = t.objectStore("cases").get(cid);
+    rq.onsuccess = () => { for (const pid of (rq.result && rq.result.pages) || []) { const r2 = pages.get(pid); r2.onsuccess = () => { for (const k of (r2.result && r2.result.photos) || []) blobs.delete(k); pages.delete(pid); }; }
+      t.objectStore("cases").delete(cid); }; }); },
+  /* 存一頁：這一頁還在、而且從我讀出來之後沒有被別的視窗改過，才寫。每寫一次版本號（v）加一。
+     回傳新的版本號（數字）；"gone"＝已經被刪掉，不寫回去；"conflict"＝別的視窗改過了，不蓋掉它（force 為真才蓋） */
+  savePage(pg, base, force) { return new Promise((res, rej) => { let out = "gone"; const t = DB.db.transaction("pages", "readwrite"), o = t.objectStore("pages");
+    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    const rq = o.get(pg.id); rq.onsuccess = () => { const cur = rq.result; if (!cur) return; if (!force && (cur.v || 0) !== base) { out = "conflict"; return; } pg.v = (cur.v || 0) + 1; o.put(pg, pg.id); out = pg.v; }; }); },
+};
+
+/* ── 分享／存檔 ── */
+function download(f) { const u = URL.createObjectURL(f), a = mk("a"); a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }
+function closeSheet() { $("sheet").hidden = true; $("sheet-in").textContent = ""; }
+async function offerShare(list) {                // list: [{name, bytes, type}]
+  if (LOCAL && window.__afTestSink) { await window.__afTestSink(list); return true; }
+  const files = list.map(f => new File([f.bytes], f.name, { type: f.type }));
+  const can = fs => navigator.canShare && navigator.canShare({ files: fs });
+  // iPhone 規定「分享」要緊接在你按的那一下後面；圖片要先花時間畫，所以一律備好之後再請你按一次
+  const box = $("sheet-in"); box.textContent = "";
+  box.appendChild(mk("h3", "", "圖片備好了（" + files.length + " 張）"));
+  box.appendChild(mk("p", "sub", "最大的一張 " + (Math.max(...files.map(f => f.size)) / 1e6).toFixed(1) + "MB（每張都壓在 3MB 以內）"));
+  if (can(files)) { const b = mk("button", "btn pri wide", files.length > 1 ? "一次分享 " + files.length + " 張" : "分享／存到照片");
+    b.onclick = async () => { try { await navigator.share({ files }); closeSheet(); } catch (e) {} }; box.appendChild(b); }
+  if (files.length > 1 || !can(files)) for (const f of files) { const b = mk("button", "btn wide", (can([f]) ? "只分享：" : "下載：") + f.name); b.style.whiteSpace = "normal";
+    b.onclick = async () => { if (can([f])) { try { await navigator.share({ files: [f] }); } catch (e) {} } else download(f); }; box.appendChild(b); }
+  const c = mk("button", "btn wide", "關閉"); c.onclick = closeSheet; box.appendChild(c);
+  $("sheet").hidden = false; return true;
+}
+
+/* ── 照片：縮到長邊 1600、轉正、存成 JPEG ── */
+function shrinkPhoto(file) {
+  return new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(file);
+    const fail = e => { URL.revokeObjectURL(u); rej(e instanceof Error ? e : new Error("這張照片讀不了")); };
+    im.onerror = () => fail();
+    im.onload = () => { try { const W = im.naturalWidth, H = im.naturalHeight, k = Math.min(1, 1600 / Math.max(W, H)); if (!(W > 0) || !(H > 0)) return fail();
+      const cv = mk("canvas"); cv.width = Math.max(1, Math.round(W * k)); cv.height = Math.max(1, Math.round(H * k));
+      const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height);
+      cv.toBlob(b => { if (!b) return fail(new Error("這張照片轉不出來")); b.arrayBuffer().then(bytes => { URL.revokeObjectURL(u); res({ bytes, w: cv.width, h: cv.height }); }, fail); }, "image/jpeg", 0.85);
+    } catch (e) { fail(e); } };
+    im.src = u; });
+}
+const loadImg = bytes => new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" }));
+  im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error("照片讀不了")); }; im.src = u; });
+const canvasBlob = (cv, type, q) => new Promise((res, rej) => cv.toBlob(b => b ? b.arrayBuffer().then(res, rej) : rej(new Error("圖片轉不出來")), type, q));
+
+/* ══════════════════════════════════════════════════════════
+   照片頁：一張 1920×1080 的白底頁，放一到兩張照片，上面畫標註
+   標註（座標都是這張 1920×1080 頁面上的位置）：
+     rail  紅色粗線＝扶手        {t, x1, y1, x2, y2}
+     dim   黃色雙箭頭＝尺寸      {t, x1, y1, x2, y2, s:標籤文字}
+     arrow 黑色箭頭              {t, x1, y1, x2, y2}
+     note  黃底黑字說明框        {t, x, y, s}
+   ══════════════════════════════════════════════════════════ */
+const PW = 1920, PH = 1080;
+const C_RAIL = "#e3342f", C_DIM = "#f6d32d", C_NOTE = "#f0c040";
+/* 照片在頁面上的位置：一張＝置中、撐滿高度；兩張＝並排、同高、整組置中 */
+function photoRects(dims) {
+  if (!dims.length) return [];
+  let h = PH; const total = () => dims.reduce((a, d) => a + d.w * h / d.h, 0);
+  if (total() > PW) h = PH * PW / total();
+  let x = (PW - total()) / 2; const y = (PH - h) / 2, out = [];
+  for (const d of dims) { const w = d.w * h / d.h; out.push({ x, y, w, h }); x += w; }
+  return out;
+}
+function arrowHead(g, x, y, ang, size) { g.beginPath(); g.moveTo(x, y); g.lineTo(x - size * Math.cos(ang - 0.42), y - size * Math.sin(ang - 0.42)); g.lineTo(x - size * Math.cos(ang + 0.42), y - size * Math.sin(ang + 0.42)); g.closePath(); g.fill(); }
+function noteLines(g, s, maxW) {                 // 太長自動換行（一行最多 maxW 寬）
+  const out = []; let cur = "";
+  for (const ch of String(s)) { if (ch === "\n") { out.push(cur); cur = ""; continue; } if (cur && g.measureText(cur + ch).width > maxW) { out.push(cur); cur = ch; } else cur += ch; }
+  if (cur || !out.length) out.push(cur); return out;
+}
+function drawBoxText(g, s, x, y, font, fs, fill, maxW) {       // 置中的底色框＋字；回傳框的範圍（選取與點擊用）
+  g.font = font; g.textAlign = "center"; g.textBaseline = "middle";
+  const lines = noteLines(g, s, maxW), lh = fs * 1.32, w = Math.max(...lines.map(l => g.measureText(l).width)) + fs * 0.9, h = lines.length * lh + fs * 0.36;
+  x = Math.min(Math.max(x, w / 2 + 4), PW - w / 2 - 4); y = Math.min(Math.max(y, h / 2 + 4), PH - h / 2 - 4);
+  g.fillStyle = fill; g.fillRect(x - w / 2, y - h / 2, w, h);
+  g.fillStyle = "#111"; lines.forEach((l, i) => g.fillText(l, x, y - (lines.length - 1) * lh / 2 + i * lh));
+  return { x: x - w / 2, y: y - h / 2, w, h };
+}
+function drawPhotoPage(g, page, imgs, sel, k) {      // k＝畫布縮了幾倍在顯示（把手要畫多大）；匯出時不用給
+  g.fillStyle = "#fff"; g.fillRect(0, 0, PW, PH);
+  const rs = photoRects(imgs.map(im => ({ w: im.naturalWidth || im.width, h: im.naturalHeight || im.height })));
+  imgs.forEach((im, i) => g.drawImage(im, rs[i].x, rs[i].y, rs[i].w, rs[i].h));
+  g.lineCap = "round"; g.lineJoin = "round";
+  page.shapes.forEach((s, i) => {
+    if (s.t === "rail") { g.strokeStyle = C_RAIL; g.lineWidth = 16; g.beginPath(); g.moveTo(s.x1, s.y1); g.lineTo(s.x2, s.y2); g.stroke(); }
+    else if (s.t === "dim" || s.t === "arrow") {
+      const col = s.t === "dim" ? C_DIM : "#111", ang = Math.atan2(s.y2 - s.y1, s.x2 - s.x1), hs = s.t === "dim" ? 26 : 34, cut = hs * 0.8;
+      g.strokeStyle = col; g.fillStyle = col; g.lineWidth = s.t === "dim" ? 6 : 9; g.lineCap = "butt"; g.beginPath();
+      g.moveTo(s.x1 + (s.t === "dim" ? cut * Math.cos(ang) : 0), s.y1 + (s.t === "dim" ? cut * Math.sin(ang) : 0)); g.lineTo(s.x2 - cut * Math.cos(ang), s.y2 - cut * Math.sin(ang)); g.stroke(); g.lineCap = "round";
+      arrowHead(g, s.x2, s.y2, ang, hs); if (s.t === "dim") arrowHead(g, s.x1, s.y1, ang + Math.PI, hs);
+      if (s.t === "dim" && s.s) s.box = drawBoxText(g, s.s, (s.x1 + s.x2) / 2 + 70, (s.y1 + s.y2) / 2, "600 30px " + FONT, 30, C_DIM, 400); else delete s.box;
+    }
+    else if (s.t === "note") s.box = drawBoxText(g, s.s, s.x, s.y, "600 44px " + FONT, 44, C_NOTE, 900);
+    if (i === sel) {                               // 選取中的：畫出可以拖的把手
+      const hr = Math.max(16, 9 * (k || 1)); g.strokeStyle = "#2563eb"; g.fillStyle = "#fff"; g.lineWidth = Math.max(4, hr / 4);
+      if (s.t === "note") g.strokeRect(s.box.x - 4, s.box.y - 4, s.box.w + 8, s.box.h + 8);
+      else for (const [x, y] of [[s.x1, s.y1], [s.x2, s.y2]]) { g.beginPath(); g.arc(x, y, hr, 0, Math.PI * 2); g.fill(); g.stroke(); }
+    }
+  });
+  return rs;
+}
+const segDist = (p, s) => { const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((p.x - s.x1) * dx + (p.y - s.y1) * dy) / L)) : 0; return Math.hypot(p.x - s.x1 - t * dx, p.y - s.y1 - t * dy); };
+const inBox = (p, b, pad) => !!b && p.x >= b.x - pad && p.x <= b.x + b.w + pad && p.y >= b.y - pad && p.y <= b.y + b.h + pad;
+
+/* ══════════════════════════════════════════════════════════
+   平面圖：在方格上畫，座標單位是「格」。只畫格局示意，不按比例
+     walls 牆（橫或直的線段，端點都在格線交點）   {x1, y1, x2, y2}
+     doors 門：開在牆上的一段，加開門弧線        {x, y, o:"h"|"v", w:寬幾格, v:0～4}（v＝四種開法，4＝只有開口）
+     items 設備符號                               {k, x, y, r:轉幾個 90 度}
+     labels 文字標籤（可有可無）                  {x, y, s}
+   ══════════════════════════════════════════════════════════ */
+const GC = 20, GR = 26;                           // 畫布有幾格寬、幾格高
+const ITEMS = { toilet: { n: "馬桶", w: 1.2, h: 1.8 }, sink: { n: "洗手台", w: 1.4, h: 1 }, tub: { n: "浴缸", w: 1.6, h: 3.4 }, shower: { n: "淋浴", w: 1.8, h: 1.8 },
+                bed: { n: "床", w: 3, h: 4 }, stairs: { n: "樓梯", w: 2, h: 4 }, faucet: { n: "水龍頭", w: 0.8, h: 1 } };
+const itemBox = it => { const d = ITEMS[it.k], t = it.r % 2 === 1; return { x: it.x, y: it.y, w: t ? d.h : d.w, h: t ? d.w : d.h }; };
+function drawItem(g, it, u) {                     // u＝一格幾個像素
+  const d = ITEMS[it.k], b = itemBox(it);
+  g.save(); g.translate((b.x + b.w / 2) * u, (b.y + b.h / 2) * u); g.rotate(it.r * Math.PI / 2); g.translate(-d.w * u / 2, -d.h * u / 2);
+  const W = d.w * u, H = d.h * u; g.lineWidth = Math.max(1.5, u * 0.05); g.strokeStyle = "#111"; g.fillStyle = "#fff";
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); g.fill(); g.stroke(); };
+  if (it.k === "toilet") { g.fillRect(W * 0.08, 0, W * 0.84, H * 0.28); g.strokeRect(W * 0.08, 0, W * 0.84, H * 0.28); g.beginPath(); g.ellipse(W / 2, H * 0.64, W * 0.42, H * 0.36, 0, 0, Math.PI * 2); g.fill(); g.stroke(); }
+  else if (it.k === "sink") { g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.ellipse(W / 2, 0, W / 2, H * 0.95, 0, 0, Math.PI); g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.arc(W / 2, H * 0.3, u * 0.07, 0, Math.PI * 2); g.stroke(); }
+  else if (it.k === "tub") { g.fillRect(0, 0, W, H); g.strokeRect(0, 0, W, H); rr(W * 0.12, H * 0.06, W * 0.76, H * 0.88, W * 0.3); }
+  else if (it.k === "shower") { g.fillRect(0, 0, W, H); g.strokeRect(0, 0, W, H); g.setLineDash([u * 0.18, u * 0.14]); g.beginPath(); g.moveTo(0, 0); g.lineTo(W, H); g.moveTo(W, 0); g.lineTo(0, H); g.stroke(); g.setLineDash([]); }
+  else if (it.k === "bed") { g.fillRect(0, 0, W, H); g.strokeRect(0, 0, W, H); rr(W * 0.14, H * 0.05, W * 0.72, H * 0.16, u * 0.12); }
+  else if (it.k === "stairs") { g.fillRect(0, 0, W, H); g.strokeRect(0, 0, W, H); g.beginPath(); for (let y = 0.5; y < d.h; y += 0.5) { g.moveTo(0, y * u); g.lineTo(W, y * u); } g.stroke(); }
+  else if (it.k === "faucet") { g.fillRect(W * 0.1, 0, W * 0.8, H * 0.22); g.strokeRect(W * 0.1, 0, W * 0.8, H * 0.22);       // 水龍頭（從上面看）：貼牆的底座＋伸出來的出水管
+    g.lineWidth = Math.max(2.5, u * 0.14); g.lineCap = "round"; g.beginPath(); g.moveTo(W / 2, H * 0.22); g.lineTo(W / 2, H * 0.8); g.stroke();
+    g.lineWidth = Math.max(1.5, u * 0.05); g.beginPath(); g.arc(W / 2, H * 0.8, W * 0.16, 0, Math.PI * 2); g.fill(); g.stroke(); }
+  g.restore();
+}
+let measG = null;
+function labelW(s) {                              // 文字標籤有幾格寬（字高 0.62 格、左右共留半格）。畫的時候、算匯出範圍、判斷有沒有點到，都用這同一個算法
+  if (!measG) { measG = mk("canvas").getContext("2d"); measG.font = "600 100px " + FONT; }
+  return measG.measureText(String(s)).width * 0.0062 + 0.5;
+}
+function doorGeom(d) {                            // 開口的兩端、鉸鍊那一端、門板開到哪
+  const a = { x: d.x, y: d.y }, b = d.o === "h" ? { x: d.x + d.w, y: d.y } : { x: d.x, y: d.y + d.w };
+  const hinge = d.v % 2 === 0 ? a : b, other = d.v % 2 === 0 ? b : a, side = d.v < 2 ? -1 : 1;
+  const leaf = d.o === "h" ? { x: hinge.x, y: hinge.y + side * d.w } : { x: hinge.x + side * d.w, y: hinge.y };
+  return { a, b, hinge, other, leaf };
+}
+function drawPlan(g, plan, u, ox, oy, opt) {      // ox, oy＝畫布左上角對到第幾格（匯出時裁到內容用）；opt.grid 畫格線、opt.sel 選取中的東西
+  g.save(); g.translate(-ox * u, -oy * u); g.lineCap = "square"; g.lineJoin = "miter";
+  const wallW = Math.max(3, u * 0.11);
+  if (opt.grid) { g.strokeStyle = "#e5e7eb"; g.lineWidth = 1; g.beginPath(); for (let x = 0; x <= GC; x++) { g.moveTo(x * u, 0); g.lineTo(x * u, GR * u); } for (let y = 0; y <= GR; y++) { g.moveTo(0, y * u); g.lineTo(GC * u, y * u); } g.stroke(); }
+  g.strokeStyle = "#111"; g.lineWidth = wallW; g.beginPath();
+  for (const w of plan.walls) { g.moveTo(w.x1 * u, w.y1 * u); g.lineTo(w.x2 * u, w.y2 * u); } g.stroke();
+  for (const d of plan.doors) {                    // 門：先把那一段牆擦掉，再畫門板與弧線
+    const q = doorGeom(d);
+    g.strokeStyle = "#fff"; g.lineWidth = wallW + 3; g.lineCap = "butt"; g.beginPath(); g.moveTo(q.a.x * u, q.a.y * u); g.lineTo(q.b.x * u, q.b.y * u); g.stroke();
+    if (d.v < 4) { g.strokeStyle = "#111"; g.lineWidth = Math.max(1.5, u * 0.05); g.beginPath(); g.moveTo(q.hinge.x * u, q.hinge.y * u); g.lineTo(q.leaf.x * u, q.leaf.y * u); g.stroke();
+      const a0 = Math.atan2(q.leaf.y - q.hinge.y, q.leaf.x - q.hinge.x), a1 = Math.atan2(q.other.y - q.hinge.y, q.other.x - q.hinge.x); let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+      g.beginPath(); g.arc(q.hinge.x * u, q.hinge.y * u, d.w * u, a0, a1, da < 0); g.stroke(); }
+    g.lineCap = "square";
+  }
+  for (const it of plan.items) drawItem(g, it, u);
+  for (const l of plan.labels) { g.font = "600 " + (u * 0.62).toFixed(2) + "px " + FONT; g.textAlign = "center"; g.textBaseline = "middle";
+    const w = labelW(l.s) * u, h = u * 0.95; g.fillStyle = C_NOTE; g.fillRect(l.x * u - w / 2, l.y * u - h / 2, w, h); g.fillStyle = "#111"; g.fillText(l.s, l.x * u, l.y * u); }
+  const s = opt.sel;
+  if (s) { g.strokeStyle = "#2563eb"; g.lineWidth = Math.max(3, u * 0.09); g.setLineDash([u * 0.2, u * 0.16]); g.lineCap = "butt";
+    if (s.kind === "wall") { const w = plan.walls[s.i]; g.beginPath(); g.moveTo(w.x1 * u, w.y1 * u); g.lineTo(w.x2 * u, w.y2 * u); g.stroke(); }
+    else if (s.kind === "door") { const q = doorGeom(plan.doors[s.i]); g.strokeRect(Math.min(q.a.x, q.b.x, q.leaf.x) * u - 4, Math.min(q.a.y, q.b.y, q.leaf.y) * u - 4, (Math.abs(q.b.x - q.a.x) || Math.abs(q.leaf.x - q.hinge.x)) * u + 8, (Math.abs(q.b.y - q.a.y) || Math.abs(q.leaf.y - q.hinge.y)) * u + 8); }
+    else if (s.kind === "item") { const b = itemBox(plan.items[s.i]); g.strokeRect(b.x * u - 4, b.y * u - 4, b.w * u + 8, b.h * u + 8); }
+    else if (s.kind === "label") { const l = plan.labels[s.i], bw = labelW(l.s); g.strokeRect((l.x - bw / 2) * u - 4, (l.y - 0.5) * u - 4, bw * u + 8, u + 8); }
+    g.setLineDash([]); }
+  g.restore();
+}
+function planBounds(plan) {                       // 內容的範圍（格）；沒有內容回 null
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+  for (const w of plan.walls) { add(w.x1, w.y1); add(w.x2, w.y2); }
+  for (const d of plan.doors) { const q = doorGeom(d); add(q.a.x, q.a.y); add(q.b.x, q.b.y); if (d.v < 4) add(q.leaf.x, q.leaf.y); }
+  for (const it of plan.items) { const b = itemBox(it); add(b.x, b.y); add(b.x + b.w, b.y + b.h); }
+  for (const l of plan.labels) { const bw = labelW(l.s); add(l.x - bw / 2, l.y - 0.5); add(l.x + bw / 2, l.y + 0.5); }
+  return x1 < x0 ? null : { x0, y0, x1, y1 };
+}
+
+/* ── 把一頁畫成要匯出的圖 ── */
+async function pageImgs(page, strict) {           // strict＝少一張照片就當成錯誤（匯出與編輯時用；縮圖不用）：少了照片版面會重排，標註的位置就不對了
+  const out = []; for (const k of page.photos || []) { const b = await DB.get("blobs", k); if (b) out.push(await loadImg(b.bytes)); else if (strict) throw new Error("有一張照片不見了"); } return out; }
+function photoCrop(rs, shapes) {                  // 照片與標註實際佔到的範圍（匯出選「只留照片」時，白邊裁到這裡）
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const add = (x, y, r) => { x0 = Math.min(x0, x - r); y0 = Math.min(y0, y - r); x1 = Math.max(x1, x + r); y1 = Math.max(y1, y + r); };
+  for (const r of rs) { add(r.x, r.y, 0); add(r.x + r.w, r.y + r.h, 0); }
+  for (const s of shapes) { if (s.t !== "note") { const r = s.t === "rail" ? 10 : 36; add(s.x1, s.y1, r); add(s.x2, s.y2, r); } if (s.box) { add(s.box.x, s.box.y, 6); add(s.box.x + s.box.w, s.box.y + s.box.h, 6); } }
+  x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(PW, Math.ceil(x1)); y1 = Math.min(PH, Math.ceil(y1));
+  return x1 - x0 > 1 && y1 - y0 > 1 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+}
+/* 匯出的圖檔格式：JPG／JPEG／PNG 三選一（JPG 與 JPEG 內容一樣，只差副檔名，看上傳的系統收哪一種）。每張保證不超過 3MB */
+const FMT = { jpg: ["image/jpeg", "jpg", "JPG"], jpeg: ["image/jpeg", "jpeg", "JPEG"], png: ["image/png", "png", "PNG"] };
+const MAX_BYTES = 2.9e6;                          // 上限是 3MB，留一點餘裕
+function fmtNow() { try { const v = localStorage.getItem("fulao.fmt"); return FMT[v] ? v : "jpg"; } catch (e) { return "jpg"; } }
+async function encodeUnder(cv, type) {            // 轉成圖檔：JPG 太大先降一點畫質；還是太大（或是 PNG）就把圖縮小再試，直到不超過上限
+  let cur = cv;
+  for (let n = 0; n < 10; n++) { let size = 0;
+    for (const q of type === "image/jpeg" ? [0.92, 0.85, 0.75] : [undefined]) { const bytes = await canvasBlob(cur, type, q); size = bytes.byteLength; if (size <= MAX_BYTES) { const r = { bytes, w: cur.width, h: cur.height }; if (cur !== cv) cur.width = cur.height = 0; return r; } }
+    const k = Math.min(0.9, Math.sqrt(MAX_BYTES / size) * 0.94), next = mk("canvas"); next.width = Math.max(1, Math.round(cur.width * k)); next.height = Math.max(1, Math.round(cur.height * k));
+    const g = next.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(cur, 0, 0, next.width, next.height); if (cur !== cv) cur.width = cur.height = 0; cur = next; }       // 用完的暫存畫布放掉（iPhone 的畫布記憶體有限）
+  throw new Error("有一張圖縮不到 3MB 以下");
+}
+async function renderPage(page, crop, fmt) {      // 回傳 { bytes, type, ext, w, h }；crop＝照片頁只留照片、裁掉白邊；fmt＝jpg／jpeg／png
+  const cv = mk("canvas"), F = FMT[fmt] || FMT.jpg; let out = cv;
+  if (page.type === "photo") { cv.width = PW; cv.height = PH; const pg = clone(page), rs = drawPhotoPage(cv.getContext("2d"), pg, await pageImgs(page, true), -1);
+    const k = crop && rs.length ? photoCrop(rs, pg.shapes) : null;
+    if (k) { out = mk("canvas"); out.width = k.w; out.height = k.h; out.getContext("2d").drawImage(cv, -k.x, -k.y); } }
+  else { const b = planBounds(page) || { x0: 0, y0: 0, x1: 6, y1: 4 }, m = 1, cw = b.x1 - b.x0 + 2 * m, ch = b.y1 - b.y0 + 2 * m;      // 平面圖：裁到內容、四周留一格、白底黑線、不畫格線
+    const u = Math.max(8, Math.min(60, Math.floor(2600 / Math.max(cw, ch))));          // 一格最多 60 點；內容太寬（很長的文字）就縮小格子，長邊不超過 2600 點
+    cv.width = Math.round(cw * u); cv.height = Math.round(ch * u);
+    const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); drawPlan(g, page, u, b.x0 - m, b.y0 - m, {}); }
+  try { const r = await encodeUnder(out, F[0]); return { bytes: r.bytes, type: F[0], ext: F[1], w: r.w, h: r.h }; }
+  finally { cv.width = cv.height = 0; if (out !== cv) out.width = out.height = 0; }
+}
+async function drawThumb(cv, page) {
+  const g = cv.getContext("2d");
+  if (page.type === "photo") { cv.width = 480; cv.height = 270; g.scale(0.25, 0.25); drawPhotoPage(g, clone(page), await pageImgs(page), -1); return; }
+  cv.width = 480; cv.height = 270; g.fillStyle = "#fff"; g.fillRect(0, 0, 480, 270);
+  const b = planBounds(page); if (!b) { g.fillStyle = "#a8a29e"; g.font = "22px sans-serif"; g.textAlign = "center"; g.fillText("（空白的平面圖）", 240, 140); return; }
+  const u = Math.min(440 / (b.x1 - b.x0 + 1), 240 / (b.y1 - b.y0 + 1)); g.translate((480 - (b.x1 - b.x0) * u) / 2, (270 - (b.y1 - b.y0) * u) / 2); drawPlan(g, clone(page), u, b.x0, b.y0, {});
+}
+
+/* ══ 個案清單與個案頁 ═══════════════════════════════════ */
+let C = null;                                     // 目前打開的個案
+let viewTok = 0;                                  // 清單畫面每重畫一次加一；資料讀到一半又有人要求重畫，舊的那一次就作廢
+function show(id) { const was = $(id).hidden; for (const v of ["v-home", "v-case", "v-rec"]) $(v).hidden = v !== id; if (was) window.scrollTo(0, 0); }
+/* 會動到資料的動作一個一個來（新增、刪除、排序、匯出不交錯）；做的時候清單畫面先鎖住，免得做到一半又切到別的個案 */
+let Q = Promise.resolve(), BUSY = 0;
+function lockViews() { for (const v of ["v-home", "v-case"]) $(v).inert = BUSY > 0; }
+function serial(fn) { const run = async () => { BUSY++; lockViews(); try { return await fn(); } finally { BUSY--; lockViews(); } }; const r = Q.then(run); Q = r.catch(() => {}); return r; }
+const saveErr = e => toast("沒存成功：" + ((e && e.message) || e), true);
+/* 改個案一律走這裡：重新從手機讀最新的那一筆，改完連同頁面與照片「一次寫入」——全部成功才算數，中途失敗整筆不算 */
+async function applyCase(cid, fn) { const c = await DB.mutate(cid, fn); if (C && C.id === cid) C = c; return c; }      // fn(c, t)：見 DB.mutate
+const mutCase = (cid, fn) => serial(() => applyCase(cid, fn));
+const stillOn = cid => !!C && C.id === cid && $("ed").hidden;      // 做完之後，畫面還停在這個個案的清單上嗎
+const reopen = cid => () => { if (stillOn(cid)) return openCase(cid); };
+const editPage = pid => serial(() => openEditor(pid)).catch(saveErr);      // 從清單開編輯：排隊做；載入照片的這段時間清單鎖住，不能把這一頁刪掉
+function askCase(c) {                             // 新增或修改個案：姓名與日期
+  return new Promise(res => { const box = $("sheet-in"); box.textContent = ""; box.appendChild(mk("h3", "", c ? "修改個案" : "新個案"));
+    box.appendChild(mk("label", "", "姓名（只用來當檔名，存在這支手機）")); const n = mk("input"); n.type = "text"; n.value = c ? c.name : ""; n.id = "c-name"; box.appendChild(n);
+    box.appendChild(mk("label", "", "評估日期")); const d = mk("input"); d.type = "date"; d.value = c ? c.date : today(); d.id = "c-date"; box.appendChild(d);
+    const ok = mk("button", "btn pri wide", "確定"); ok.id = "c-ok"; ok.onclick = () => { if (!n.value.trim()) return toast("請填姓名", true); closeSheet(); res({ name: n.value.trim(), date: d.value || today() }); };
+    const no = mk("button", "btn wide", "取消"); no.onclick = () => { closeSheet(); res(null); }; box.appendChild(ok); box.appendChild(no); $("sheet").hidden = false; });
+}
+async function goHome() {
+  const tok = ++viewTok; C = null; show("v-home");
+  const cases = (await DB.all("cases")).sort((a, b) => (b.at || 0) - (a.at || 0)); if (tok !== viewTok) return;
+  const list = $("case-list"); list.textContent = "";
+  if (!cases.length) list.appendChild(mk("p", "sub", "還沒有個案。按上面的「＋ 新個案」開始。"));
+  for (const c of cases) { const b = mk("div", "box"); b.dataset.id = c.id; b.appendChild(mk("div", "t", c.name)); b.appendChild(mk("div", "s", c.date + "｜" + c.pages.length + " 頁")); b.onclick = () => openCase(c.id); list.appendChild(b); }
+}
+async function openCase(id) {
+  const tok = ++viewTok, c = await DB.get("cases", id); if (tok !== viewTok) return;
+  if (!c) { toast("找不到這個個案", true); return goHome(); }
+  const pages = []; for (const pid of c.pages) { const p = await DB.get("pages", pid); if (tok !== viewTok) return; if (p) pages.push(p); }
+  C = c; show("v-case"); $("case-title").textContent = c.name; $("case-sub").textContent = "評估日期 " + c.date + "｜共 " + pages.length + " 頁（匯出時照這個順序編號）"; prefLabels(); recLabel();
+  const box = $("pages"); box.textContent = "";
+  pages.forEach((p, i) => {
+    const el = mk("div", "pg"), cv = mk("canvas"); el.dataset.id = p.id; el.appendChild(cv); el.appendChild(mk("div", "n", (i + 1) + "・" + (p.type === "photo" ? "照片頁" : "平面圖")));
+    const ops = mk("div", "ops"), add = (t, fn) => { const b = mk("button", "", t); b.onclick = e => { e.stopPropagation(); fn(); }; ops.appendChild(b); };
+    add("編輯", () => editPage(p.id)); add("↑", () => movePage(c.id, p.id, -1)); add("↓", () => movePage(c.id, p.id, 1)); add("刪", () => delPage(c.id, p.id));
+    el.appendChild(ops); cv.onclick = () => editPage(p.id); box.appendChild(el);
+    drawThumb(cv, p).catch(() => {});
+  });
+}
+const movePage = (cid, pid, d) => mutCase(cid, c => { const i = c.pages.indexOf(pid), j = i + d; if (i < 0 || j < 0 || j >= c.pages.length) return; [c.pages[i], c.pages[j]] = [c.pages[j], c.pages[i]]; }).then(reopen(cid), saveErr);
+function delPage(cid, pid) {
+  if (!confirm("刪除這一頁？")) return;
+  return mutCase(cid, (c, t) => { c.pages = c.pages.filter(x => x !== pid); const pages = t.objectStore("pages"), rq = pages.get(pid);
+    rq.onsuccess = () => { for (const k of (rq.result && rq.result.photos) || []) t.objectStore("blobs").delete(k); pages.delete(pid); }; }).then(reopen(cid), saveErr);
+}
+$("btn-new").onclick = async () => { const v = await askCase(null); if (!v) return; const c = { id: uid("c"), name: v.name, date: v.date, pages: [], at: Date.now() };
+  serial(() => DB.put("cases", c.id, c)).then(() => openCase(c.id), saveErr); };
+$("case-back").onclick = goHome;
+$("case-edit").onclick = async () => { const cid = C && C.id; if (!cid) return; const v = await askCase(C); if (!v) return;
+  mutCase(cid, c => { c.name = v.name; c.date = v.date; }).then(reopen(cid), saveErr); };
+$("case-del").onclick = () => {
+  const c0 = C; if (!c0) return;
+  if (!confirm("刪除「" + c0.name + "」和它所有的照片、平面圖？刪掉就找不回來。")) return;
+  serial(() => DB.dropCase(c0.id)).then(() => { if (C && C.id === c0.id) return goHome(); }, saveErr);
+};
+$("add-photo").onchange = e => {
+  const files = [...(e.target.files || [])]; e.target.value = ""; const cid = C && C.id; if (!files.length || !cid) return;     // 個案在按下去的當下就定住：照片轉檔要時間，中途不會跑到別的個案
+  if (files.length > 2) toast("一頁最多放兩張照片：前兩張放同一頁，其餘各自一頁");
+  const groups = files.length > 2 ? [files.slice(0, 2), ...files.slice(2).map(f => [f])] : [files];
+  serial(async () => { const puts = [], ids = []; let bad = 0;
+    for (const grp of groups) { const page = { id: uid("p"), type: "photo", photos: [], shapes: [] };
+      for (const f of grp) { try { const ph = await shrinkPhoto(f), k = uid("b"); puts.push(["blobs", k, ph]); page.photos.push(k); } catch (err) { bad++; } }
+      if (page.photos.length) { puts.push(["pages", page.id, page]); ids.push(page.id); } }
+    if (bad) toast("有 " + bad + " 張照片讀不了，已略過", true);
+    if (!ids.length) return;
+    await applyCase(cid, (c, t) => { c.pages.push(...ids); for (const [s, k, v] of puts) t.objectStore(s).put(v, k); });          // 照片、頁面、個案的頁面清單一次寫入
+    if (!stillOn(cid)) return; if (ids.length === 1) await openEditor(ids[0]); else await openCase(cid);
+  }).catch(saveErr);
+};
+$("add-plan").onclick = () => { const cid = C && C.id; if (!cid) return; const page = { id: uid("p"), type: "plan", walls: [], doors: [], items: [], labels: [] };
+  mutCase(cid, (c, t) => { c.pages.push(page.id); t.objectStore("pages").put(page, page.id); }).then(() => { if (stillOn(cid)) return editPage(page.id); }, saveErr); };
+/* 照片頁匯出的樣子：預設跟以前 Keynote 一樣是 16:9 白底；也可以改成只留照片（裁掉兩邊的白邊）。這是這支手機的偏好，不跟著個案 */
+function cropOn() { try { return localStorage.getItem("fulao.crop") === "1"; } catch (e) { return false; } }
+function prefLabels() { $("case-crop").textContent = "照片頁匯出成：" + (cropOn() ? "只留照片（裁掉白邊）" : "16:9 白底、照片置中") + "　［點一下切換］";
+  $("case-fmt").textContent = "圖檔格式：" + FMT[fmtNow()][2] + "（每張不超過 3MB）　［點一下切換］"; }
+const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { return toast("這支手機現在記不住這個設定", true); } prefLabels(); };
+$("case-crop").onclick = () => setPref("fulao.crop", cropOn() ? "0" : "1");
+$("case-fmt").onclick = () => { const ks = Object.keys(FMT); setPref("fulao.fmt", ks[(ks.indexOf(fmtNow()) + 1) % ks.length]); };
+const mmdd = c => c.date.replace(/-/g, "").slice(4);
+$("share-all").onclick = () => {
+  const b = $("share-all"), c = C; if (!c || !c.pages.length) return toast("還沒有任何一頁", true);
+  const snap = { name: c.name, date: c.date, pages: c.pages.slice(), crop: cropOn(), fmt: fmtNow() };       // 匯出的是「按下去那一刻」的這個個案：姓名、日期、頁面順序先定住
+  b.disabled = true; b.textContent = "準備圖片中…";
+  serial(async () => { const out = [];
+    for (const pid of snap.pages) { const p = await DB.get("pages", pid); if (!p) throw new Error("有一頁不見了（可能在別的視窗刪掉了），請回個案清單再試一次"); const r = await renderPage(p, snap.crop, snap.fmt);
+      out.push({ name: safeName(mmdd(snap) + snap.name) + "-" + pad2(out.length + 1) + "." + r.ext, bytes: r.bytes, type: r.type }); }
+    if (!out.length) throw new Error("沒有可以匯出的頁");
+    await offerShare(out);
+  }).catch(e => toast("沒有匯出成功：" + ((e && e.message) || e), true)).then(() => { b.disabled = false; b.textContent = "全部匯出（分享圖片）"; });
+};
+
+/* ══ 評估紀錄 ═══════════════════════════════════════════
+   做什麼用：扶老系統（伊甸無障礙住宅管理系統）除了上傳圖片，還有好幾個分頁的表單要填，而它在手機上版面是壞的。
+             這裡照它畫面上的欄位排一份，現場先記在手機，回頭由負責人自己照著填進系統——只是記錄，不跟那個系統連線。
+   欄位來源：負責人 2026-11-24 在扶老系統截圖上用紅圈標出來的那幾格（他要的就是這些，「可點選和打字」即可；沒圈的不放）。
+             主要移動輔具的選項照系統下拉選單的字。要加欄位只改下面的 REC。
+   每一小節一種型態：nums（一排數字欄）、pick（單選，再點一下取消）、checks（可複選；第三格為真＝勾了可以補一句說明）、
+                     more（補一行字，moreph 是提示字）、area（多行字）；none＝這一組的「無」是哪一格（勾「無」會清掉同組其他的，反過來也是） */
+const REC = [
+  { tab: "個人評估資料", secs: [
+    { h: "基本測量", nums: [["height", "身高", "cm"], ["weight", "體重", "kg"]] },
+    { h: "體位｜站姿", nums: [["st_shoulder", "肩高", "cm"], ["st_elbow", "肘高", "cm"], ["st_troch", "大轉子高", "cm"], ["st_hand", "手長", "cm"]] },
+    { h: "體位｜坐姿", nums: [["si_shoulder", "肩高", "cm"], ["si_elbow", "肘高", "cm"], ["si_hipknee", "臀膝窩長", "cm"], ["si_pop", "膝窩長", "cm"], ["si_upper", "上臂長", "cm"], ["si_fore", "前臂長", "cm"]] },
+    { h: "主要移動輔具", pick: "aid", opts: ["不需要", "單隻手杖", "雙隻手杖", "四腳枴", "四腳助行器", "腋下枴", "手推輪椅", "電動輪椅", "輪式助行器", "其他"], more: "aid_t", moreph: "補充說明（選「其他」時寫是什麼）" },
+    { h: "影響行動之診斷", none: "dx_none", checks: [["dx_none", "無"], ["dx_aging", "老化", 1], ["dx_disease", "疾病", 1], ["dx_accident", "意外", 1]], more: "dx_more", moreph: "其他（上面沒有的，打字記）" },
+    { h: "服用藥物副作用", none: "med_none", checks: [["med_none", "無"], ["med_chronic", "慢性疾病", 1], ["med_major", "重大疾病", 1]], more: "med_more", moreph: "其他（上面沒有的，打字記）" },
+  ] },
+  { tab: "障別表", secs: [
+    { h: "障級", pick: "dis_level", opts: ["無", "輕度", "中度", "重度", "極重度"] },
+    { h: "障別", none: "dis_none", checks: [["dis_none", "無"]], more: "dis_more", moreph: "有障別的話，打字記是哪幾項" },
+  ] },
+  { tab: "備註", secs: [{ h: "其他想記的", area: "note" }] },
+];
+let RC = null, recT = null;                       // RC＝正在填的那一份：{ cid, v:{欄位:值}, rev:改了幾次, saved:存到第幾次 }
+const recFilled = v => Object.keys(v || {}).filter(k => v[k] !== "" && v[k] !== false && v[k] != null && !(k.endsWith("_t") && !v[k.slice(0, -2)])).length;
+function recLabel() { const n = C ? recFilled(C.rec) : 0; $("case-rec").textContent = "評估紀錄（量測、診斷、障別）：" + (n ? "已填 " + n + " 項" : "還沒填"); }
+function recState(msg) { $("rec-state").textContent = msg || (RC && RC.rev !== RC.saved ? "儲存中…" : "已存"); }
+function recFlush() {                             // 寫進手機（跟改個案走同一條路：排隊、同一筆交易）
+  clearTimeout(recT); recT = null; if (!RC || RC.rev === RC.saved) return Promise.resolve();
+  const cid = RC.cid, v = clone(RC.v), rev = RC.rev;
+  return mutCase(cid, c => { c.rec = v; }).then(() => { if (RC && RC.cid === cid) { RC.saved = Math.max(RC.saved, rev); recState(); } });
+}
+function recAuto() { recT = null; recFlush().catch(() => { recState("還沒存成功，會再試"); clearTimeout(recT); recT = setTimeout(recAuto, 2000); }); }
+function recTouch() { RC.rev++; recState(); clearTimeout(recT); recT = setTimeout(recAuto, 400); }
+function recPaint() {                             // 只更新勾選的樣子與補充欄的顯示，不重建畫面（正在打字的欄位不會跳掉）
+  const b = $("rec-body");
+  for (const e of b.querySelectorAll("[data-c]")) e.classList.toggle("on", !!RC.v[e.dataset.c]);
+  for (const e of b.querySelectorAll("[data-p]")) e.classList.toggle("on", RC.v[e.dataset.p] === e.dataset.o);
+  for (const e of b.querySelectorAll("[data-d]")) e.hidden = !RC.v[e.dataset.d];
+}
+function recToggle(sec, k) {
+  const on = !RC.v[k]; RC.v[k] = on;
+  if (on && sec.none) { if (k !== sec.none) RC.v[sec.none] = false; else for (const s of REC.flatMap(t => t.secs)) if (s.none === k && s.checks) for (const o of s.checks) if (o[0] !== k) RC.v[o[0]] = false; }
+  recTouch(); recPaint();
+}
+function openRec() {
+  const c = C; if (!c) return; RC = { cid: c.id, v: clone(c.rec || {}), rev: 0, saved: 0 };
+  const body = $("rec-body"); body.textContent = "";
+  const inp = (k, ph, cls) => { const i = mk("input", cls); i.type = "text"; i.autocomplete = "off"; i.maxLength = 200; if (ph) i.placeholder = ph; i.value = RC.v[k] || ""; i.dataset.k = k; i.oninput = () => { RC.v[k] = i.value.trim(); recTouch(); }; return i; };
+  const chip = (txt, fn) => { const b = mk("button", "chip", txt); b.type = "button"; b.onclick = fn; return b; };
+  for (const tab of REC) { body.appendChild(mk("div", "rec-tab", tab.tab));
+    for (const sec of tab.secs) { const box = mk("div", "box"); box.appendChild(mk("div", "rec-h", sec.h));
+      if (sec.nums) { const grid = mk("div", "rec-grid"); for (const [k, lab, unit] of sec.nums) { const f = mk("label", "rec-f"); f.appendChild(mk("span", "", lab)); const i = inp(k, "", ""); i.inputMode = "decimal"; i.maxLength = 8; f.appendChild(i); f.appendChild(mk("span", "u", unit)); grid.appendChild(f); } box.appendChild(grid); }
+      if (sec.pick) { const row = mk("div", "chips"); for (const o of sec.opts) { const b = chip(o, () => { RC.v[sec.pick] = RC.v[sec.pick] === o ? "" : o; recTouch(); recPaint(); }); b.dataset.p = sec.pick; b.dataset.o = o; row.appendChild(b); } box.appendChild(row); }
+      if (sec.checks) { const row = mk("div", "chips"); for (const [k, lab] of sec.checks) { const b = chip(lab, () => recToggle(sec, k)); b.dataset.c = k; row.appendChild(b); } box.appendChild(row);
+        for (const [k, lab, more] of sec.checks) if (more) { const i = inp(k + "_t", lab + "：補充說明（可不填）", "rec-in"); i.dataset.d = k; box.appendChild(i); } }
+      if (sec.more) box.appendChild(inp(sec.more, sec.moreph || "其他", "rec-in"));
+      if (sec.area) { const t = mk("textarea"); t.maxLength = 2000; t.value = RC.v[sec.area] || ""; t.dataset.k = sec.area; t.oninput = () => { RC.v[sec.area] = t.value.trim(); recTouch(); }; box.appendChild(t); }
+      body.appendChild(box); } }
+  recPaint(); recState(); show("v-rec");
+}
+function recText(v) {                             // 整理成一段文字（不含姓名），照系統的分頁與欄位順序
+  const out = [];
+  for (const tab of REC) { const lines = [];
+    for (const sec of tab.secs) { let s = "";
+      if (sec.nums) s = sec.nums.filter(([k]) => v[k]).map(([k, lab, u]) => lab + " " + v[k] + " " + u).join("、");
+      else if (sec.pick) { s = v[sec.pick] || ""; if (sec.more && v[sec.more]) s = s ? s + "（" + v[sec.more] + "）" : v[sec.more]; }
+      else if (sec.area) s = v[sec.area] || "";
+      else if (sec.checks) { const parts = sec.checks.filter(([k]) => v[k]).map(([k, lab, more]) => lab + (more && v[k + "_t"] ? "（" + v[k + "_t"] + "）" : "")); if (sec.more && v[sec.more]) parts.push(v[sec.more]); s = parts.join("、"); }
+      if (s) lines.push(sec.h.replace(/（[^（）]*）$/, "") + "：" + s); }
+    if (lines.length) out.push("〔" + tab.tab + "〕", ...lines, ""); }
+  return out.join("\n").trim();
+}
+$("case-rec").onclick = openRec;
+$("rec-back").onclick = async () => { if (!RC) return goHome(); try { await recFlush(); } catch (e) { return toast("還沒存成功，先不要離開，請再按一次", true); } const cid = RC.cid; RC = null; openCase(cid); };
+$("rec-copy").onclick = async () => {
+  const t = RC ? recText(RC.v) : ""; if (!t) return toast("還沒有填任何東西");
+  try { await navigator.clipboard.writeText(t); toast("已複製（不含姓名）"); }
+  catch (e) { const box = $("sheet-in"); box.textContent = ""; box.appendChild(mk("h3", "", "紀錄的文字（長按可以全選、複製）")); const ta = mk("textarea"); ta.readOnly = true; ta.value = t; ta.style.minHeight = "46vh"; box.appendChild(ta);
+    const c = mk("button", "btn wide", "關閉"); c.onclick = closeSheet; box.appendChild(c); $("sheet").hidden = false; }
+};
+const recBackground = () => { if (RC) recFlush().catch(() => {}); };       // 切到別的 App：還沒寫進手機的立刻寫
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") recBackground(); });
+window.addEventListener("pagehide", recBackground);
+
+/* ══ 編輯畫面 ═══════════════════════════════════════════ */
+const ED = { page: null, imgs: [], view: null, tool: "", sel: null, drag: null, pid: null, hist: [], seq: 0, rev: 0, savedRev: 0, base: 0, conflict: false, fail: 0, asking: null, item: "toilet", u: 40, k: 1, zoom: 1, busy: false, opening: false };
+// rev＝改了幾次；savedRev＝寫進手機到第幾次；base＝我手上這一頁是手機裡的第幾版；conflict＝別的視窗改過這一頁；fail＝自動存檔連續失敗幾次
+const edCv = $("ed-cv"), edPos = new Map();       // edPos：現在有哪幾根手指按在畫布上、各在哪裡
+function edAsk(ph, init, cb, max) { ED.asking = cb; $("ed-ask").hidden = false; const i = $("ed-input"); i.placeholder = ph; i.maxLength = max || 60; i.value = init || ""; setTimeout(() => i.focus(), 30); }
+function edAnswer(ok) { const cb = ED.asking; if (!cb) return; ED.asking = null; const v = $("ed-input").value.trim(); $("ed-ask").hidden = true; $("ed-input").blur(); if (ok) cb(v); edDraw(); }
+$("ed-ok").onclick = () => edAnswer(true); $("ed-no").onclick = () => edAnswer(false);
+$("ed-input").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); edAnswer(true); } });
+function edPush() { ED.hist.push(JSON.stringify(ED.page)); ED.seq++; }       // 改東西之前先記下原樣（復原用）
+function edStrip(p) { const o = clone(p); for (const s of o.shapes || []) delete s.box; for (const l of o.labels || []) delete l.bw; return o; }
+let saveT = null;
+function edFlush(force) {                         // 把現在這一頁寫進手機。回傳 "ok"；"gone"＝這一頁已被刪掉，沒寫；"conflict"＝別的視窗改過，沒寫
+  clearTimeout(saveT); saveT = null; if (!ED.page) return Promise.resolve("ok");
+  if (!force && ED.rev === ED.savedRev) return Promise.resolve("ok");      // 沒有新的修改就不寫：只是打開看看，不會把別的視窗剛存的內容蓋掉
+  const snap = edStrip(ED.page), rev = ED.rev, id = snap.id;
+  return DB.savePage(snap, ED.base, force).then(r => { if (!ED.page || ED.page.id !== id) return "ok";
+    if (typeof r === "number") { ED.base = r; ED.savedRev = Math.max(ED.savedRev, rev); ED.conflict = false; ED.fail = 0; return "ok"; }
+    if (r === "conflict") ED.conflict = true; return r; });
+}
+function edAuto() {                               // 自動存檔；沒成功就隔兩秒再試，最多三次（之後等按「完成」時再存）
+  saveT = null; if (!ED.page || ED.conflict) return;
+  edFlush().then(r => { if (r === "conflict") toast("這一頁在另一個視窗被改過了；按「完成」時再決定要不要用這邊的蓋過去", true); },
+    () => { ED.fail++; toast(ED.fail <= 3 ? "還沒存成功，兩秒後再試" : "還沒存成功；按「完成」會再存一次", true); if (ED.fail <= 3 && ED.page) { clearTimeout(saveT); saveT = setTimeout(edAuto, 2000); } });
+}
+function edSave() {                               // 每改一次叫一次：記一筆「有新的修改」，稍等一下再寫（連續拖動時不用每一格都寫）
+  ED.rev++; if (ED.hist.length > 40) ED.hist.splice(0, ED.hist.length - 40);
+  clearTimeout(saveT); saveT = setTimeout(edAuto, 250);
+}
+function edFit(center) {                          // 畫布在螢幕上顯示多大：平常縮到剛好放得下；按「放大」是兩倍，用兩根手指拖著看
+  const st = $("ed-stage"), z = ED.zoom; $("ed-zoom").textContent = z > 1 ? "縮小" : "放大";
+  if (z === 1) { st.classList.remove("zoom"); edCv.style.width = edCv.style.height = ""; return; }
+  st.classList.add("zoom"); const k = Math.min((st.clientWidth - 12) / edCv.width, (st.clientHeight - 12) / edCv.height) * z;
+  edCv.style.width = Math.round(edCv.width * k) + "px"; edCv.style.height = Math.round(edCv.height * k) + "px";
+  if (center) { st.scrollLeft = (st.scrollWidth - st.clientWidth) / 2; st.scrollTop = (st.scrollHeight - st.clientHeight) / 2; }
+}
+function edDraw() {
+  const g = edCv.getContext("2d"), p = ED.page; if (!p) return;
+  if (p.type === "photo") { edCv.width = ED.view.w; edCv.height = ED.view.h; } else { edCv.width = GC * ED.u; edCv.height = GR * ED.u; }
+  const r = edCv.getBoundingClientRect(); if (r.width > 0) ED.k = edCv.width / r.width;       // 畫布的一個點在螢幕上是幾分之一點：手指粗細的容許範圍靠它換算
+  if (p.type === "photo") { g.translate(-ED.view.x, -ED.view.y); drawPhotoPage(g, p, ED.imgs, ED.sel == null ? -1 : ED.sel, ED.k); }
+  else { g.fillStyle = "#fff"; g.fillRect(0, 0, edCv.width, edCv.height); drawPlan(g, p, ED.u, 0, 0, { grid: true, sel: ED.sel });
+    if (ED.drag && ED.drag.ghost) { const q = ED.drag.ghost; g.strokeStyle = "#2563eb"; g.lineWidth = 4; g.setLineDash([8, 6]); g.beginPath(); if (q.rect) g.rect(q.x1 * ED.u, q.y1 * ED.u, (q.x2 - q.x1) * ED.u, (q.y2 - q.y1) * ED.u); else { g.moveTo(q.x1 * ED.u, q.y1 * ED.u); g.lineTo(q.x2 * ED.u, q.y2 * ED.u); } g.stroke(); g.setLineDash([]); } }
+  edHint();
+}
+function edHint() {
+  const p = ED.page, t = ED.tool, s = ED.sel; let h = "";
+  if (p.type === "photo") h = s != null ? "已選取：拖端點可調整、拖中間可移動；按「改字」或「刪除選取」" :
+    t === "rail" ? "扶手：在照片上拖一條紅線（L 型就接著再拖一段）" : t === "dim" ? "尺寸：拖出一條黃色雙箭頭，放開後可以填數字" : t === "arrow" ? "箭頭：從尾巴拖到要指的地方" : "說明：點一下要放的位置，再打字";
+  else h = s ? (s.kind === "door" ? "已選取門：再點一下換開門方向" : s.kind === "item" ? "已選取設備：拖動可移動，再點一下轉向" : "已選取：可以按「刪除選取」") :
+    t === "room" ? "房間：從一個角拖到對角，畫出一個方框（點一下牆可以選取）" : t === "wall" ? "牆：沿著格線拖一條線，隔間用（點一下牆可以選取）" : t === "door" ? "門：在牆上點一下" : t === "item" ? "設備：點一下要放的位置（" + ITEMS[ED.item].n + "）" : "文字：點一下要放的位置";
+  $("ed-hint").textContent = h + (ED.zoom > 1 ? "｜兩根手指一起拖＝移動畫面" : "");
+}
+function edCancelGesture() {                      // 手勢被打斷（第二根手指、來電、畫到一半按了別的鈕）：這一筆改到的東西全部還原
+  const d = ED.drag; ED.drag = null; ED.pid = null; if (!d) return;
+  let n = d.s0 == null ? 0 : ED.seq - d.s0, back = false; while (n-- > 0 && ED.hist.length) { ED.page = JSON.parse(ED.hist.pop()); back = true; }
+  if (back) { ED.sel = null; edSave(); }
+  edDraw();
+}
+function edTools() {
+  const box = $("ed-tools"); box.textContent = ""; const photo = ED.page.type === "photo";
+  // 每顆鈕都是「按下去的當下」才去拿現在這一頁（復原會把整頁換掉，不能抓著舊的）；打字那一列開著、或畫到一半，先收掉再做
+  const add = (id, txt, fn, on) => { const b = mk("button", on ? "on" : "", txt); b.dataset.t = id; b.onclick = () => { if (ED.busy || !ED.page) return; if (ED.asking) edAnswer(false); edCancelGesture(); fn(); }; box.appendChild(b); return b; };
+  const pick = t => () => { ED.tool = t; ED.sel = null; edTools(); edDraw(); };
+  if (photo) { add("rail", "扶手線", pick("rail"), ED.tool === "rail"); add("dim", "尺寸", pick("dim"), ED.tool === "dim"); add("note", "說明框", pick("note"), ED.tool === "note"); add("arrow", "箭頭", pick("arrow"), ED.tool === "arrow");
+    box.appendChild(mk("div", "sep")); add("edit", "改字", () => { const i = ED.sel, s = ED.page.shapes[i]; if (!s || (s.t !== "note" && s.t !== "dim")) return toast("先點一下說明框或尺寸"); const kind = s.t;
+      edAsk(kind === "dim" ? "尺寸（例如 75cm）" : "說明文字", s.s, v => { const t = ED.page.shapes[i]; if (!t || t.t !== kind || (kind === "note" && !v)) return; edPush(); t.s = v; edSave(); }); }); }
+  else { add("room", "房間", pick("room"), ED.tool === "room"); add("wall", "牆", pick("wall"), ED.tool === "wall"); add("door", "門", pick("door"), ED.tool === "door"); add("text", "文字", pick("text"), ED.tool === "text");
+    box.appendChild(mk("div", "sep")); for (const k of Object.keys(ITEMS)) add("item-" + k, ITEMS[k].n, () => { ED.tool = "item"; ED.item = k; ED.sel = null; edTools(); edDraw(); }, ED.tool === "item" && ED.item === k);
+    box.appendChild(mk("div", "sep")); }
+  add("del", "刪除選取", () => { const s = ED.sel, p = ED.page; if (s == null) return toast("先點一下要刪的東西"); edPush();
+    if (p.type === "photo") p.shapes.splice(s, 1); else ({ wall: p.walls, door: p.doors, item: p.items, label: p.labels })[s.kind].splice(s.i, 1);
+    ED.sel = null; edSave(); edDraw(); });
+}
+$("ed-undo").onclick = () => { if (ED.busy || !ED.page) return; if (ED.asking) return edAnswer(false);      // 正在打字時按復原＝只取消這次打字，不多退一步
+  edCancelGesture();
+  if (!ED.hist.length) return toast("沒有可以復原的"); ED.page = JSON.parse(ED.hist.pop()); ED.sel = null; edTools(); edSave(); edDraw(); };
+$("ed-zoom").onclick = () => { if (ED.busy || !ED.page) return; edCancelGesture(); ED.zoom = ED.zoom > 1 ? 1 : 2; edFit(true); edDraw(); };
+function edPt(e) { const r = edCv.getBoundingClientRect(), x = (e.clientX - r.left) * edCv.width / r.width, y = (e.clientY - r.top) * edCv.height / r.height;
+  return ED.page.type === "photo" ? { x: x + ED.view.x, y: y + ED.view.y } : { x: x / ED.u, y: y / ED.u }; }
+const finger = (base, mult) => Math.max(base, mult * ED.k);        // 容許範圍：畫面縮得越小，手指相對越粗，範圍就放越大
+/* ── 照片頁的手勢：點一下＝選取；已選取的才能拖；沒選取的地方一拖就是畫新的 ── */
+function photoHit(p) { const sh = ED.page.shapes, tol = finger(34, 18); for (let i = sh.length - 1; i >= 0; i--) { const s = sh[i]; if (s.t === "note" ? inBox(p, s.box, tol * 0.4) : (segDist(p, s) < tol || inBox(p, s.box, tol * 0.3))) return i; } return -1; }
+function photoDown(p) {
+  const sh = ED.page.shapes, hit = photoHit(p), s = hit >= 0 ? sh[hit] : null, er = finger(50, 26);
+  if (hit >= 0 && hit === ED.sel) { const end = s.t === "note" ? 0 : Math.hypot(p.x - s.x1, p.y - s.y1) < er ? 1 : Math.hypot(p.x - s.x2, p.y - s.y2) < er ? 2 : 0;
+    ED.drag = { mode: "move", i: hit, end, p0: p, orig: clone(s), moved: false }; return; }
+  ED.drag = { mode: "new", p0: p, hit, moved: false };
+}
+function photoMove(p) {
+  const d = ED.drag, sh = ED.page.shapes; if (!d) return;
+  if (Math.hypot(p.x - d.p0.x, p.y - d.p0.y) > finger(14, 6)) d.moved = true; if (!d.moved) return;
+  if (d.mode === "move") { const s = sh[d.i], o = d.orig, dx = p.x - d.p0.x, dy = p.y - d.p0.y; if (!d.pushed) { edPush(); d.pushed = true; }
+    if (s.t === "note") { s.x = o.x + dx; s.y = o.y + dy; } else if (d.end === 1) { s.x1 = p.x; s.y1 = p.y; } else if (d.end === 2) { s.x2 = p.x; s.y2 = p.y; } else { s.x1 = o.x1 + dx; s.y1 = o.y1 + dy; s.x2 = o.x2 + dx; s.y2 = o.y2 + dy; } }
+  else if (ED.tool !== "note") { if (d.i == null) { edPush(); let a = d.p0; const jr = finger(44, 22);
+      if (ED.tool === "rail") for (const s of sh) if (s.t === "rail") for (const q of [[s.x1, s.y1], [s.x2, s.y2]]) if (Math.hypot(q[0] - a.x, q[1] - a.y) < jr) a = { x: q[0], y: q[1] };   // 從上一段的端點附近起筆：接在一起（L 型）
+      sh.push({ t: ED.tool, x1: a.x, y1: a.y, x2: p.x, y2: p.y, ...(ED.tool === "dim" ? { s: "" } : {}) }); d.i = sh.length - 1; ED.sel = null; }
+    sh[d.i].x2 = p.x; sh[d.i].y2 = p.y; }
+  edDraw();
+}
+function photoUp(p) {
+  const d = ED.drag; ED.drag = null; if (!d) return; const sh = ED.page.shapes;
+  if (d.mode === "new" && !d.moved) {              // 只是點一下
+    if (d.hit >= 0) ED.sel = d.hit;
+    else if (ED.sel != null) ED.sel = null;
+    else if (ED.tool === "note") edAsk("說明文字（例如：建議加裝扶手）", "", v => { if (!v) return; edPush(); ED.page.shapes.push({ t: "note", x: p.x, y: p.y, s: v }); edSave(); });
+    return edDraw();
+  }
+  if (d.mode === "new" && d.i != null) { const i = d.i, s = sh[i];
+    if (Math.hypot(s.x2 - s.x1, s.y2 - s.y1) < finger(40, 14)) { sh.splice(i, 1); ED.hist.pop(); }       // 太短：當成誤觸
+    else if (s.t === "dim") edAsk("尺寸（例如 75cm；不填就只有箭頭）", "", v => { const t = ED.page.shapes[i]; if (t && t.t === "dim") { t.s = v; edSave(); } }); }
+  edSave(); edDraw();
+}
+/* ── 平面圖的手勢 ── */
+const snap = v => Math.round(v), snapH = v => Math.round(v * 2) / 2;
+function planHit(p) {                             // 點到什麼：設備與文字優先；門與牆挑最近的那一個
+  const pl = ED.page, c = ED.k / ED.u, pad = Math.max(0.2, 8 * c);                // c＝螢幕上一點等於幾格
+  const loose = ED.tool === "room" || ED.tool === "wall" || ED.tool === "door";    // 放設備、放文字時，牆邊要能直接放東西，所以牆與門只認「正正點在上面」
+  const dt = loose ? Math.max(0.55, 16 * c) : 0.35, wt = loose ? Math.max(0.45, 14 * c) : 0.3;
+  for (let i = pl.items.length - 1; i >= 0; i--) { const b = itemBox(pl.items[i]); if (p.x >= b.x - pad && p.x <= b.x + b.w + pad && p.y >= b.y - pad && p.y <= b.y + b.h + pad) return { kind: "item", i }; }
+  for (let i = pl.labels.length - 1; i >= 0; i--) { const l = pl.labels[i]; if (Math.abs(p.x - l.x) <= labelW(l.s) / 2 + pad && Math.abs(p.y - l.y) <= 0.5 + pad) return { kind: "label", i }; }
+  let door = null, dd0 = 1e9, wall = null, dw0 = 1e9;                                // 門與牆用同一把尺比：誰近選誰，一樣近（門本來就開在牆上）選門
+  for (let i = pl.doors.length - 1; i >= 0; i--) { const q = doorGeom(pl.doors[i]), dd = segDist(p, { x1: q.a.x, y1: q.a.y, x2: q.b.x, y2: q.b.y }); if (dd < dt && dd < dd0) { dd0 = dd; door = { kind: "door", i }; } }
+  for (let i = pl.walls.length - 1; i >= 0; i--) { const dd = segDist(p, pl.walls[i]); if (dd < wt && dd < dw0) { dw0 = dd; wall = { kind: "wall", i }; } }
+  return door && dd0 <= dw0 + 1e-6 ? door : (wall || door);
+}
+function planDown(p) { const hit = planHit(p), same = !!hit && !!ED.sel && hit.kind === ED.sel.kind && hit.i === ED.sel.i;
+  ED.drag = { p0: p, hit, same, moved: false, orig: hit && hit.kind === "item" ? clone(ED.page.items[hit.i]) : null }; }
+function planMove(p) {
+  const d = ED.drag, pl = ED.page; if (!d) return;
+  if (Math.hypot(p.x - d.p0.x, p.y - d.p0.y) > Math.max(0.4, 6 * ED.k / ED.u)) d.moved = true; if (!d.moved) return;
+  if (d.same && d.hit.kind === "item") { if (!d.pushed) { edPush(); d.pushed = true; } const it = pl.items[d.hit.i]; it.x = snapH(d.orig.x + p.x - d.p0.x); it.y = snapH(d.orig.y + p.y - d.p0.y); }
+  else if (ED.tool === "room") d.ghost = { rect: true, x1: Math.min(snap(d.p0.x), snap(p.x)), y1: Math.min(snap(d.p0.y), snap(p.y)), x2: Math.max(snap(d.p0.x), snap(p.x)), y2: Math.max(snap(d.p0.y), snap(p.y)) };
+  else if (ED.tool === "wall") { const hz = Math.abs(p.x - d.p0.x) >= Math.abs(p.y - d.p0.y), x1 = snap(d.p0.x), y1 = snap(d.p0.y); d.ghost = hz ? { x1, y1, x2: snap(p.x), y2: y1 } : { x1, y1, x2: x1, y2: snap(p.y) }; }
+  edDraw();
+}
+function addWall(pl, x1, y1, x2, y2) { if (x1 === x2 && y1 === y2) return; if (x1 > x2 || y1 > y2) [x1, y1, x2, y2] = [x2, y2, x1, y1]; if (!pl.walls.some(w => w.x1 === x1 && w.y1 === y1 && w.x2 === x2 && w.y2 === y2)) pl.walls.push({ x1, y1, x2, y2 }); }
+function planUp(p) {
+  const d = ED.drag, pl = ED.page; ED.drag = null; if (!d) return;
+  if (d.moved) {
+    if (d.ghost) { const q = d.ghost; if (q.rect ? (q.x2 - q.x1 >= 1 && q.y2 - q.y1 >= 1) : (q.x1 !== q.x2 || q.y1 !== q.y2)) { edPush();
+        if (q.rect) { addWall(pl, q.x1, q.y1, q.x2, q.y1); addWall(pl, q.x1, q.y2, q.x2, q.y2); addWall(pl, q.x1, q.y1, q.x1, q.y2); addWall(pl, q.x2, q.y1, q.x2, q.y2); } else addWall(pl, q.x1, q.y1, q.x2, q.y2); } }
+    edSave(); return edDraw();
+  }
+  if (d.hit) {                                     // 點到東西：第一下選取；已選取再點＝門換方向、設備轉向
+    if (d.same && d.hit.kind === "door") { edPush(); const dr = pl.doors[d.hit.i]; dr.v = (dr.v + 1) % 5; edSave(); }
+    else if (d.same && d.hit.kind === "item") { edPush(); const it = pl.items[d.hit.i], b0 = itemBox(it); it.r = (it.r + 1) % 4; const b1 = itemBox(it); it.x = snapH(b0.x + (b0.w - b1.w) / 2); it.y = snapH(b0.y + (b0.h - b1.h) / 2); edSave(); }
+    else if (d.hit.kind === "wall" && ED.tool === "door") return planDoor(p, d.hit.i);
+    else ED.sel = d.hit;
+    return edDraw();
+  }
+  if (ED.sel) { ED.sel = null; return edDraw(); }
+  if (ED.tool === "item") { edPush(); const def = ITEMS[ED.item]; pl.items.push({ k: ED.item, x: snapH(p.x - def.w / 2), y: snapH(p.y - def.h / 2), r: 0 }); ED.sel = { kind: "item", i: pl.items.length - 1 }; edSave(); }
+  else if (ED.tool === "text") edAsk("文字（例如：浴室）", "", v => { if (!v) return; edPush(); ED.page.labels.push({ x: snapH(p.x), y: snapH(p.y), s: v }); edSave(); }, 20);       // 平面圖的文字不換行，最多 20 個字
+  else if (ED.tool === "door") toast("門要點在牆上");
+  edDraw();
+}
+function planDoor(p, wi) {                        // 在這面牆上、點的位置開一扇門（寬 2 格；牆太短就縮成 1 格）
+  const pl = ED.page, w = pl.walls[wi], hz = w.y1 === w.y2, len = hz ? w.x2 - w.x1 : w.y2 - w.y1, dw = len >= 2 ? 2 : 1, lo = hz ? w.x1 : w.y1;
+  const at = Math.max(lo, Math.min(lo + len - dw, Math.round((hz ? p.x : p.y) - dw / 2)));
+  edPush(); pl.doors.push(hz ? { x: at, y: w.y1, o: "h", w: dw, v: 2 } : { x: w.x1, y: at, o: "v", w: dw, v: 2 }); ED.sel = { kind: "door", i: pl.doors.length - 1 }; edSave(); edDraw();
+}
+/* ── 手指事件：一次只認一根手指在畫；第二根手指放上來＝這一筆不算（放大時兩根手指一起拖是移動畫面） ── */
+edCv.addEventListener("pointerdown", e => {
+  e.preventDefault(); if (e.isPrimary) edPos.clear(); edPos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { edCv.setPointerCapture(e.pointerId); } catch (x) {}
+  if (ED.asking || ED.busy || !ED.page) return;
+  if (edPos.size > 1) return edCancelGesture();
+  const p = edPt(e); ED.pid = e.pointerId; ED.page.type === "photo" ? photoDown(p) : planDown(p); if (ED.drag) ED.drag.s0 = ED.seq;
+});
+edCv.addEventListener("pointermove", e => {
+  const q = edPos.get(e.pointerId);
+  if (q && edPos.size > 1 && ED.zoom > 1) { const st = $("ed-stage"); st.scrollLeft -= (e.clientX - q.x) / 2; st.scrollTop -= (e.clientY - q.y) / 2; }
+  if (q) { q.x = e.clientX; q.y = e.clientY; }
+  if (!ED.drag || e.pointerId !== ED.pid || edPos.size > 1) return;
+  e.preventDefault(); const p = edPt(e); ED.page.type === "photo" ? photoMove(p) : planMove(p);
+});
+edCv.addEventListener("pointerup", e => { edPos.delete(e.pointerId); if (!ED.drag || e.pointerId !== ED.pid) return; ED.pid = null; const p = edPt(e); ED.page.type === "photo" ? photoUp(p) : planUp(p); });
+edCv.addEventListener("pointercancel", e => { edPos.delete(e.pointerId); if (e.pointerId === ED.pid) edCancelGesture(); });
+async function openEditor(pid) {                  // 一律在排隊裡呼叫（清單鎖住的時候）：見 editPage
+  if (ED.opening || ED.page) return; ED.opening = true;
+  try { const p = await DB.get("pages", pid), c = C ? await DB.get("cases", C.id) : null;
+    if (!p || !c || !c.pages.includes(pid)) { toast("這一頁已經不在這個個案裡了", true); if (C) openCase(C.id); return; }
+    const imgs = p.type === "photo" ? await pageImgs(p, true) : [];
+    edPos.clear(); Object.assign(ED, { page: p, imgs, sel: null, drag: null, pid: null, hist: [], seq: 0, rev: 0, savedRev: 0, base: p.v || 0, conflict: false, fail: 0, asking: null, zoom: 1, busy: false, tool: p.type === "photo" ? "rail" : "room" });
+    if (p.type === "photo") { const rs = photoRects(imgs.map(im => ({ w: im.naturalWidth, h: im.naturalHeight }))), x0 = rs.length ? rs[0].x : 0, x1 = rs.length ? rs[rs.length - 1].x + rs[rs.length - 1].w : PW;
+      ED.view = { x: Math.max(0, x0 - 20), y: 0, w: Math.min(PW, x1 + 20) - Math.max(0, x0 - 20), h: PH }; }          // 編輯時只看照片那一塊（兩邊的白邊不顯示），手機上才夠大
+    $("ed-ask").hidden = true; $("ed").hidden = false; edFit(); edTools(); edDraw();
+  } catch (e) { ED.page = null; $("ed").hidden = true; toast("這一頁打不開：" + ((e && e.message) || e), true); }
+  finally { ED.opening = false; }
+}
+async function closeEditor() {                    // 存好了才關；沒存成功就留在編輯畫面，畫的東西還在，可以再按一次
+  if (ED.busy || !ED.page) return; edCancelGesture(); ED.busy = true; let r = "ok";
+  try { r = await edFlush();
+    if (r === "conflict") { if (!confirm("這一頁在另一個視窗被改過了。\n按「確定」＝用這邊的內容蓋過去\n按「取消」＝先留在這裡")) { ED.busy = false; return; } r = await edFlush(true); }
+  } catch (e) { ED.busy = false; return toast("沒存成功，這一頁先不關，畫的東西還在。請再按一次「完成」", true); }
+  if (r === "gone") toast("這一頁已經在別的地方被刪掉了，沒有再存回去", true);
+  ED.busy = false; $("ed").hidden = true; ED.page = null; ED.imgs = []; if (C) openCase(C.id); else goHome();
+}
+$("ed-done").onclick = () => { if (ED.busy) return; if (ED.asking) edAnswer(true); closeEditor(); };
+$("ed-cancel").onclick = () => { if (ED.busy) return; if (ED.asking) edAnswer(false); closeEditor(); };
+/* 切到別的 App、鎖螢幕：畫到一半的那一筆不算，還沒寫進手機的修改立刻寫 */
+const edBackground = () => { if (!ED.page) return; edCancelGesture(); edPos.clear(); if (ED.rev !== ED.savedRev) edFlush().catch(() => {}); };       // 只要還有沒寫成功的修改就寫（包含剛剛失敗的那一次）
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") edBackground(); });
+window.addEventListener("pagehide", edBackground);
+/* iPhone 鍵盤跳出來時，把編輯畫面與對話框縮到鍵盤上方（不然打字的那一列會被鍵盤蓋住） */
+function fitVV() { const v = window.visualViewport; if (!v) return; const st = document.documentElement.style; st.setProperty("--vvh", v.height + "px"); st.setProperty("--vvt", v.offsetTop + "px"); if (ED.page) { edFit(); edDraw(); } }
+if (window.visualViewport) { window.visualViewport.addEventListener("resize", fitVV); window.visualViewport.addEventListener("scroll", fitVV); }
+
+/* ══ 啟動 ═══════════════════════════════════════════════ */
+(async () => {
+  $("ver").textContent = VERSION; fitVV();
+  try { await DB.open(); } catch (e) { toast("手機的儲存空間打不開：" + (e.message || e), true); return; }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  goHome();
+})();
+</script>
+</body>
+</html>
