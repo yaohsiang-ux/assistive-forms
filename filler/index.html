@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6OOGSLYxPfJbTuP759qTieq6I0XPrz5piVMwaTKPeGQ=' 'sha256-lHgAipOfl8zLI/FP6QkYzr0bzSEDKv/RinpIVrB4fwk='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Snt+eL2U9I9LBDLYvLC7jqmzO/zCwg5edaiEfNk128M=' 'sha256-8k/sj5xfkN9f361RVaSpeuIxzmBmTmHPIUoVk7Q/q/w='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -107,6 +107,19 @@ body.phmode .phrow,.phrow.show{display:block}
 .card.delctl{background:var(--cream);border-style:dashed;padding:8px 12px}
 .card.delctl .flab{margin-top:0}
 .card.gone{opacity:.32}
+/* ── 爬梯機評估 ── */
+.stfl{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden;background:var(--card)}
+.stfl>.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;font-weight:600;cursor:pointer}
+.stfl>.hd span{font-weight:400;color:var(--muted);font-size:12.5px}
+.stfl>.bd{padding:2px 12px 12px;border-top:1px solid var(--line)}
+.strow{display:grid;grid-template-columns:3.4em 1fr 1fr 2.8em;gap:6px;align-items:center;margin:4px 0;font-size:13px}
+.stq{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin:4px 0 8px}
+.stpl{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.stpl label{font-size:10.5px;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frm .strow input,.frm .stq input,.frm .stpl input{padding:8px 6px;min-width:0}
+.stm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.stm .why{font-size:12px;color:var(--muted);margin-top:1px}
+.stm>div:last-child{white-space:nowrap;font-weight:600}
 .phthumb img{cursor:pointer}
 .phthumb .phedit{position:absolute;left:0;right:0;bottom:0;font-size:11px;line-height:18px;text-align:center;
   background:rgba(0,0,0,.55);color:#fff;pointer-events:none}
@@ -183,7 +196,9 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
   <div id="rep-list"></div>
   <button class="btn wide" id="btn-add-rep">＋ 加一份報告</button>
   <h2>其他檔案</h2>
-  <button class="btn wide" id="btn-stair">領一份爬梯機記錄表</button>
+  <button class="btn wide" id="btn-stair-app">爬梯機評估（在這裡填，當場看適用機型）</button>
+  <div class="sub" id="stair-stat" hidden></div>
+  <button class="btn wide" id="btn-stair">領一份空白的爬梯機記錄表</button>
   <button class="btn pri wide" id="btn-share-all">整案分享（Word＋PDF）</button>
   <h2>清理</h2>
   <button class="btn danger wide" id="btn-del-case">刪除這個個案在手機裡的資料</button>
@@ -220,6 +235,27 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
   <button class="btn pri wide" id="basic-save" style="margin-top:18px">儲存</button>
 </div>
 
+<!-- ══ 爬梯機評估 ══ -->
+<div class="view frm" id="v-stair" hidden>
+  <div class="top"><button class="back" id="st-back">‹ 返回</button><div class="title">爬梯機評估</div></div>
+  <p class="sub" id="st-who"></p>
+  <label>體重（公斤）</label><input type="number" id="st-weight" inputmode="decimal" step="any">
+  <h2>樓梯量測</h2>
+  <p class="sub">點樓層展開。量到的數字照填，適用機型會用記錄表自己的公式當場算出來。</p>
+  <div id="st-floors"></div>
+  <h2>三題是非</h2>
+  <div id="st-yn"></div>
+  <label>特殊狀況備註</label><textarea id="st-note" rows="2"></textarea>
+  <h2>適用機型</h2>
+  <div id="st-res"></div>
+  <button class="btn pri wide" id="st-xlsx" style="margin-top:14px">產出記錄表（Excel）</button>
+  <h2>帶進編號 19 報告</h2>
+  <p class="sub">把樓梯紀錄表（真的 Excel 截圖，由家裡 Mac 的 Excel 產生，家裡 Mac 要醒著，約等 15～30 秒）和適用機型的名稱、照片，放進這個個案的編號 19 報告。要放哪幾種服務方式的適用機型（可複選）：</p>
+  <div class="chips" id="st-mode"></div>
+  <button class="btn wide" id="st-to19" style="margin-top:10px">帶進編號 19</button>
+  <div class="note" id="st-msg" hidden></div>
+</div>
+
 <!-- ══ 模板庫 ══ -->
 <div class="view" id="v-tpl" hidden>
   <div class="top"><button class="back" data-go="home">‹ 首頁</button><div class="title">模板庫</div></div>
@@ -242,6 +278,10 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
   <button class="btn wide" id="set-test">測試連線</button>
   <div class="note" id="set-stat"></div>
   <button class="btn danger wide" id="set-clear">清除連線設定</button>
+  <h2>字型來源</h2>
+  <p class="sub">照片標註使用的楷體：數位發展部 2026「CNS11643 中文標準交換碼全字庫正楷體」（版本 20261028；本填寫器只取其中常用字）。
+  此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。
+  政府資料開放授權條款：https://data.gov.tw/license ｜ 全字庫網站：https://www.cns11643.gov.tw</p>
 </div>
 
 <!-- ══ 填寫畫面 ══ -->
@@ -287,7 +327,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v6";
+const VERSION = "v7";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -773,7 +813,7 @@ function cellMerge(blocks) {
    · 其他每一題：照片接在那一題的後面
    · 沒有格子可填、但標題寫著照片／圖片／平面圖／用印的地方：另外給一個只放照片的位置
    表格勾選表（一格一個方框）不給放，格子太小。 */
-const RE_PHOTO = /照片|圖片|平面圖|示意圖|用印|簽章|蓋章/;
+const RE_PHOTO = /照片|圖片|平面圖|示意圖|用印|簽章|蓋章|樓梯紀錄表|爬梯機款式/;   // 「樓梯紀錄表：」「建議使用以下爬梯機款式：」也要能放圖
 const PH_MIN_DXA = 1400;                           // 可用寬度不到約 2.5 公分的地方不給放照片
 function cellOf(node) { for (let p = node.parentNode; p && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_W, "tc")) return p; return null; }
 const SDT_LEAF = [[NS_W, "text"], [NS_W, "date"], [NS_W, "comboBox"], [NS_W, "dropDownList"], [NS_W, "picture"], [NS_W14, "checkbox"]];
@@ -908,7 +948,7 @@ function removeRow(tr) {
 function rowsToDrop(d, model, values) {
   const cur = f => values[f.id] !== undefined ? values[f.id] : f.orig;
   const differs = f => String(cur(f) == null ? "" : cur(f)).trim() !== "" && String(cur(f)) !== String(f.orig == null ? "" : f.orig);
-  const filled = f => f.type === "cb" ? (!!cur(f) && !f.orig) : f.type === "ph" ? phParse(cur(f)).ids.length > 0 : differs(f);
+  const filled = f => f.type === "cb" ? (!!cur(f) && !f.orig) : f.type === "ph" ? phAny(cur(f)) : differs(f);
   const has = new Set(), keep = new Set(), boxed = new Set();
   for (const f of model.fields) {
     if (f.type !== "cb" && f.type !== "txt" && f.type !== "ph" && f.type !== "alt") continue;
@@ -1214,11 +1254,37 @@ function applyFrames(fields, values) {
 const NS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const NS_WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
 const EMU_DXA = 635, EMU_CM = 360000;
-function phParse(v) {
-  const m = /^([123])\|(.*)$/.exec(String(v || ""));
-  return m ? { n: +m[1], ids: m[2].split(",").filter(Boolean) } : { n: 2, ids: [] };
+/* 一個照片位置的值有兩種寫法：
+     「2|代號,代號」            只有你自己放的照片（一排幾張）
+     {"n":2,"ids":[…],"auto":[…]}  另外帶著自動產生的內容（例如爬梯機評估帶進來的樓梯紀錄表、機型名稱與照片）
+   auto 是一串項目，照順序放在你自己的照片前面：
+     { t:"文字", b:粗體, sz:字級, k:跟下一段不分頁 }｜{ pics:[代號…], n:一排幾張 }｜{ tbl:[[格子…]…], border:有無框線, cols:欄數, sz:字級, keep:整張不分頁 }
+     格子可以是字串、{ t, span, b, sz }、{ pic:代號 }、{ t, pic }（同一格：字在上、照片在下），或 { items:[…] }（格子裡再放一串項目，最多三層）
+     va＝格內上下對齊；pad:0＝格子左右不留邊
+   ids＝你自己的照片；all＝這個位置用到的所有照片（算容量、清孤兒照片用）。 */
+function autoPics(it) {
+  const out = [];
+  if (it && Array.isArray(it.pics)) for (const id of it.pics) out.push(String(id));
+  if (it && Array.isArray(it.tbl)) for (const row of it.tbl) if (Array.isArray(row)) for (const c of row) if (c && typeof c === "object") {
+    if (c.pic) out.push(String(c.pic));
+    if (Array.isArray(c.items)) for (const x of c.items) out.push(...autoPics(x));
+  }
+  return out;
 }
-const phJoin = (n, ids) => ids.length ? n + "|" + ids.join(",") : "";
+function phParse(v) {
+  const s = String(v || "");
+  if (s[0] === "{") {
+    try {
+      const o = JSON.parse(s), auto = Array.isArray(o.auto) ? o.auto : [], ids = Array.isArray(o.ids) ? o.ids.map(String) : [], all = ids.slice();
+      for (const it of auto) for (const id of autoPics(it)) if (!all.includes(id)) all.push(id);
+      return { n: [1, 2, 3].includes(o.n) ? o.n : 2, ids, auto, all };
+    } catch (e) { return { n: 2, ids: [], auto: [], all: [], bad: true }; }      // bad＝這個值讀不懂（清孤兒照片時要跳過，免得誤刪）
+  }
+  const m = /^([123])\|(.*)$/.exec(s), ids = m ? m[2].split(",").filter(Boolean) : [];
+  return { n: m ? +m[1] : 2, ids, auto: [], all: ids };
+}
+const phJoin = (n, ids, auto) => auto && auto.length ? JSON.stringify({ n, ids, auto }) : (ids.length ? n + "|" + ids.join(",") : "");
+const phAny = v => { const p = phParse(v); return p.all.length > 0 || p.auto.length > 0; };
 function availDxa(anchor) {                       // 定位點所在的那一格（或那一節的版面）可以放多寬
   for (let p = anchor.parentNode; p && p.nodeType === 1; p = p.parentNode) {
     if (isEl(p, NS_W, "tc")) break;
@@ -1303,7 +1369,7 @@ function addChildren(xdoc, tag, items, first) {      // 在根元素裡加幾個
   return out;
 }
 async function applyPhotos(d, values, getPhoto) {
-  const jobs = d.model.fields.filter(f => f.type === "ph" && phParse(values[f.id]).ids.length && d.doc.documentElement.contains(f.anchor));
+  const jobs = d.model.fields.filter(f => f.type === "ph" && phAny(values[f.id]) && d.doc.documentElement.contains(f.anchor));
   if (!jobs.length) return null;
   if (!getPhoto) throw new Error("這份有附照片，但現在讀不到照片（請回個案裡再匯出）");
   const dec = new TextDecoder("utf-8"), enc = new TextEncoder();
@@ -1333,35 +1399,124 @@ async function applyPhotos(d, values, getPhoto) {
   const names = new Set(d.entries.map(e => e.name.toLowerCase()));
   const media = [], addRel = [];
   let seq = 0;
+  const maxH = 20 * EMU_CM, gap = 0.12 * EMU_CM, picCache = new Map();
+  const addPic = async id => {                     // 同一張照片用在好幾個地方：檔案只放一份
+    if (picCache.has(id)) return picCache.get(id);
+    const ph = await getPhoto(id);
+    if (!ph || !ph.bytes || !(ph.w > 0) || !(ph.h > 0)) throw new Error("有一張照片在手機裡找不到了，請回那一題把它移除再匯出");
+    seq++;
+    let name, dup = 0; do { name = "word/media/afphoto" + seq + (dup ? "_" + dup : "") + "." + ext; dup++; } while (names.has(name.toLowerCase()));
+    names.add(name.toLowerCase());
+    const bytes = new Uint8Array(ph.bytes), rid = newRid();
+    media.push({ name, method: 0, time: d.de.time, date: d.de.date, crc: crc32(bytes), usize: bytes.length, raw: bytes });
+    addRel.push({ Id: rid, Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", Target: name.slice(5) });
+    const o = { rid, w: ph.w, h: ph.h }; picCache.set(id, o); return o;
+  };
+  const E = (doc, tag, attrs) => { const e = doc.createElementNS(NS_W, "w:" + tag); if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttributeNS(NS_W, "w:" + k, String(v)); return e; };
+  const picRun = (doc, pic, cxMax) => { let cx = Math.max(1, Math.floor(cxMax)), cy = Math.round(cx * pic.h / pic.w);
+    if (cy > maxH) { cy = maxH; cx = Math.round(cy * pic.w / pic.h); } return drawingRun(doc, pic.rid, cx, cy, newUid()); };
+  const loosePPr = (doc, center, keep) => {        // 行距固定用「自動」：不然遇到固定行高的段落，照片會被切掉；keep＝跟下一段不分頁
+    const pPr = E(doc, "pPr"); if (keep) pPr.appendChild(E(doc, "keepNext")); pPr.appendChild(E(doc, "snapToGrid", { val: 0 }));
+    pPr.appendChild(E(doc, "spacing", { before: 40, after: 40, line: 240, lineRule: "auto" })); pPr.appendChild(E(doc, "ind", { left: 0, right: 0, firstLine: 0 }));
+    if (center) pPr.appendChild(E(doc, "jc", { val: "center" }));
+    return pPr;
+  };
+  const spaceRun = doc => { const r = E(doc, "r"), t = E(doc, "t"); t.textContent = " "; t.setAttributeNS(NS_XML, "xml:space", "preserve"); r.appendChild(t); return r; };
+  const baseRPr = anchor => {                      // 文字的字型、字級照定位點那一段原本的字（報告是標楷體就是標楷體）；粗體、底線、螢光這些不沿用
+    let src = null;
+    if (isEl(anchor, NS_W, "p")) {
+      const rs = anchor.getElementsByTagNameNS(NS_W, "r");
+      for (let i = 0; i < rs.length && !src; i++) if (rs[i].getElementsByTagNameNS(NS_W, "t").length) src = kid(rs[i], NS_W, "rPr");
+      if (!src) src = kid(kid(anchor, NS_W, "pPr"), NS_W, "rPr");
+    }
+    const pr = src ? src.cloneNode(true) : anchor.ownerDocument.createElementNS(NS_W, "w:rPr");
+    for (let c = pr.firstElementChild, nx; c; c = nx) { nx = c.nextElementSibling; if (c.namespaceURI !== NS_W || !["rFonts", "sz", "szCs", "lang"].includes(c.localName)) pr.removeChild(c); }
+    // 中文、英數字都明寫同一個字型：預設標楷體；定位點自己明寫了別的中文字型才跟著它
+    const rf0 = kid(pr, NS_W, "rFonts"), ea = (rf0 && rf0.getAttributeNS(NS_W, "eastAsia")) || "標楷體";
+    const rf = E(anchor.ownerDocument, "rFonts", { ascii: ea, hAnsi: ea, eastAsia: ea, hint: "eastAsia" });
+    if (rf0) pr.replaceChild(rf, rf0); else pr.insertBefore(rf, pr.firstChild);
+    return pr;
+  };
+  const textRun = (doc, rpr0, text, opt) => {
+    const r = E(doc, "r"), pr = rpr0.cloneNode(true);
+    const sz = +(opt && opt.sz);
+    if (sz >= 4 && sz <= 96) { for (const n of ["sz", "szCs"]) { const o = kid(pr, NS_W, n); if (o) pr.removeChild(o); }
+      const lang = kid(pr, NS_W, "lang"); pr.insertBefore(E(doc, "sz", { val: Math.round(sz * 2) }), lang); pr.insertBefore(E(doc, "szCs", { val: Math.round(sz * 2) }), lang); }
+    if (opt && opt.b) pr.insertBefore(E(doc, "b"), kid(pr, NS_W, "sz") || kid(pr, NS_W, "szCs") || kid(pr, NS_W, "lang"));
+    if (pr.firstElementChild) r.appendChild(pr);
+    const t = E(doc, "t"); t.textContent = text; t.setAttributeNS(NS_XML, "xml:space", "preserve"); r.appendChild(t);
+    return r;
+  };
+  const textPara = (doc, rpr0, text, opt) => { const p = E(doc, "p"); p.appendChild(loosePPr(doc, opt && opt.c, opt && opt.k)); if (text !== "") p.appendChild(textRun(doc, rpr0, text, opt)); return p; };
+  const tableEl = async (doc, rpr0, it, availD, depth) => {
+    const pad = it.pad === 0 ? 0 : 60;
+    const rows = it.tbl.filter(r => Array.isArray(r) && r.length);
+    const span = c => { const v = Math.floor(+((c && typeof c === "object" && c.span) || 1)); return v >= 1 ? Math.min(v, 24) : 1; };   // 不是數字就當 1
+    const ncol = Math.min(24, Math.max(1, Math.floor(+it.cols) || 0, ...rows.map(r => r.reduce((a, c) => a + span(c), 0))));
+    const cw = Math.max(200, Math.floor(availD / ncol)), tbl = E(doc, "tbl"), pr = E(doc, "tblPr");
+    pr.appendChild(E(doc, "tblW", { w: cw * ncol, type: "dxa" }));
+    if (it.border !== false) { const b = E(doc, "tblBorders");
+      for (const side of ["top", "left", "bottom", "right", "insideH", "insideV"]) b.appendChild(E(doc, side, { val: "single", sz: 4, space: 0, color: "auto" })); pr.appendChild(b); }
+    pr.appendChild(E(doc, "tblLayout", { type: "fixed" }));
+    const mar = E(doc, "tblCellMar"); for (const side of ["left", "right"]) mar.appendChild(E(doc, side, { w: pad, type: "dxa" })); pr.appendChild(mar);
+    tbl.appendChild(pr);
+    const grid = E(doc, "tblGrid"); for (let i = 0; i < ncol; i++) grid.appendChild(E(doc, "gridCol", { w: cw })); tbl.appendChild(grid);
+    for (let ri = 0; ri < rows.length; ri++) {
+      const row = rows[ri], keepRow = !!it.keep && ri < rows.length - 1;       // 整張表黏在一起：除了最後一列，每一列都跟下一列不分頁
+      const tr = E(doc, "tr"), trPr = E(doc, "trPr"); let used = 0;
+      trPr.appendChild(E(doc, "cantSplit")); tr.appendChild(trPr);            // 同一列不跨頁
+      const cell = async (c, sp) => {
+        const tc = E(doc, "tc"), tcPr = E(doc, "tcPr"); tcPr.appendChild(E(doc, "tcW", { w: cw * sp, type: "dxa" }));
+        if (sp > 1) tcPr.appendChild(E(doc, "gridSpan", { val: sp })); tcPr.appendChild(E(doc, "vAlign", { val: it.va === "bottom" || it.va === "top" ? it.va : "center" })); tc.appendChild(tcPr);
+        if (c && Array.isArray(c.items)) {         // 格子裡再放一串內容
+          const inner = await blocksOf(doc, rpr0, c.items, Math.max(400, cw * sp - 2 * pad), depth + 1);
+          for (const el of inner) tc.appendChild(el);
+          if (!inner.length) tc.appendChild(E(doc, "p"));
+        } else if (c && c.pic) { if (c.t != null && String(c.t) !== "") tc.appendChild(textPara(doc, rpr0, String(c.t), { c: true, sz: c.sz || it.sz, b: c.b, k: true }));   // 同一格：字在上、照片在下
+          const p = E(doc, "p"); p.appendChild(loosePPr(doc, true, keepRow)); p.appendChild(picRun(doc, await addPic(String(c.pic)), (cw * sp - 2 * pad - 40) * EMU_DXA)); tc.appendChild(p); }
+        else tc.appendChild(textPara(doc, rpr0, c && c.t != null ? String(c.t) : "", { c: true, sz: (c && c.sz) || it.sz, b: c && c.b, k: keepRow }));
+        tr.appendChild(tc);
+      };
+      for (const c0 of row) { const c = c0 && typeof c0 === "object" ? c0 : { t: c0 == null ? "" : String(c0) }, sp = Math.min(span(c), ncol - used); if (sp < 1) break; used += sp; await cell(c, sp); }
+      while (used < ncol) { used++; await cell({ t: "" }, 1); }
+      tbl.appendChild(tr);
+    }
+    return tbl;
+  };
+  const thinPara = doc => {                        // 幾乎不佔高度的空段落：隔開兩張表、補在表格後面（格子不能以表格結尾）
+    const p = E(doc, "p"), pPr = E(doc, "pPr"), rPr = E(doc, "rPr");
+    pPr.appendChild(E(doc, "snapToGrid", { val: 0 })); pPr.appendChild(E(doc, "spacing", { before: 0, after: 0, line: 20, lineRule: "exact" }));
+    rPr.appendChild(E(doc, "sz", { val: 2 })); rPr.appendChild(E(doc, "szCs", { val: 2 })); pPr.appendChild(rPr); p.appendChild(pPr);
+    return p;
+  };
+  const blocksOf = async (doc, rpr0, items, availD, depth) => {
+    const blocks = [], lastTbl = () => blocks.length > 0 && isEl(blocks[blocks.length - 1], NS_W, "tbl");
+    for (const it of items) {
+      if (it && Array.isArray(it.tbl)) {
+        if (depth > 2 || !it.tbl.some(r => Array.isArray(r) && r.length)) continue;   // 表格包表格最多三層；沒有任何一列的表不寫
+        if (lastTbl()) blocks.push(thinPara(doc));
+        blocks.push(await tableEl(doc, rpr0, it, availD, depth));
+      } else if (it && Array.isArray(it.pics) && it.pics.length) {
+        const n0 = Math.floor(+it.n), n = Math.min(6, Math.max(1, n0 >= 1 ? n0 : it.pics.length)), p = E(doc, "p"); p.appendChild(loosePPr(doc)); let k = 0;
+        for (const id of it.pics) { const pic = await addPic(String(id)); if (k++) p.appendChild(spaceRun(doc)); p.appendChild(picRun(doc, pic, (availD * EMU_DXA - (n - 1) * gap) / n)); }
+        blocks.push(p);
+      } else if (it && typeof it.t === "string") blocks.push(textPara(doc, rpr0, it.t, it));
+    }
+    if (lastTbl()) blocks.push(thinPara(doc));
+    return blocks;
+  };
   for (const f of jobs) {
     const v = phParse(values[f.id]), doc = f.anchor.ownerDocument;
-    const avail = Math.max(600, availDxa(f.anchor)) * EMU_DXA, gap = 0.12 * EMU_CM;
-    const wEach = Math.floor((avail - (v.n - 1) * gap) / v.n);
-    const p = doc.createElementNS(NS_W, "w:p"), pPr = doc.createElementNS(NS_W, "w:pPr");
-    const sp = doc.createElementNS(NS_W, "w:spacing");                 // 行距固定用「自動」：不然遇到固定行高的段落，照片會被切掉
-    for (const [k, val] of [["before", "40"], ["after", "40"], ["line", "240"], ["lineRule", "auto"]]) sp.setAttributeNS(NS_W, "w:" + k, val);
-    const ind = doc.createElementNS(NS_W, "w:ind");
-    for (const k of ["left", "right", "firstLine"]) ind.setAttributeNS(NS_W, "w:" + k, "0");
-    const snap = doc.createElementNS(NS_W, "w:snapToGrid"); snap.setAttributeNS(NS_W, "w:val", "0");
-    pPr.appendChild(snap); pPr.appendChild(sp); pPr.appendChild(ind); p.appendChild(pPr);
-    let k = 0;
-    for (const id of v.ids) {
-      const ph = await getPhoto(id);
-      if (!ph || !ph.bytes || !(ph.w > 0) || !(ph.h > 0)) throw new Error("有一張照片在手機裡找不到了，請回那一題把它移除再匯出");
-      seq++;
-      let name, dup = 0; do { name = "word/media/afphoto" + seq + (dup ? "_" + dup : "") + "." + ext; dup++; } while (names.has(name.toLowerCase()));
-      names.add(name.toLowerCase());
-      const bytes = new Uint8Array(ph.bytes), rid = newRid();
-      media.push({ name, method: 0, time: d.de.time, date: d.de.date, crc: crc32(bytes), usize: bytes.length, raw: bytes });
-      addRel.push({ Id: rid, Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", Target: name.slice(5) });
-      let cx = wEach, cy = Math.round(cx * ph.h / ph.w);
-      const maxH = 20 * EMU_CM; if (cy > maxH) { cy = maxH; cx = Math.round(cy * ph.w / ph.h); }
-      if (k++) { const s2 = doc.createElementNS(NS_W, "w:r"), t2 = doc.createElementNS(NS_W, "w:t");
-                 t2.textContent = " "; t2.setAttributeNS(NS_XML, "xml:space", "preserve"); s2.appendChild(t2); p.appendChild(s2); }
-      p.appendChild(drawingRun(doc, rid, cx, cy, newUid()));
-    }
     if (!blockHost(f.anchor)) throw new Error("有一張照片放的位置，文件結構不允許放圖。請把它移到別的題目再匯出");
-    f.anchor.parentNode.insertBefore(p, f.anchor.nextSibling);
+    const availD = Math.max(600, availDxa(f.anchor)), rpr0 = baseRPr(f.anchor);
+    const blocks = await blocksOf(doc, rpr0, v.auto, availD, 0);       // 自動內容：照順序放在你自己的照片前面
+    if (v.ids.length) {
+      const p = E(doc, "p"); p.appendChild(loosePPr(doc)); let k = 0;
+      for (const id of v.ids) { const pic = await addPic(id); if (k++) p.appendChild(spaceRun(doc)); p.appendChild(picRun(doc, pic, (availD * EMU_DXA - (v.n - 1) * gap) / v.n)); }
+      blocks.push(p);
+    }
+    let ref = f.anchor;
+    for (const el of blocks) { ref.parentNode.insertBefore(el, ref.nextSibling); ref = el; }
     if (/^Pc\d+$/.test(f.id)) { const tc = cellOf(f.anchor); if (tc) markCell(tc, f.id.slice(2)); }   // 空白格放了照片：留記號，之後再打開這一格還能打字
   }
   const pack = async (e, bytes) => { const z = await deflateRaw(bytes);
@@ -1415,6 +1570,552 @@ async function buildDocx(origAb, values, getPhoto) {
   const out = d.entries.map(e => e === d.de ? { ...e, method: packed ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: packed || bytes }
                                  : (ph && ph.swap.get(e)) || e);
   return writeZip(ph ? out.concat(ph.media) : out);
+}
+
+/* ══════════════════════════════════════════════════════════
+   爬梯機記錄表（.xlsx）的讀、算、寫 —— 之後會併進填寫器的第一段程式
+   做法：不另外寫一套「哪台機型適不適用」的判斷，而是把記錄表自己的公式讀出來照著算。
+         官方改門檻、加機型，只要還是用這幾個函數，就不用改程式。
+   只支援這份記錄表會用到的語法；遇到看不懂的函數或寫法就丟錯，不硬算。
+   需要第一段程式裡的：readZip、entryBytes、writeZip、deflateRaw、crc32
+   ══════════════════════════════════════════════════════════ */
+const NS_X = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+const NS_XR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const XL_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+
+function colNum(s) { let n = 0; for (const ch of s) n = n * 26 + ch.charCodeAt(0) - 64; return n; }
+function colName(n) { let s = ""; while (n > 0) { const k = (n - 1) % 26; s = String.fromCharCode(65 + k) + s; n = (n - 1 - k) / 26; } return s; }
+function refParts(r) { const m = /^([A-Z]{1,3})(\d+)$/.exec(r); if (!m) throw new Error("看不懂的格子位址：" + r); return { c: colNum(m[1]), r: +m[2] }; }
+
+class XErr { constructor(code) { this.code = code; } }          // 試算表的錯誤值（#DIV/0! 之類）
+
+/* ── 開檔：把每張工作表的格子、公式讀出來 ── */
+async function xlOpen(ab) {
+  const entries = readZip(ab), dec = new TextDecoder("utf-8");
+  const text = async name => { const e = entries.find(x => x.name === name); if (!e) throw new Error("記錄表裡找不到 " + name); return dec.decode(await entryBytes(e)); };
+  const xml = (t, what) => { const d = new DOMParser().parseFromString(t, "application/xml");
+    if (d.getElementsByTagName("parsererror").length) throw new Error("記錄表的" + what + "讀不懂"); return d; };
+  const wbDoc = xml(await text("xl/workbook.xml"), "活頁簿"), relDoc = xml(await text("xl/_rels/workbook.xml.rels"), "關聯表");
+  const target = new Map(); for (const e of relDoc.documentElement.children) target.set(e.getAttribute("Id"), e.getAttribute("Target"));
+  const sst = [];
+  if (entries.some(x => x.name === "xl/sharedStrings.xml")) {
+    const sd = xml(await text("xl/sharedStrings.xml"), "文字表");
+    for (const si of sd.documentElement.children) { if (si.localName !== "si") continue;
+      let s = ""; const ts = si.getElementsByTagNameNS(NS_X, "t");
+      for (let i = 0; i < ts.length; i++) { let p = ts[i].parentNode; if (p.localName === "rPh") continue; s += ts[i].textContent; }   // 注音標示不算
+      sst.push(s); }
+  }
+  const sheets = new Map(), order = [];
+  for (const sh of wbDoc.getElementsByTagNameNS(NS_X, "sheet")) {
+    const name = sh.getAttribute("name"), t = target.get(sh.getAttributeNS(NS_XR, "id"));
+    if (!t) throw new Error("記錄表的工作表對不上：" + name);
+    const path = t.startsWith("/") ? t.slice(1) : "xl/" + t, doc = xml(await text(path), "工作表「" + name + "」");
+    const cells = new Map(), shared = new Map();
+    for (const c of doc.getElementsByTagNameNS(NS_X, "c")) {
+      const ref = c.getAttribute("r"); if (!ref) continue;
+      let f = null, v = null, is = null;
+      for (const k of c.children) { if (k.localName === "f") f = k; else if (k.localName === "v") v = k; else if (k.localName === "is") is = k; }
+      const o = { el: c, ref, t: c.getAttribute("t") || "n", raw: v ? v.textContent : null, is: is ? is.textContent : null, f: null, base: null };
+      if (f) {
+        if (f.getAttribute("t") === "array") throw new Error("記錄表用了陣列公式，填寫器不會算");
+        if (f.getAttribute("t") === "shared") {
+          const si = f.getAttribute("si");
+          if (f.textContent) shared.set(si, { text: f.textContent, ref });
+          o.shared = si;
+        } else o.f = f.textContent;
+      }
+      cells.set(ref, o);
+    }
+    for (const o of cells.values()) if (o.shared !== undefined) {         // 共用公式：照起始格的公式，位址跟著位移
+      const m = shared.get(o.shared); if (!m) throw new Error("記錄表的共用公式找不到起始格");
+      o.f = m.text; o.base = m.ref;
+    }
+    sheets.set(name, { name, path, doc, cells }); order.push(name);
+  }
+  return { entries, sheets, order, sst, wbDoc, ast: new Map() };
+}
+
+/* ── 公式：拆字、組成樹 ── */
+function xlTokens(src) {
+  const out = []; let i = 0; const n = src.length;
+  const refRe = /^\$?[A-Z]{1,3}\$?\d+/;
+  while (i < n) {
+    const ch = src[i];
+    if (ch === " " || ch === "\n" || ch === "\t") { i++; continue; }
+    if (ch === '"') { let j = i + 1, s = ""; for (;;) { if (j >= n) throw new Error("公式的引號沒有結束"); if (src[j] === '"') { if (src[j + 1] === '"') { s += '"'; j += 2; continue; } break; } s += src[j++]; } out.push({ k: "str", v: s }); i = j + 1; continue; }
+    const two = src.substr(i, 2);
+    if (two === "<=" || two === ">=" || two === "<>") { out.push({ k: "op", v: two }); i += 2; continue; }
+    if ("+-*/^&=<>(),:".includes(ch)) { out.push({ k: "op", v: ch }); i++; continue; }
+    const rest = src.slice(i);
+    let m = /^\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(rest);
+    if (m) { out.push({ k: "num", v: +m[0] }); i += m[0].length; continue; }
+    m = /^'((?:[^']|'')+)'!/.exec(rest) || /^([^\s!'"()+\-*\/^&=<>,:$]+)!/.exec(rest);
+    if (m) { out.push({ k: "sheet", v: m[1].replace(/''/g, "'") }); i += m[0].length; continue; }
+    m = refRe.exec(rest);
+    if (m && !/^[A-Za-z0-9_.]/.test(rest[m[0].length] || "")) { out.push({ k: "ref", v: m[0] }); i += m[0].length; continue; }
+    m = /^[A-Za-z_][A-Za-z0-9_.]*/.exec(rest);
+    if (m) { out.push({ k: "id", v: m[0].toUpperCase() }); i += m[0].length; continue; }
+    throw new Error("公式裡有看不懂的字：" + rest.slice(0, 12));
+  }
+  return out;
+}
+function xlParse(src) {
+  const T = xlTokens(src); let p = 0;
+  const peek = v => T[p] && T[p].k === "op" && T[p].v === v, eat = v => { if (!peek(v)) throw new Error("公式格式不對（少了 " + v + "）"); p++; };
+  const ref1 = (sheet) => { const t = T[p++]; if (!t || t.k !== "ref") throw new Error("公式格式不對（要接格子位址）");
+    const m = /^(\$?)([A-Z]{1,3})(\$?)(\d+)$/.exec(t.v); return { c: colNum(m[2]), r: +m[4], ac: !!m[1], ar: !!m[3], sheet }; };
+  function primary() {
+    const t = T[p];
+    if (!t) throw new Error("公式不完整");
+    if (t.k === "num") { p++; return { t: "num", v: t.v }; }
+    if (t.k === "str") { p++; return { t: "str", v: t.v }; }
+    if (t.k === "op" && t.v === "(") { p++; const e = expr(); eat(")"); return { t: "par", a: e }; }     // 括號要留記號：Excel 對「最外層的加減」有特別的規矩
+    if (t.k === "sheet" || t.k === "ref") {
+      const sheet = t.k === "sheet" ? (p++, t.v) : null, a = ref1(sheet);
+      if (peek(":")) { p++; const b = ref1(sheet); return { t: "range", a, b }; }
+      return { t: "ref", a };
+    }
+    if (t.k === "id") {
+      p++;
+      if ((t.v === "TRUE" || t.v === "FALSE")) { if (peek("(")) { p++; eat(")"); } return { t: "bool", v: t.v === "TRUE" }; }
+      eat("("); const args = [];
+      if (!peek(")")) for (;;) { args.push(expr()); if (peek(",")) { p++; continue; } break; }
+      eat(")"); return { t: "fn", name: t.v, args };
+    }
+    throw new Error("公式格式不對");
+  }
+  const unary = () => { if (peek("-")) { p++; return { t: "neg", a: unary() }; } if (peek("+")) { p++; return unary(); } return primary(); };
+  const bin = (next, ops) => () => { let a = next(); while (T[p] && T[p].k === "op" && ops.includes(T[p].v)) { const op = T[p++].v; a = { t: "bin", op, a, b: next() }; } return a; };
+  const power = bin(unary, ["^"]), term = bin(power, ["*", "/"]), add = bin(term, ["+", "-"]), cat = bin(add, ["&"]);
+  function expr() { let a = cat(); if (T[p] && T[p].k === "op" && ["=", "<>", "<", ">", "<=", ">="].includes(T[p].v)) { const op = T[p++].v; a = { t: "cmp", op, a, b: cat() }; } return a; }
+  const e = expr(); if (p !== T.length) throw new Error("公式後面多了東西");
+  return e;
+}
+
+/* ── 算：inputs＝這次要填進去的值（"工作表!位址" → 數字／字／是非） ── */
+const XL_ARITY = { IF: [2, 3], ISERROR: [1, 1], AND: [1, 99], OR: [1, 99], MAX: [1, 99], MIN: [1, 99], DEGREES: [1, 1], ASIN: [1, 1], ROUND: [2, 2], ROUNDDOWN: [2, 2], COUNTIF: [2, 2] };
+/* 試算表把只差最後幾個位元的兩個數字當成相等（例如 34.6+35.4 與 70）。這裡照同樣的規矩，不然踩在門檻上的量測會判反 */
+function xlNear(a, b) {
+  if (a === b) return true;
+  if (a === 0 || b === 0 || !isFinite(a) || !isFinite(b)) return false;
+  if (Number.isInteger(a) && Number.isInteger(b)) return false;
+  const d = Math.abs(a - b), e = 3.552713678800501e-15;        // 2 的 -48 次方
+  return d < Math.abs(a) * e && d < Math.abs(b) * e;
+}
+/* COUNTIF 的條件：只算「跟某段文字一樣」這一種（記錄表實際用到的）。
+   比大小、不等於、萬用字元、數字、是非、空白這些條件，各家試算表的算法有出入，一律擋下不硬算 */
+function xlCrit(c) {
+  if (typeof c !== "string" || c.trim() === "" || /^[=<>]/.test(c) || /[*?~]/.test(c) || isFinite(+c) || /^[\d\s.,%\/:+\-]+$/.test(c) || /^(TRUE|FALSE)$/i.test(c.trim()))
+    throw new Error("記錄表的 COUNTIF 用了填寫器不會算的條件：" + String(c).slice(0, 20));
+  return c.toUpperCase();
+}
+/* 開檔時把每一條公式從頭到尾看過一遍（包含這次沒走到的分支）：有填寫器不會算的寫法就先擋下，不要等填到一半才出錯 */
+function xlCheck(wb) {
+  if (wb.checked) return;
+  const sheetOk = a => { if (a.sheet && !wb.sheets.has(a.sheet)) throw new Error("公式提到不存在的工作表：" + a.sheet); };
+  const walk = (n, okRange) => {
+    switch (n.t) {
+      case "num": case "str": case "bool": return;
+      case "ref": sheetOk(n.a); return;
+      case "range": if (!okRange) throw new Error("公式把一整塊範圍當成單一的值用，填寫器不會算"); sheetOk(n.a); return;
+      case "neg": case "par": walk(n.a, false); return;
+      case "cmp": case "bin": walk(n.a, false); walk(n.b, false); return;
+      case "fn": {
+        const ar = XL_ARITY[n.name];
+        if (!ar) throw new Error("記錄表用了填寫器不會算的函數：" + n.name);
+        if (n.args.length < ar[0] || n.args.length > ar[1]) throw new Error(n.name + " 的引數個數不對");
+        const multi = n.name === "MAX" || n.name === "MIN" || n.name === "AND" || n.name === "OR";
+        if (multi) for (const a of n.args) { let x = a; while (x.t === "par") x = x.a;
+          if (x !== a && (x.t === "ref" || x.t === "range")) throw new Error(n.name + " 裡的格子外面多包了一層括號，各家試算表的算法不一樣，填寫器不會算"); }
+        n.args.forEach((a, i) => walk(a, multi || (n.name === "COUNTIF" && i === 0)));
+        if (n.name === "COUNTIF") {
+          if (n.args[0].t !== "range" && n.args[0].t !== "ref") throw new Error("COUNTIF 的第一個引數要是範圍");
+          if (n.args[1].t === "str" || n.args[1].t === "num" || n.args[1].t === "bool") xlCrit(n.args[1].v);
+        }
+        return;
+      }
+    }
+    throw new Error("公式格式不對");
+  };
+  // 每條公式用到哪些「也是公式」的格子（不管那個分支這次走不走得到）
+  const deps = new Map();
+  const isF = (sheet, c, r) => { const sh = wb.sheets.get(sheet), o = sh && sh.cells.get(colName(c) + r); return !!o && o.f != null; };
+  const collect = (n, sheet, dr, dc, out) => {
+    if (!n || typeof n !== "object") return;
+    if (n.t === "ref" || n.t === "range") {
+      const A = n.a, B = n.t === "range" ? n.b : n.a, s2 = A.sheet || sheet;
+      const c1 = A.ac ? A.c : A.c + dc, c2 = B.ac ? B.c : B.c + dc, r1 = A.ar ? A.r : A.r + dr, r2 = B.ar ? B.r : B.r + dr;
+      if ((Math.abs(c2 - c1) + 1) * (Math.abs(r2 - r1) + 1) > 20000) throw new Error("公式指到的範圍太大，填寫器不會算");
+      for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++) for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) if (isF(s2, c, r)) out.push(s2 + "!" + colName(c) + r);
+      return;
+    }
+    if (n.t === "neg" || n.t === "par") return collect(n.a, sheet, dr, dc, out);
+    if (n.t === "cmp" || n.t === "bin") { collect(n.a, sheet, dr, dc, out); collect(n.b, sheet, dr, dc, out); return; }
+    if (n.t === "fn") for (const x of n.args) collect(x, sheet, dr, dc, out);
+  };
+  for (const sh of wb.sheets.values()) for (const o of sh.cells.values()) if (o.f != null) {
+    try {
+      let ast = wb.ast.get(o.f); if (!ast) { ast = xlParse(o.f); wb.ast.set(o.f, ast); } walk(ast, false);
+      let dr = 0, dc = 0; if (o.base) { const b = refParts(o.base), p = refParts(o.ref); dr = p.r - b.r; dc = p.c - b.c; }
+      const out = []; collect(ast, sh.name, dr, dc, out); deps.set(sh.name + "!" + o.ref, out);
+    } catch (e) { throw new Error((e.message || String(e)) + "（" + sh.name + "!" + o.ref + "）"); }
+  }
+  // 公式之間繞成一圈就先擋（試算表自己也會警告）；不用遞迴，免得鏈太長
+  const state = new Map();                         // 1＝走到一半、2＝走完
+  for (const start of deps.keys()) {
+    if (state.get(start)) continue;
+    const stack = [[start, 0]]; state.set(start, 1);
+    while (stack.length) {
+      const top = stack[stack.length - 1], list = deps.get(top[0]) || [];
+      if (top[1] >= list.length) { state.set(top[0], 2); stack.pop(); continue; }
+      const nx = list[top[1]++], st = state.get(nx);
+      if (st === 1) throw new Error("記錄表的公式互相循環：" + nx);
+      if (!st) { state.set(nx, 1); stack.push([nx, 0]); }
+    }
+  }
+  wb.checked = true;
+}
+function xlCompute(wb, inputs) {
+  xlCheck(wb);
+  const memo = new Map(), busy = new Set();
+  const tidy = x => Number(x.toPrecision(15));
+  const num = v => { if (v instanceof XErr) throw v; if (v === null || v === "") return v === "" ? fail("#VALUE!") : 0; if (typeof v === "number") return v; if (typeof v === "boolean") return v ? 1 : 0;
+                     const s = String(v).trim(); if (s !== "" && isFinite(+s)) return +s; return fail("#VALUE!"); };
+  const fail = code => { throw new XErr(code); };
+  const txt = v => { if (v instanceof XErr) throw v; return v === null ? "" : typeof v === "boolean" ? (v ? "TRUE" : "FALSE") : String(v); };
+  const truth = v => { if (v instanceof XErr) throw v; if (typeof v === "boolean") return v; if (v === null) return false; if (typeof v === "number") return v !== 0;
+                       const s = String(v).toUpperCase(); if (s === "TRUE") return true; if (s === "FALSE") return false; return fail("#VALUE!"); };
+  const rank = v => typeof v === "number" ? 0 : typeof v === "string" ? 1 : 2;
+  function compare(a, b, op) {
+    if (a instanceof XErr) throw a; if (b instanceof XErr) throw b;
+    if (a === null && b === null) a = b = 0;
+    else if (a === null) a = typeof b === "number" ? 0 : typeof b === "string" ? "" : false;
+    else if (b === null) b = typeof a === "number" ? 0 : typeof a === "string" ? "" : false;
+    let c;
+    if (rank(a) !== rank(b)) c = rank(a) - rank(b);
+    else if (typeof a === "string") { const x = a.toUpperCase(), y = b.toUpperCase();
+      if (x !== y && op !== "=" && op !== "<>") throw new Error("記錄表的公式拿兩段文字比大小，各家試算表的排法不一樣，填寫器不會算");
+      c = x === y ? 0 : 1; }
+    else c = typeof a === "number" && xlNear(a, b) ? 0 : (+a) - (+b);
+    return op === "=" ? c === 0 : op === "<>" ? c !== 0 : op === "<" ? c < 0 : op === ">" ? c > 0 : op === "<=" ? c <= 0 : c >= 0;
+  }
+  function cell(sheet, c, r) {
+    const key = sheet + "!" + colName(c) + r;
+    if (inputs && inputs.has(key)) return inputs.get(key);
+    if (memo.has(key)) return memo.get(key);
+    const sh = wb.sheets.get(sheet); if (!sh) throw new Error("公式提到不存在的工作表：" + sheet);
+    const o = sh.cells.get(colName(c) + r);
+    let v;
+    if (!o) v = null;
+    else if (o.f != null) {
+      if (busy.has(key)) throw new Error("記錄表的公式互相循環：" + key);
+      busy.add(key);
+      let ast = wb.ast.get(o.f); if (!ast) { ast = xlParse(o.f); wb.ast.set(o.f, ast); }
+      let dr = 0, dc = 0;
+      if (o.base) { const b = refParts(o.base); dr = r - b.r; dc = c - b.c; }
+      try { v = ev(ast, { sheet, dr, dc }, true); if (v === null) v = 0;               // 公式的結果是「一個空白格」：試算表會當成 0
+            if (typeof v === "number" && !isFinite(v)) v = new XErr("#NUM!"); }
+      catch (e) { if (e instanceof XErr) v = e; else throw e; }
+      busy.delete(key);
+    }
+    else if (o.t === "s") v = wb.sst[+o.raw] ?? "";
+    else if (o.t === "inlineStr") v = o.is ?? "";
+    else if (o.t === "str") v = o.raw ?? "";
+    else if (o.t === "b") v = o.raw === "1";
+    else if (o.t === "e") v = new XErr(o.raw || "#N/A");
+    else v = o.raw == null || o.raw === "" ? null : +o.raw;
+    memo.set(key, v); return v;
+  }
+  const at = (a, ctx) => cell(a.sheet || ctx.sheet, a.ac ? a.c : a.c + ctx.dc, a.ar ? a.r : a.r + ctx.dr);
+  function rangeVals(n, ctx) {
+    const sheet = n.a.sheet || ctx.sheet, c1 = n.a.ac ? n.a.c : n.a.c + ctx.dc, c2 = n.b.ac ? n.b.c : n.b.c + ctx.dc,
+          r1 = n.a.ar ? n.a.r : n.a.r + ctx.dr, r2 = n.b.ar ? n.b.r : n.b.r + ctx.dr, out = [];
+    for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++) for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) out.push(cell(sheet, c, r));
+    return out;
+  }
+  function numsOf(args, ctx) {                     // MAX／MIN 的取數規則：範圍裡只看數字；直接寫的引數會轉成數字
+    const out = [];
+    for (const a of args) {
+      if (a.t === "range") { for (const v of rangeVals(a, ctx)) { if (v instanceof XErr) throw v; if (typeof v === "number") out.push(v); } }
+      else if (a.t === "ref") { const v = at(a.a, ctx); if (v instanceof XErr) throw v; if (typeof v === "number") out.push(v); }
+      else out.push(num(ev(a, ctx)));
+    }
+    return out;
+  }
+  function ev(n, ctx, top) {                       // top＝這是整條公式最外層的那一個運算
+    switch (n.t) {
+      case "num": case "str": case "bool": return n.v;
+      case "par": return ev(n.a, ctx);
+      case "ref": { const v = at(n.a, ctx); if (v instanceof XErr) throw v; return v; }
+      case "range": throw new Error("公式把一整塊範圍當成單一的值用，填寫器不會算");
+      case "neg": return -num(ev(n.a, ctx));
+      case "cmp": return compare(ev(n.a, ctx), ev(n.b, ctx), n.op);
+      case "bin": {
+        if (n.op === "&") return txt(ev(n.a, ctx)) + txt(ev(n.b, ctx));
+        const a = num(ev(n.a, ctx)), b = num(ev(n.b, ctx));
+        let r;
+        if (n.op === "+") r = top && xlNear(a, -b) ? 0 : a + b;      // 最外層的加減剛好抵銷就是 0（Excel 的規矩；包在括號或別的運算裡就不歸零）
+        else if (n.op === "-") r = top && xlNear(a, b) ? 0 : a - b;
+        else if (n.op === "*") r = a * b;
+        else if (n.op === "/") r = b === 0 ? fail("#DIV/0!") : a / b;
+        else r = a === 0 && b === 0 ? NaN : Math.pow(a, b);
+        return isFinite(r) ? r : fail("#NUM!");                      // 算出無效的數（例如負數開根號）：是錯誤值，不能讓後面的比較吃掉
+      }
+      case "fn": {
+        const A = n.args, need = (lo, hi) => { if (A.length < lo || A.length > hi) throw new Error(n.name + " 的引數個數不對"); };
+        switch (n.name) {
+          case "IF": need(2, 3); return truth(ev(A[0], ctx)) ? ev(A[1], ctx) : (A[2] ? ev(A[2], ctx) : false);
+          case "ISERROR": need(1, 1); try { const v = ev(A[0], ctx); return v instanceof XErr; } catch (e) { if (e instanceof XErr) return true; throw e; }
+          case "AND": case "OR": {
+            need(1, 99); const isAnd = n.name === "AND"; let r = isAnd, seen = 0;
+            const take = b => { seen++; if (isAnd ? !b : b) r = !isAnd; };
+            for (const a of A) {
+              if (a.t === "range" || a.t === "ref") {      // 直接指到格子：空白格與文字不算（試算表的規矩）
+                for (const v of (a.t === "range" ? rangeVals(a, ctx) : [at(a.a, ctx)])) {
+                  if (v instanceof XErr) throw v;
+                  if (typeof v === "boolean") take(v); else if (typeof v === "number") take(v !== 0);
+                }
+              } else take(truth(ev(a, ctx)));
+            }
+            return seen ? r : fail("#VALUE!");
+          }
+          case "MAX": { const v = numsOf(A, ctx); return v.length ? Math.max(...v) : 0; }
+          case "MIN": { const v = numsOf(A, ctx); return v.length ? Math.min(...v) : 0; }
+          case "DEGREES": need(1, 1); return num(ev(A[0], ctx)) * 180 / Math.PI;
+          case "ASIN": { need(1, 1); const x = num(ev(A[0], ctx)); return x < -1 || x > 1 ? fail("#NUM!") : Math.asin(x); }
+          case "ROUND": case "ROUNDDOWN": {
+            need(2, 2); const x = tidy(num(ev(A[0], ctx))), d = Math.trunc(num(ev(A[1], ctx))), p = Math.pow(10, d), y = tidy(Math.abs(x) * p);
+            return Math.sign(x) * (n.name === "ROUND" ? Math.round(y) : Math.floor(y)) / p;
+          }
+          case "COUNTIF": {
+            need(2, 2); if (A[0].t !== "range" && A[0].t !== "ref") throw new Error("COUNTIF 的第一個引數要是範圍");
+            const vals = A[0].t === "range" ? rangeVals(A[0], ctx) : [at(A[0].a, ctx)], want = xlCrit(ev(A[1], ctx));
+            let k = 0;
+            for (const v of vals) if (typeof v === "string" && v.toUpperCase() === want) k++;
+            return k;
+          }
+          default: throw new Error("記錄表用了填寫器不會算的函數：" + n.name);
+        }
+      }
+    }
+    throw new Error("公式格式不對");
+  }
+  const out = new Map();
+  for (const sh of wb.sheets.values()) for (const o of sh.cells.values()) if (o.f != null) { const p = refParts(o.ref); out.set(sh.name + "!" + o.ref, cell(sh.name, p.c, p.r)); }
+  return out;
+}
+
+/* ── 寫：把填的值與算好的結果寫回去，其餘原封不動；打開時再請試算表軟體重算一次 ── */
+async function xlWrite(wb, inputs, computed) {
+  const touched = new Set();
+  const setCell = (sheet, ref, v, isInput) => {
+    const sh = wb.sheets.get(sheet), o = sh && sh.cells.get(ref);
+    if (!o) throw new Error("記錄表裡找不到要填的格子：" + sheet + "!" + ref);
+    const c = o.el, doc = c.ownerDocument; let f = null;
+    for (const k of [...c.children]) { if (k.localName === "f") f = k; else c.removeChild(k); }
+    if (isInput && f) throw new Error("要填的格子裡原本是公式：" + sheet + "!" + ref);
+    const put = (tag, text) => { const e = doc.createElementNS(NS_X, tag); e.textContent = text; c.appendChild(e); return e; };
+    if (v === null || v === "") c.removeAttribute("t");
+    else if (v instanceof XErr) { c.setAttribute("t", "e"); put("v", v.code); }
+    else if (typeof v === "number") { c.removeAttribute("t"); put("v", String(v)); }
+    else if (typeof v === "boolean") { c.setAttribute("t", "b"); put("v", v ? "1" : "0"); }
+    else if (f) { c.setAttribute("t", "str"); put("v", String(v)); }
+    else { c.setAttribute("t", "inlineStr"); const is = doc.createElementNS(NS_X, "is"), t = doc.createElementNS(NS_X, "t");
+           t.textContent = String(v); t.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve"); is.appendChild(t); c.appendChild(is); }
+    touched.add(sheet);
+  };
+  for (const [k, v] of inputs) { const i = k.lastIndexOf("!"); setCell(k.slice(0, i), k.slice(i + 1), v, true); }
+  for (const [k, v] of computed) { const i = k.lastIndexOf("!"); setCell(k.slice(0, i), k.slice(i + 1), v, false); }
+  let cp = wb.wbDoc.getElementsByTagNameNS(NS_X, "calcPr")[0];
+  if (!cp) { cp = wb.wbDoc.createElementNS(NS_X, "calcPr"); wb.wbDoc.documentElement.appendChild(cp); }
+  cp.setAttribute("fullCalcOnLoad", "1");
+  const enc = new TextEncoder(), ser = d => { const s = new XMLSerializer().serializeToString(d); return enc.encode(/^\s*<\?xml/.test(s) ? s : XL_HEAD + s); };
+  const swap = new Map([["xl/workbook.xml", ser(wb.wbDoc)]]);
+  for (const name of touched) { const sh = wb.sheets.get(name); swap.set(sh.path, ser(sh.doc)); }
+  const out = [];
+  for (const e of wb.entries) {
+    const b = swap.get(e.name);
+    if (!b) { out.push(e); continue; }
+    const z = await deflateRaw(b);
+    out.push({ ...e, method: z ? 8 : 0, crc: crc32(b), usize: b.length, raw: z || b });
+  }
+  return writeZip(out);
+}
+
+/* ── 爬梯機記錄表的版面：哪一格放什麼，從表上的字去找，不寫死位址（官方挪動位置也認得） ── */
+function xlText(wb, sheet, ref) {
+  const sh = wb.sheets.get(sheet), o = sh && sh.cells.get(ref);
+  if (!o) return "";
+  if (o.t === "s") return wb.sst[+o.raw] ?? "";
+  if (o.t === "inlineStr") return o.is ?? "";
+  return o.raw ?? "";
+}
+function stairLayout(wb, boxes) {
+  const bad = why => { throw new Error("這份爬梯機記錄表的版面跟填寫器認得的不一樣（" + why + "），先不要用填寫器算"); };
+  const rec = [...wb.sheets.values()].find(sh => [...sh.cells.keys()].some(r => /^級寬/.test(xlText(wb, sh.name, r).replace(/\s+/g, ""))));
+  if (!rec) bad("找不到樓梯紀錄那一頁");
+  const S = rec.name, T = ref => xlText(wb, S, ref).replace(/\s+/g, "");
+  const all = [...rec.cells.keys()].map(ref => ({ ref, ...refParts(ref), t: T(ref) }));
+  const find = re => all.find(x => re.test(x.t)) || null;
+  const right = p => { const ref = colName(p.c + 1) + p.r; if (!rec.cells.has(ref)) bad("少了 " + ref + " 這一格"); return ref; };
+  const pName = find(/^姓名[:：]/), pWeight = find(/^體重[:：]/), pAddr = find(/^地址[:：]/), pNote = find(/^特殊狀況備註/);
+  if (!pName || !pWeight || !pAddr) bad("找不到姓名、體重或地址");
+  const wCells = all.filter(x => /^級寬/.test(x.t));
+  const hdr = Math.min(...wCells.map(x => x.r)), cols = wCells.filter(x => x.r === hdr).map(x => x.c).sort((a, b) => a - b);
+  const firsts = all.filter(x => x.c === 1 && x.t === "第1階").map(x => x.r).sort((a, b) => a - b);
+  const plats = all.filter(x => x.c === 1 && x.t === "迴轉平台").map(x => x.r).sort((a, b) => a - b);
+  if (!cols.length || !firsts.length || firsts.length !== plats.length) bad("階梯與迴轉平台的列對不起來");
+  const flights = firsts.map((r0, i) => ({ r0, n: plats[i] - r0, plat: plats[i] + 1 }));
+  if (flights.some(f => f.n < 1 || f.n > 40)) bad("每段的階數不合理");
+  const platNames = [0, 1, 2, 3, 4].map(j => xlText(wb, S, colName(cols[0] + j) + plats[0]).replace(/\s+/g, ""));
+  const floors = cols.map(c => ({ c, label: xlText(wb, S, colName(c) + (hdr - 1)).replace(/\s+/g, " ").trim(), labelRef: colName(c) + (hdr - 1) }));
+  // 表頭與欄位要跟填寫器認得的一樣：每層樓依序是 級寬／級高／斜邊長／傾角／級深，迴轉平台是 深、深、寬、寬、寬
+  const HEAD = ["級寬", "級高", "斜邊長", "傾角", "級深"];
+  if (platNames.some(n => !n) || !/^深/.test(platNames[0]) || !/^深/.test(platNames[1]) || !platNames.slice(2).every(n => /^寬/.test(n))) bad("迴轉平台的欄位名稱不一樣");
+  // 每一段從第幾階開始才有斜邊長：第 1 階那一列的傾角欄若不是公式（記錄表上是斜線格），那一階就不用斜邊長
+  for (const f of flights) f.y0 = cols.every(c => { const o = rec.cells.get(colName(c + 3) + f.r0); return !!o && o.f != null; }) ? 0 : 1;
+  cols.forEach((c, i) => {
+    if (i && c - cols[i - 1] < 5) bad("樓層之間的欄數不夠");
+    HEAD.forEach((h, j) => { if (!T(colName(c + j) + hdr).startsWith(h)) bad(colName(c + j) + hdr + " 應該是「" + h + "」"); });
+    for (const f of flights) {
+      const ang = rec.cells.get(colName(c + 3) + (f.r0 + 1));
+      if (!ang || ang.f == null) bad(colName(c + 3) + (f.r0 + 1) + " 應該是傾角的公式");
+      if ([0, 1, 2, 3, 4].some(j => T(colName(c + j) + (f.plat - 1)) !== platNames[j])) bad("第 " + (f.plat - 1) + " 列迴轉平台的欄位名稱對不起來");
+    }
+  });
+  for (const f of flights) if (T("A" + (f.r0 + f.n - 1)) !== "第" + f.n + "階") bad("第 " + f.n + " 階那一列對不起來");
+  // 每兩層樓排成一塊（各有自己的「第1階」標籤欄）：截 Excel 的圖時一塊一張
+  const starts = all.filter(x => x.r === flights[0].r0 && x.t === "第1階").map(x => x.c).sort((a, b) => a - b);
+  for (const fl of floors) { fl.block = starts.filter(c => c < fl.c).length; if (fl.block < 1) bad("樓層排在「第1階」標籤的左邊"); }
+  for (const fl of floors) for (const f of flights) {
+    for (const ref of [colName(fl.c) + f.r0, colName(fl.c + 1) + f.r0, colName(fl.c + 2) + f.r0, colName(fl.c) + f.plat, colName(fl.c + 4) + f.plat])
+      if (!rec.cells.has(ref)) bad("少了 " + ref + " 這一格");
+  }
+  // 是非題：看勾選方塊自己記的「接到哪一格、旁邊寫什麼字」。只有一個「有」的方塊時 no 是 null（沒勾就是沒有）
+  const yn = re => { const p = find(re); if (!p) return null;
+    const inRow = (boxes || []).filter(b => b.sheet === S && refParts(b.ref).r === p.r && rec.cells.has(b.ref) && rec.cells.get(b.ref).t === "b");
+    const yes = inRow.filter(b => /^(是|有)$/.test(b.label)), no = inRow.filter(b => /^(否|無|沒有)$/.test(b.label));
+    return yes.length === 1 && no.length <= 1 && inRow.length === yes.length + no.length
+      ? { yes: yes[0].ref, no: no.length ? no[0].ref : null, q: xlText(wb, S, p.ref).replace(/^※/, "").trim() } : null; };
+  const round = yn(/^※梯階圓角/), depth = yn(/^※級深/), spiral = yn(/^※是否有三角/);
+  if (!round || !depth || !spiral) bad("找不到三題是非題的勾選方塊");
+  // 結果頁：有「型號」那一列是機型名稱，底下每一列是一種服務方式
+  let res = null;
+  for (const sh of wb.sheets.values()) {
+    const cell = [...sh.cells.keys()].map(ref => ({ ref, ...refParts(ref) })).find(x => x.c === 1 && xlText(wb, sh.name, x.ref).trim() === "型號");
+    if (!cell) continue;
+    const machines = [];
+    for (let c = 2; c < 40; c++) { const t = xlText(wb, sh.name, colName(c) + cell.r).trim(); if (t) machines.push({ c, name: t.split("\n")[0].trim(), full: t.replace(/\s*\n\s*/g, " ") }); }
+    const modes = [];
+    for (let r = cell.r + 1; r < cell.r + 14; r++) { const t = xlText(wb, sh.name, "A" + r).trim(); if (t && t !== "款式圖片" && machines.some(m => sh.cells.has(colName(m.c) + r) && sh.cells.get(colName(m.c) + r).f != null)) modes.push({ r, name: t }); }
+    if (machines.length && modes.length) { res = { sheet: sh.name, row: cell.r, machines, modes }; break; }
+  }
+  if (!res) bad("找不到適用機型那一頁");
+  // 公式頁：每種服務方式一塊，逐項寫著哪台不適用——拿來說明原因
+  const why = new Map();
+  for (const sh of wb.sheets.values()) {
+    if (sh === rec || sh.name === res.sheet) continue;
+    for (const o of sh.cells.values()) {
+      const p = refParts(o.ref), t = xlText(wb, sh.name, o.ref).trim(), mode = res.modes.find(m => m.name === t);
+      if (!mode || why.has(mode.name)) continue;
+      const names = [];
+      for (let c = p.c; c < p.c + 12; c++) { const n = xlText(wb, sh.name, colName(c) + (p.r + 1)).trim(); if (n) names.push({ c, name: n.split("\n")[0].trim() }); }
+      if (names.length < 2) continue;
+      const rows = [];
+      for (let r = p.r + 2; r < p.r + 30; r++) {
+        if (!names.some(n => sh.cells.has(colName(n.c) + r) && sh.cells.get(colName(n.c) + r).f != null)) { if (rows.length) break; continue; }
+        rows.push({ r, label: (xlText(wb, sh.name, "A" + r) || "").replace(/^[a-z](?:-\d)?\./i, "").trim() });
+      }
+      why.set(mode.name, { sheet: sh.name, names, rows });
+    }
+  }
+  // 備註寫在標籤後面第二格：寫在隔壁那一格會把「特殊狀況備註:」這幾個字蓋掉一半
+  const noteRef = pNote ? (rec.cells.has(colName(pNote.c + 2) + pNote.r) ? colName(pNote.c + 2) + pNote.r : right(pNote)) : null;
+  return { sheet: S, name: right(pName), weight: right(pWeight), addr: right(pAddr), note: noteRef,
+           floors, flights, platNames, round, depth, spiral, res, why };
+}
+const stairNum = v => { const s = String(v == null ? "" : v).trim(); return s !== "" && isFinite(+s) ? +s : null; };
+/* 把填寫器裡的量測資料，換成「哪一格填什麼」 */
+function stairInputs(L, d, who) {
+  const m = new Map(), put = (ref, v) => { if (v !== null && v !== "" && v !== undefined) m.set(L.sheet + "!" + ref, v); };
+  put(L.name, (who && who.name) || ""); put(L.addr, (who && who.addr) || ""); put(L.weight, stairNum(d.weight));
+  if (L.note) put(L.note, String(d.note || "").trim());
+  L.floors.forEach((fl, i) => {
+    const fd = d.floors[i]; if (!fd) return;
+    if (fd.label && fd.label !== fl.label) put(fl.labelRef, fd.label);
+    L.flights.forEach((f, k) => {
+      const g = fd.f[k]; if (!g) return;
+      put(colName(fl.c) + f.r0, stairNum(g.w));
+      (g.steps || []).slice(0, f.n).forEach((s, j) => { put(colName(fl.c + 1) + (f.r0 + j), stairNum(s.h)); if (j >= f.y0) put(colName(fl.c + 2) + (f.r0 + j), stairNum(s.y)); });
+      (g.plat || []).slice(0, 5).forEach((v, j) => put(colName(fl.c + j) + f.plat, stairNum(v)));
+    });
+  });
+  for (const [k, q] of [["round", L.round], ["depth", L.depth], ["spiral", L.spiral]]) {
+    m.set(L.sheet + "!" + q.yes, d[k] === true); if (q.no) m.set(L.sheet + "!" + q.no, d[k] === false);
+  }
+  return m;
+}
+/* 算完之後整理成畫面要的樣子：每種服務方式、每台機型適不適用，以及不適用／缺資料的項目 */
+function stairResult(wb, L, comp) {
+  const val = (sheet, ref) => { const k = sheet + "!" + ref; return comp.has(k) ? comp.get(k) : xlText(wb, sheet, ref); };
+  return L.res.modes.map(mode => {
+    const W = L.why.get(mode.name);
+    return { name: mode.name, machines: L.res.machines.map(mc => {
+      const ref = colName(mc.c) + mode.r, sh = wb.sheets.get(L.res.sheet);
+      if (!sh.cells.has(ref) || sh.cells.get(ref).f == null) return null;         // 這種服務方式沒有這台
+      const v = val(L.res.sheet, ref), fails = [], missing = [];
+      const col = W && W.names.find(n => n.name === mc.name);
+      if (col) for (const row of W.rows) {
+        const x = val(W.sheet, colName(col.c) + row.r);
+        if (typeof x === "string" && x.startsWith("不適用")) fails.push(row.label); else if (x === "None") missing.push(row.label);
+      }
+      return { name: mc.full, short: mc.name, col: mc.c, status: v instanceof XErr ? "N/A" : String(v), fails, missing };
+    }).filter(Boolean) };
+  });
+}
+/* 活頁簿上的勾選方塊：每一個在哪一頁、接到哪一格、旁邊寫什麼字（是／否／有）。這些記在舊式繪圖檔裡。回傳 [{ sheet, ref, label }] */
+async function xlCheckboxes(wb) {
+  const dec = new TextDecoder("utf-8"), get = async name => { const e = wb.entries.find(x => x.name === name); return e ? await entryBytes(e) : null; };
+  const out = [];
+  for (const sh of wb.sheets.values()) {
+    const i = sh.path.lastIndexOf("/"), rb = await get(sh.path.slice(0, i) + "/_rels/" + sh.path.slice(i + 1) + ".rels"); if (!rb) continue;
+    const rd = new DOMParser().parseFromString(dec.decode(rb), "application/xml");
+    for (const e of rd.documentElement.children) {
+      const t = e.getAttribute("Target") || ""; if (!/vmlDrawing[^/]*\.vml$/i.test(t)) continue;
+      const parts = sh.path.split("/").slice(0, -1); for (const p of t.split("/")) { if (p === "..") parts.pop(); else if (p !== ".") parts.push(p); }
+      const vb = await get(t.startsWith("/") ? t.slice(1) : parts.join("/")); if (!vb) continue;
+      for (const m of dec.decode(vb).matchAll(/<v:shape\b[\s\S]*?<\/v:shape>/g)) {
+        const x = m[0]; if (!/ObjectType="Checkbox"/i.test(x)) continue;
+        const link = /<x:FmlaLink>([^<]*)<\/x:FmlaLink>/.exec(x), tb = /<v:textbox[\s\S]*?<\/v:textbox>/.exec(x); if (!link) continue;
+        let ref = link[1].trim();
+        if (ref.includes("!")) { const k = ref.lastIndexOf("!"); if (ref.slice(0, k).replace(/^'|'$/g, "").replace(/''/g, "'") !== sh.name) continue; ref = ref.slice(k + 1); }
+        ref = ref.replace(/\$/g, "");
+        if (/^[A-Z]{1,3}\d+$/.test(ref)) out.push({ sheet: sh.name, ref, label: tb ? tb[0].replace(/<[^>]*>/g, "").replace(/&nbsp;|&#160;/g, " ").replace(/\s+/g, "") : "" });
+      }
+    }
+  }
+  return out;
+}
+/* 記錄表某一頁裡的圖（機型照片就放在適用機型那一頁）：回傳 [{ row, col, bytes, ext }] */
+async function xlSheetImages(wb, sheetName) {
+  const sh = wb.sheets.get(sheetName); if (!sh) return [];
+  const dec = new TextDecoder("utf-8"), get = async name => { const e = wb.entries.find(x => x.name === name); return e ? await entryBytes(e) : null; };
+  const relsOf = async path => { const i = path.lastIndexOf("/"), b = await get(path.slice(0, i) + "/_rels/" + path.slice(i + 1) + ".rels"); const m = new Map();
+    if (b) { const d = new DOMParser().parseFromString(dec.decode(b), "application/xml"); for (const e of d.documentElement.children) m.set(e.getAttribute("Id"), e.getAttribute("Target")); } return m; };
+  const join = (base, t) => { if (t.startsWith("/")) return t.slice(1); const parts = base.split("/").slice(0, -1); for (const s of t.split("/")) { if (s === "..") parts.pop(); else if (s !== ".") parts.push(s); } return parts.join("/"); };
+  const out = [];
+  for (const t of (await relsOf(sh.path)).values()) {
+    if (!/drawings\/drawing\d+\.xml$/.test(t)) continue;
+    const dp = join(sh.path, t), db = await get(dp); if (!db) continue;
+    const dd = new DOMParser().parseFromString(dec.decode(db), "application/xml"), drel = await relsOf(dp);
+    for (const a of dd.documentElement.children) {
+      const from = a.getElementsByTagNameNS("*", "from")[0], blip = a.getElementsByTagNameNS("*", "blip")[0]; if (!from || !blip) continue;
+      const col = +from.getElementsByTagNameNS("*", "col")[0].textContent + 1, row = +from.getElementsByTagNameNS("*", "row")[0].textContent + 1;
+      const tgt = drel.get(blip.getAttributeNS(NS_XR, "embed")); if (!tgt) continue;
+      const mp = join(dp, tgt), bytes = await get(mp); if (bytes) out.push({ row, col, bytes, ext: mp.split(".").pop().toLowerCase() });
+    }
+  }
+  return out;
 }
 </script>
 
@@ -1476,7 +2177,7 @@ const DB = {
 async function kvGet(k, d) { const v = await DB.get("kv", k); return v === undefined ? d : v; }
 
 /* ── 畫面切換 ───────────────────────────────────────────── */
-const VIEWS = ["v-home", "v-case", "v-basic", "v-tpl", "v-set"];
+const VIEWS = ["v-home", "v-case", "v-basic", "v-tpl", "v-set", "v-stair"];
 function endSession() {                          // 離開填寫畫面：這一次開啟到此為止
   if (!$("mark").hidden) markClose();
   if (!S.ses) return;
@@ -1708,7 +2409,7 @@ async function getPhotoOf(ses, id) {
 async function photoTotal(ses) {
   let n = 0;
   for (const f of S.model.fields) if (f.type === "ph")
-    for (const id of phParse(cur(f)).ids) { const ph = await getPhotoOf(ses, id); if (ph) n += ph.bytes.byteLength; }
+    for (const id of phParse(cur(f)).all) { const ph = await getPhotoOf(ses, id); if (ph) n += ph.bytes.byteLength; }
   return n;
 }
 function shrinkPhoto(file) {                     // 用 <img> 讀：手機拍的方向資訊會自動轉正，HEIC 也讀得了
@@ -1744,18 +2445,20 @@ function photoRow(f, b, named) {
   lab.appendChild(lt); lab.appendChild(inp);
   const nSel = mk("select"); [1, 2, 3].forEach(n => nSel.appendChild(new Option("一排 " + n + " 張", String(n))));
   nSel.dataset.fid = f.id + ":n";
+  const autoBox = mk("div", "fhint"), autoRm = mk("button", "btn sm", "移除帶進來的內容"); autoRm.style.marginLeft = "6px"; autoBox.hidden = true;
   let mine = [];                                 // 這一列自己建的縮圖網址：重畫時先收掉
   const paint = () => {
     for (const u of mine) { URL.revokeObjectURL(u); ses.urls.delete(u); }
     mine = [];
     const v = st(); thumbs.textContent = ""; nSel.value = String(v.n); nSel.hidden = !v.ids.length;
-    row.classList.toggle("show", always || v.ids.length > 0);
+    row.classList.toggle("show", always || v.ids.length > 0 || v.auto.length > 0);
+    autoBox.hidden = !v.auto.length;
     for (const id of v.ids) {
       const box = mk("div", "phthumb"), im = mk("img"), x = mk("button", "", "✕");
       im.alt = "照片";
       x.onclick = () => { if (ses.lock) return toast("正在匯出或離開，請稍候再調整照片"); enqueue(async () => {
         if (!live()) return;
-        const w = st(); setVal(f, phJoin(w.n, w.ids.filter(k => k !== id))); paint();
+        const w = st(); setVal(f, phJoin(w.n, w.ids.filter(k => k !== id), w.auto)); paint();
         const saved = await flush();             // 先把「不再引用這張」存進草稿，存成功才真的刪照片
         if (!saved || !live()) return;
         ses.ph.delete(id);
@@ -1770,11 +2473,11 @@ function photoRow(f, b, named) {
             if (await photoTotal(ses) - rec.bytes.byteLength + out.bytes.byteLength > PH_MAX) { toast("標註後這份報告的照片會超過上限（約 12MB），這次的標註沒有存", true); return; }
             if (!live()) return;
             const nid = "ph_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-            const nrec = { bytes: out.bytes, w: out.w, h: out.h, at: Date.now(), base: out.base, marks: out.marks };
+            const nrec = { bytes: out.bytes, w: out.w, h: out.h, at: Date.now(), base: out.base, marks: out.marks, kai: !!out.kai };
             await DB.put("files", phKeyOf(ses, nid), nrec);
             if (!live()) { try { await DB.del("files", phKeyOf(ses, nid)); } catch (e) {} return; }
             ses.ph.set(nid, nrec);
-            const w = st(); setVal(f, phJoin(w.n, w.ids.map(k => k === id ? nid : k))); paint();
+            const w = st(); setVal(f, phJoin(w.n, w.ids.map(k => k === id ? nid : k), w.auto)); paint();
             const saved = await flush();
             if (!saved || !live()) return;
             ses.ph.delete(id);
@@ -1792,7 +2495,7 @@ function photoRow(f, b, named) {
   };
   // 照片作業一律排隊、一件一件做：容量檢查才準，匯出也才等得到「全部做完」
   const enqueue = job => { ses.q = ses.q.then(job).catch(e => { if (live()) toast("照片沒處理成功：" + (e.message || e), true); }); return ses.q; };
-  nSel.onchange = () => { const v = st(); setVal(f, phJoin(+nSel.value, v.ids)); };
+  nSel.onchange = () => { const v = st(); setVal(f, phJoin(+nSel.value, v.ids, v.auto)); };
   inp.onchange = () => {
     const files = [...(inp.files || [])]; inp.value = "";
     if (!files.length) return;
@@ -1810,12 +2513,23 @@ function photoRow(f, b, named) {
         await DB.put("files", phKeyOf(ses, id), { bytes: ph.bytes, w: ph.w, h: ph.h, at: Date.now() });
         if (!live()) { try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {} return; }   // 存好才發現已經離開：這張不留
         ses.ph.set(id, ph);
-        const v = st(); setVal(f, phJoin(v.n, v.ids.concat(id)));
+        const v = st(); setVal(f, phJoin(v.n, v.ids.concat(id), v.auto));
       }
     }).then(() => { if (live()) { lt.textContent = idle; paint(); } });
   };
   ctl.appendChild(lab); ctl.appendChild(nSel);
-  row.appendChild(thumbs); row.appendChild(ctl);
+  autoRm.onclick = () => { if (ses.lock) return toast("正在匯出或離開，請稍候"); enqueue(async () => {
+    if (!live()) return;
+    const w = st(), pics = w.auto.flatMap(autoPics);
+    setVal(f, phJoin(w.n, w.ids, [])); paint();
+    const saved = await flush();                   // 先把草稿存好，才真的刪照片
+    if (!saved || !live()) return;
+    const still = new Set(); for (const x of S.model.fields) if (x.type === "ph") for (const id of phParse(cur(x)).all) still.add(id);
+    for (const id of pics) if (!still.has(id)) { ses.ph.delete(id); try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {} }
+  }); };
+  autoBox.appendChild(mk("span", "", "這裡有「爬梯機評估」帶進來的內容（Excel 截圖，或機型名稱與照片），匯出時會放在這一題後面。"));
+  autoBox.appendChild(autoRm);
+  row.appendChild(autoBox); row.appendChild(thumbs); row.appendChild(ctl);
   paint();
   return row;
 }
@@ -1826,9 +2540,20 @@ const MK = { img: null, w: 0, h: 0, shapes: [], tool: "rail", color: "#e11d48", 
 const MK_COLORS = ["#e11d48", "#f59e0b", "#2563eb", "#16a34a", "#111111", "#ffffff"];
 function mkPt(e) { const cv = $("mk-cv"), r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; }
 function mkUnit() { return Math.max(MK.w, MK.h) / 150; }
+/* 照片標註用的楷體：數位發展部「全字庫正楷體」縮成常用字（kai.woff）。第一次用到才下載，之後離線也有 */
+const KAI = { p: null, ok: false };
+function kaiLoad() {
+  if (!KAI.p) KAI.p = (async () => {
+    try { const f = new FontFace("YXKai", 'url("kai.woff") format("woff")'); await f.load(); document.fonts.add(f); KAI.ok = true; }
+    catch (e) { KAI.p = null; }                    // 這次沒抓到（例如沒有網路）：下次再試
+    return KAI.ok;
+  })();
+  return KAI.p;
+}
+const MK_FONT = '"YXKai","BiauKaiTC","DFKai-SB","標楷體",-apple-system,"PingFang TC","Noto Sans TC",sans-serif';
 function mkLabel(g, s, x, y, color) {
   const u = mkUnit(), fs = Math.round(u * 5.2);
-  g.font = "bold " + fs + 'px -apple-system,"PingFang TC","Noto Sans TC",sans-serif'; g.textBaseline = "middle"; g.textAlign = "center";
+  g.font = (KAI.ok ? "" : "bold ") + fs + "px " + MK_FONT; g.textBaseline = "middle"; g.textAlign = "center";     // 楷體不加粗（標楷體沒有粗體）；還沒載到時維持原本的粗黑體
   const w = g.measureText(s).width + fs * 0.7, h = fs * 1.45;
   x = Math.min(Math.max(x, w / 2 + 2), MK.w - w / 2 - 2); y = Math.min(Math.max(y, h / 2 + 2), MK.h - h / 2 - 2);
   g.fillStyle = color === "#ffffff" ? "rgba(0,0,0,.72)" : "rgba(255,255,255,.9)"; g.fillRect(x - w / 2, y - h / 2, w, h);
@@ -1892,22 +2617,32 @@ function markOpen(rec, onDone) {
   im.onload = () => {
     URL.revokeObjectURL(u);
     Object.assign(MK, { img: im, w: im.naturalWidth, h: im.naturalHeight, shapes: JSON.parse(JSON.stringify(rec.marks || [])), sel: -1, drag: null,
-                        onDone, base: src, asking: null, dirty: false, saving: false, pid: null });
+                        onDone, base: src, asking: null, dirty: false, saving: false, pid: null,
+                        sid: (MK.sid || 0) + 1, kai0: !!rec.kai });
+    mkLock(false);      // sid＝這一次開啟的流水號（關掉就作廢）；kai0＝這張照片上次存的時候是不是用楷體
     const cv = $("mk-cv"); cv.width = MK.w; cv.height = MK.h;
+    kaiLoad().then(ok => {                         // 楷體到了就用楷體重畫一次
+      if (!ok || $("mark").hidden || MK.img !== im) return;
+      if (!MK.kai0 && !MK.dirty && MK.shapes.some(x => x.s)) { MK.dirty = true; toast("這張照片上的字已換成楷體，按「完成」就會存起來"); }   // 以前不是用楷體存的：算有變動
+      mkDraw();
+    });
     const box = $("mk-colors"); box.textContent = "";
     MK_COLORS.forEach(c => { const d = mk("span"); d.style.background = c; d.classList.toggle("on", c === MK.color);
-      d.onclick = () => { MK.color = c; box.querySelectorAll("span").forEach(x => x.classList.toggle("on", x === d));
+      d.onclick = () => { if (MK.saving) return; MK.color = c; box.querySelectorAll("span").forEach(x => x.classList.toggle("on", x === d));
                           if (MK.sel >= 0) { MK.shapes[MK.sel].c = c; MK.dirty = true; mkDraw(); } }; box.appendChild(d); });
     $("mk-ask").hidden = true; $("mark").hidden = false; mkTool(MK.tool); mkDraw();
   };
   im.src = u;
 }
-function markClose() { $("mark").hidden = true; MK.img = null; MK.shapes = []; MK.onDone = null; MK.base = null; MK.asking = null; MK.saving = false; MK.pid = null; MK.drag = null; }
+/* 存檔中（按了完成、在等字型或轉圖）：畫布、顏色、工具、輸入列都不給動，只留「取消」 */
+function mkLock(on) { document.querySelectorAll("#mark .mk-stage, #mk-ask, #mk-colors, #mark .mk-tools").forEach(el => { el.inert = !!on; }); }
+function markClose() { mkLock(false); MK.sid = (MK.sid || 0) + 1; $("mark").hidden = true; MK.img = null; MK.shapes = []; MK.onDone = null; MK.base = null; MK.asking = null; MK.saving = false; MK.pid = null; MK.drag = null; }
 (() => {
   const cv = $("mk-cv");
   // 規則：點一下線或字＝選取；已選取的才能拖端點調整、拖線身整個移動、點字改字。
   //       沒選取的地方一拖就是畫新的（所以 L 型扶手可以從上一段的端點接著畫）。
   cv.addEventListener("pointerdown", e => {
+    if (MK.saving) return;
     if (MK.asking || !MK.img || MK.pid != null) return;        // 一次只認一根手指
     MK.pid = e.pointerId;
     e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) {}
@@ -1956,21 +2691,32 @@ function markClose() { $("mark").hidden = true; MK.img = null; MK.shapes = []; M
   };
   cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
   $("mk-rail").onclick = () => mkTool("rail"); $("mk-dim").onclick = () => mkTool("dim"); $("mk-text").onclick = () => mkTool("text");
-  $("mk-undo").onclick = () => { if (MK.shapes.length) { MK.shapes.pop(); MK.sel = -1; MK.dirty = true; mkDraw(); } };
-  $("mk-del").onclick = () => { if (MK.sel >= 0) { MK.shapes.splice(MK.sel, 1); MK.sel = -1; MK.dirty = true; mkDraw(); } };
+  $("mk-undo").onclick = () => { if (MK.saving) return; if (MK.shapes.length) { MK.shapes.pop(); MK.sel = -1; MK.dirty = true; mkDraw(); } };
+  $("mk-del").onclick = () => { if (MK.saving) return; if (MK.sel >= 0) { MK.shapes.splice(MK.sel, 1); MK.sel = -1; MK.dirty = true; mkDraw(); } };
   $("mk-ok").onclick = () => mkAnswer(true); $("mk-no").onclick = () => mkAnswer(false);
   $("mk-input").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mkAnswer(true); } });
   $("mk-cancel").onclick = () => { if (MK.dirty && !confirm("放棄這次的標註？")) return; markClose(); };
-  $("mk-done").onclick = () => {
+  $("mk-done").onclick = async () => {
     if (MK.saving) return;
     if (MK.asking) mkAnswer(true);                 // 字還在輸入框裡就按完成：照樣收進去
     if (!MK.dirty) return markClose();
-    MK.saving = true;
-    const done = MK.onDone, base = MK.base, w = MK.w, h = MK.h, marks = JSON.parse(JSON.stringify(MK.shapes.map(s => { const o = { ...s }; delete o.box; return o; })));
+    MK.saving = true; mkLock(true);
+    // 先把「這一次」要存的東西固定住：下面要等字型，等的時候畫面可能被關掉、甚至已經開了另一張照片
+    const sid = MK.sid, done = MK.onDone, base = MK.base, w = MK.w, h = MK.h,
+          marks = JSON.parse(JSON.stringify(MK.shapes.map(s => { const o = { ...s }; delete o.box; return o; })));
+    if (marks.some(x => x.s)) {                    // 有字：等一下楷體（最多 5 秒）；等不到就先用一般字型，並說清楚
+      const ok = await Promise.race([kaiLoad(), new Promise(r => setTimeout(() => r(false), 5000))]);
+      if (MK.sid !== sid) return;                  // 等的時候已經關掉或換了一張：這一次作廢，不能去動新的那一張
+      if (!ok) toast("楷體字型還沒下載好（要連網一次）。這次標註的字先用一般字型；之後重開這張照片按「完成」就會換成楷體。", true);
+    }
+    const kai = KAI.ok;
+    MK.shapes = JSON.parse(JSON.stringify(marks));   // 畫最後那張圖用的，就是剛才固定下來的那一份（存的圖與可再編輯的內容一定一致）
     MK.sel = -1; mkDraw(true);
     $("mk-cv").toBlob(b => {
-      if (!b) { MK.saving = false; return toast("標註沒存成功", true); }
-      b.arrayBuffer().then(bytes => { markClose(); if (done) done({ bytes, w, h, base, marks }); }, () => { MK.saving = false; toast("標註沒存成功", true); });
+      if (MK.sid !== sid) return;
+      if (!b) { MK.saving = false; mkLock(false); return toast("標註沒存成功", true); }
+      b.arrayBuffer().then(bytes => { if (MK.sid !== sid) return; markClose(); if (done) done({ bytes, w, h, base, marks, kai }); },
+                           () => { if (MK.sid === sid) { MK.saving = false; mkLock(false); toast("標註沒存成功", true); } });
     }, "image/jpeg", 0.85);
   };
 })();
@@ -2071,6 +2817,7 @@ $("export").onclick = async () => {
       let f;
       try { f = await exportReport(S.caseId, S.rid, snap); }
       catch (e) {
+        if (e && e.cancel) throw e;                // 是你自己按取消的：不要走下面的救援去硬產一份
         // 救援：手機的儲存讀不到或寫不進去時，直接用畫面上這份模板與內容產檔。
         // 模板本身對不上（完整性檢查沒過）時，buildDocx 會再丟一次錯，照樣不匯出。
         const bytes = await buildDocx(S.ab, snap.values, ses ? id => getPhotoOf(ses, id) : null);
@@ -2256,6 +3003,11 @@ async function openCase(id) {
   if (!C.reports.length) list.appendChild(mk("div", "sub", "還沒有報告，按下面的「加一份報告」。"));
   const idx = await tplIndex(), rows = [];
   for (const r of c.reports) { rows.push(await repRow(c, r, idx)); if (my !== NAV) return; }
+  { const ss = await stairShotState(c), se = $("stair-stat"); if (my !== NAV) return;
+    se.hidden = ss === "none"; se.className = "sub" + (ss === "ok" ? "" : " st-bad");
+    se.textContent = ss === "ok" ? "樓梯紀錄表的圖（Excel 截圖）：已放進編號 19（" + hm(c.stairShot.at) + "）"
+      : ss === "stale" ? "樓梯紀錄表的圖是舊的（截圖之後量測或姓名地址改過）：請進「爬梯機評估」再按一次「帶進編號 19」" + (stairHasData(c) ? "" : "（量測已清空：再按一次會把舊圖拿掉）")
+      : "樓梯紀錄表的圖還沒放進編號 19：請進「爬梯機評估」按「帶進編號 19」（家裡 Mac 要醒著）"; }
   rows.forEach(x => list.appendChild(x));
   show("v-case");
 }
@@ -2266,7 +3018,7 @@ async function repRow(c, r, idx) {
   const dx = await DB.get("files", key + "|docx"), pdf = await DB.get("files", key + "|pdf"),
         job = await DB.get("files", key + "|pdfjob"), dr = await DB.get("drafts", key);
   const s = mk("div", "s");
-  const edited = !!dx && wordStale(dx, dr, c);
+  const edited = !!dx && await wordStale(dx, dr, c, r);
   const fresh = !!(pdf && dx && pdf.srcSha === dx.sha && !edited);       // PDF 與「現在的內容」對得上
   s.appendChild(document.createTextNode(dx ? "Word " + hm(dx.at) + (edited ? "（之後又改過）" : "") : "還沒匯出 Word"));
   let pst = "", cls = "";
@@ -2502,10 +3254,11 @@ async function loadReport(caseId, rid, live) {   // 取出模板、草稿（或�
   }
   return o;
 }
-function outName(c, r, ext) {
-  const num = r.num < 999 ? pad2(r.num) : r.title.replace(/（.*$/, "").slice(0, 12);
-  return safeName([num, c.basic.name || "未填姓名", c.evaluator, (c.evalDate || today()).replace(/-/g, "")].filter(Boolean).join("_")) + "." + ext;
-}
+/* 檔名（負責人 11/24 指定）：原本的報告名稱一個字都不改，個案姓名與日期接在最後面；Word、PDF、Excel 都一樣。
+   原名＝匯入模板包時保留的原始檔名。接法：原名、一個「-」、姓名、日期（月日四碼，用評估日期）。要改順序或日期寫法只改 nameTail。 */
+const tplStem = key => String(key || "").split("/").pop().replace(/\.(docx|xlsx)$/i, "");
+function nameTail(c) { return "-" + ((c.basic && c.basic.name) || "未填姓名") + (c.evalDate || today()).replace(/-/g, "").slice(4); }
+function outName(c, r, ext) { return (tplStem(r.tplKey) || safeName(r.title) || "報告") + safeName(nameTail(c)) + "." + ext; }      // 原名不經清理（一字不改）
 async function openReport(rid) {
   const cid = C.id, o = await loadReport(cid, rid);
   if (!C || C.id !== cid) return;                 // 載入途中已經切到別的個案：這份不開
@@ -2513,19 +3266,26 @@ async function openReport(rid) {
   await startEditor({ mode: "case", ab: o.ab, name: o.r.title, title: o.r.title, values: o.values, auto: o.auto, no: o.no, caseId: cid, rid,
                       outName: outName(o.c, o.r, "docx") });
   try {                                          // 清掉沒有被任何題目用到的照片（例如加到一半 App 被關掉留下的）
-    const used = new Set(), pre = cid + "|" + rid + "|ph_";
-    for (const f of S.model.fields) if (f.type === "ph") for (const id of phParse(S.values[f.id]).ids) used.add(cid + "|" + rid + "|" + id);
+    const used = new Set(), pre = cid + "|" + rid + "|ph_"; let odd = false;
+    for (const f of S.model.fields) if (f.type === "ph") { const v = phParse(S.values[f.id]); if (v.bad) odd = true; for (const id of v.all) used.add(cid + "|" + rid + "|" + id); }
     const keys = await DB.tx("files", "readonly", st => st.getAllKeys(IDBKeyRange.bound(pre, pre + "\uffff")));
-    for (const k of keys || []) if (!used.has(String(k))) await DB.del("files", k);
+    if (!odd) for (const k of keys || []) if (!used.has(String(k))) await DB.del("files", k);
   } catch (e) {}
 }
 /* 產 Word，並把確切內容與雜湊值存在手機（PDF 就是用這一份轉）。
    live＝畫面上當下的內容（從填寫畫面按匯出時傳進來）；stored＝有沒有成功存進手機 */
 async function exportReport(caseId, rid, live) {
   const o = await loadReport(caseId, rid, live);
+  if (o.r.num === 19) {                            // 樓梯紀錄表的圖是另外請家裡 Mac 的 Excel 截的：舊了要先問，還沒放要提醒
+    const st = await stairShotState(o.c), rec = o.model.fields.find(f => f.type === "ph" && /^樓梯紀錄表/.test(f.block.text.replace(/\s+/g, "")));
+    const has = !!rec && phParse(o.values[rec.id]).auto.some(it => it && Array.isArray(it.pics) && it.pics.length);
+    if (st === "stale" && has && !confirm("這份編號 19 裡的樓梯紀錄表（Excel 截圖）是舊的：截圖之後，爬梯機的量測或個案的姓名、地址改過。\n\n按「取消」：先不匯出，回「爬梯機評估」按一次「帶進編號 19」。\n按「確定」：照舊的圖匯出。"))
+      throw Object.assign(new Error("已取消匯出：請先到「爬梯機評估」按一次「帶進編號 19」"), { cancel: true });
+    if (!has && stairHasData(o.c)) toast("提醒：這個個案有填爬梯機，但編號 19 裡還沒有樓梯紀錄表的圖", true);
+  }
   const bytes = await buildDocx(o.ab, o.values, id => DB.get("files", caseId + "|" + rid + "|" + id));
   const rec = { bytes: bytes.buffer, sha: await sha256(bytes), name: outName(o.c, o.r, "docx"), at: Date.now(),
-                vk: valsKey(o.values), brev: o.c.brev || 0 };
+                vk: valsKey(o.values), brev: o.c.brev || 0, skey: o.r.num === 19 ? await stairDataKey(o.c) : "" };   // skey＝匯出當時爬梯機量測（連同姓名地址）的指紋
   let stored = o.saved;
   try {
     const c2 = await DB.get("cases", caseId);                          // 產檔途中個案或報告被刪了：不把檔案寫回去
@@ -2534,17 +3294,23 @@ async function exportReport(caseId, rid, live) {
   return { name: rec.name, bytes: rec.bytes, type: DOCX_MIME, stored };
 }
 /* Word 是不是最新：匯出後填的內容或基本資料有沒有再變 */
-function wordStale(dx, dr, c) { return !dx || dx.vk !== valsKey((dr && dr.values) || {}) || (dx.brev || 0) !== (c.brev || 0); }
+async function wordStale(dx, dr, c, r) {
+  if (!dx || dx.vk !== valsKey((dr && dr.values) || {}) || (dx.brev || 0) !== (c.brev || 0)) return true;
+  if (!r || r.num !== 19) return false;
+  // 編號 19：爬梯機量測跟匯出當時不一樣（不管是怎麼改的），裡面的樓梯紀錄表可能是舊的 → 算「之後又改過」，會重新走匯出（詢問在那裡）。
+  // 沒有記指紋的舊 Word：這個個案有爬梯機資料或截過圖，就重新檢查
+  return dx.skey === undefined ? (stairHasData(c) || !!c.stairShot) : dx.skey !== await stairDataKey(c);
+}
 async function exportIfStale(caseId, rid) {
   const key = caseId + "|" + rid, c = await DB.get("cases", caseId);
-  if (wordStale(await DB.get("files", key + "|docx"), await DB.get("drafts", key), c)) await exportReport(caseId, rid);
+  if (await wordStale(await DB.get("files", key + "|docx"), await DB.get("drafts", key), c, c && c.reports.find(x => x.rid === rid))) await exportReport(caseId, rid);
 }
 $("btn-stair").onclick = async () => {
   const c = C, xs = (await tplIndex()).filter(t => t.kind === "xlsx");
   if (!xs.length) { toast("模板庫裡沒有爬梯機記錄表，請先匯入", true); return; }
   const t = xs[0], ab = await DB.get("tpl", t.key);
   if (!ab || await sha256(ab) !== t.sha) { toast("爬梯機原檔對不上當初匯入的內容，請重新匯入", true); return; }
-  const name = safeName(["爬梯機記錄表", c.basic.name || "未填姓名", (c.evalDate || today()).replace(/-/g, "")].join("_")) + ".xlsx";
+  const name = tplStem(t.key) + safeName(nameTail(c)) + ".xlsx";
   await offerShare([{ name, bytes: ab, type: XLSX_MIME }]);   // 原檔位元組原樣送出，不經任何重存
 };
 $("btn-share-all").onclick = async () => {
@@ -2712,6 +3478,351 @@ async function sweepOrphans() {
   for (const k of await DB.keys("drafts")) if (!alive.has(String(k))) await DB.del("drafts", k);
   for (const k of await DB.keys("files")) { const s2 = String(k); if (!alive.has(s2.slice(0, s2.lastIndexOf("|")))) await DB.del("files", k); }
 }
+
+/* ══ 爬梯機評估 ═════════════════════════════════════════════
+   在個案裡輸入樓梯量測 → 用記錄表自己的公式算出適用機型 → 產出填好的記錄表（Excel）
+   → 把樓梯紀錄表（畫成圖）與適用機型的照片帶進編號 19 報告。
+   量測資料存在個案裡（C.stair）；記錄表原檔留在模板庫不動，每次產出都從原檔重新做一份。 */
+const ST = { wb: null, L: null, d: null, ab: null, sha: "", key: "", comp: null, res: null, open: 0, modes: new Set(), t: null, cid: "", busy: false };
+function stairBlank(L) {
+  return { weight: "", note: "", round: null, depth: null, spiral: null,
+           floors: L.floors.map(fl => ({ label: fl.label, f: L.flights.map(() => ({ w: "", steps: [], plat: ["", "", "", "", ""] })) })) };
+}
+function stairWho() { const b = (C && C.basic) || {}; return { name: b.name || "", addr: ((b.liveSame || !b.live) ? b.house : b.live) || "" }; }
+const stairUsed = g => stairNum(g.w) !== null || (g.steps || []).some(s => stairNum(s.h) !== null || stairNum(s.y) !== null);
+function stairCalc() {
+  ST.comp = xlCompute(ST.wb, stairInputs(ST.L, ST.d, stairWho()));
+  ST.res = stairResult(ST.wb, ST.L, ST.comp);
+}
+function stairChanged() {                          // 每改一格：存進個案，稍後重算
+  if (!C || C.id !== ST.cid) return;
+  C.stair = ST.d;
+  clearTimeout(ST.t);
+  ST.t = setTimeout(async () => {
+    if (!C || C.id !== ST.cid || $("v-stair").hidden) return;
+    try { stairCalc(); stairPaintRes(); stairPaintAngles(); } catch (e) { $("st-res").textContent = "算不出來：" + (e.message || e); }
+    try { await saveCase(); } catch (e) { toast("量測資料沒存成功", true); }
+  }, 250);
+}
+function stairPaintAngles() {
+  document.querySelectorAll("#st-floors [data-ang]").forEach(el => {
+    const v = ST.comp && ST.comp.get(ST.L.sheet + "!" + el.dataset.ang);
+    el.textContent = typeof v === "number" && v ? v + "°" : "";
+  });
+}
+function stairPaintRes() {
+  const box = $("st-res"); box.textContent = "";
+  for (const m of ST.res || []) {
+    box.appendChild(mk("div", "grp", m.name));
+    for (const x of m.machines) {
+      const row = mk("div", "stm"), l = mk("div");
+      l.appendChild(mk("div", "", x.name));
+      const why = x.status === "不適用" && x.fails.length ? "不符：" + x.fails.join("、")
+                : x.status !== "適用" && x.status !== "不適用" && x.missing.length ? "還缺：" + x.missing.join("、") : "";
+      if (why) l.appendChild(mk("div", "why", why));
+      row.appendChild(l);
+      row.appendChild(mk("div", x.status === "適用" ? "st-ok" : x.status === "不適用" ? "st-bad" : "st-warn", x.status === "適用" || x.status === "不適用" ? x.status : "資料不足"));
+      row.dataset.m = m.name + "|" + x.short;
+      box.appendChild(row);
+    }
+  }
+}
+function stairDraw() {
+  const L = ST.L, d = ST.d, who = stairWho();
+  $("st-who").textContent = (who.name || "（未填姓名）") + "｜" + (who.addr || "（基本資料還沒填地址）");
+  const w = $("st-weight"); w.value = d.weight; w.oninput = () => { d.weight = w.value; stairChanged(); };
+  const note = $("st-note"); note.value = d.note || ""; note.oninput = () => { d.note = note.value; stairChanged(); };
+  // 三題是非
+  const yn = $("st-yn"); yn.textContent = "";
+  for (const [k, q] of [["round", L.round], ["depth", L.depth], ["spiral", L.spiral]]) {
+    yn.appendChild(mk("label", "", q.q));
+    const row = mk("div", "chips");
+    const single = !q.no;                          // 記錄表上只有一個「有」的方塊：沒勾就是沒有，所以這裡只有兩種狀態
+    const paint = () => row.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", String(single ? d[k] === true : d[k]) === x.dataset.yn.split(":")[1]));
+    for (const [val, txt] of single ? [[true, "有"], [false, "沒有"]] : [[true, "是"], [false, "否"]]) {
+      const c = mk("div", "chip", txt); c.dataset.yn = k + ":" + val;
+      c.onclick = () => { d[k] = single ? val : (d[k] === val ? null : val); paint(); stairChanged(); };
+      row.appendChild(c);
+    }
+    paint();
+    yn.appendChild(row);
+  }
+  // 要帶進報告的服務方式
+  const md = $("st-mode"); md.textContent = "";
+  for (const m of L.res.modes) {
+    const c = mk("div", "chip" + (ST.modes.has(m.name) ? " on" : ""), m.name); c.dataset.mode = m.name;
+    c.onclick = () => { if (ST.modes.has(m.name)) ST.modes.delete(m.name); else ST.modes.add(m.name); c.classList.toggle("on", ST.modes.has(m.name)); };
+    md.appendChild(c);
+  }
+  stairDrawFloors();
+  try { stairCalc(); stairPaintRes(); stairPaintAngles(); } catch (e) { $("st-res").textContent = "算不出來：" + (e.message || e); }
+  $("st-msg").hidden = true;
+}
+function stairDrawFloors() {                       // 一次只展開一層，畫面才不會太長
+  const L = ST.L, d = ST.d, box = $("st-floors"); box.textContent = "";
+  L.floors.forEach((fl, i) => {
+    const fd = d.floors[i], wrap = mk("div", "stfl"), hd = mk("div", "hd");
+    const n = fd.f.reduce((a, g) => a + (g.steps || []).filter(s => stairNum(s.h) !== null).length, 0);
+    hd.appendChild(document.createTextNode(fd.label || fl.label)); hd.appendChild(mk("span", "", n ? n + " 階" : (i === ST.open ? "" : "沒有填")));
+    hd.onclick = () => { ST.open = ST.open === i ? -1 : i; stairDrawFloors(); stairPaintAngles(); };
+    hd.dataset.floor = i; wrap.appendChild(hd);
+    if (i === ST.open) {
+      const bd = mk("div", "bd");
+      L.flights.forEach((f, k) => {
+        const g = fd.f[k];
+        bd.appendChild(mk("div", "grp", k ? "第二段（迴轉平台之後）" : "第一段"));
+        const num = (val, ph, on, key) => { const x = mk("input"); x.type = "number"; x.inputMode = "decimal"; x.step = "any"; x.value = val; x.placeholder = ph; x.oninput = () => on(x.value); if (key) x.dataset.k = key; return x; };
+        const wl = mk("label", "", "級寬（公分）"); bd.appendChild(wl);
+        bd.appendChild(num(g.w, "例如 100", v => { g.w = v; stairChanged(); }, i + ":" + k + ":w"));
+        // 每階都一樣時的快速填法
+        const q = mk("div", "stq"), q1 = num("", "階數", () => {}, i + ":" + k + ":qn"), q2 = num("", "級高", () => {}, i + ":" + k + ":qh"), q3 = num("", "斜邊長", () => {}, i + ":" + k + ":qy");
+        const go = mk("button", "btn sm", "套用"); go.dataset.k = i + ":" + k + ":go";
+        go.onclick = () => { const cnt = Math.min(f.n, Math.max(0, Math.floor(+q1.value || 0))); if (!cnt) return toast("先填階數");
+          g.steps = Array.from({ length: cnt }, (_, j) => ({ h: q2.value, y: j < f.y0 ? "" : q3.value })); stairChanged(); stairDrawFloors(); };
+        q.appendChild(q1); q.appendChild(q2); q.appendChild(q3); q.appendChild(go);
+        bd.appendChild(mk("div", "flab", "每階都一樣：填階數、級高、斜邊長後按套用（最多 " + f.n + " 階），下面還可以逐階改" + (f.y0 ? "。第 1 階不用填斜邊長（記錄表上那格是斜線）" : ""))); bd.appendChild(q);
+        const head = mk("div", "strow"); ["", "級高", "斜邊長", "傾角"].forEach(t => head.appendChild(mk("div", "flab", t))); bd.appendChild(head);
+        (g.steps || []).forEach((s, j) => {
+          const row = mk("div", "strow"); row.appendChild(mk("div", "", "第" + (j + 1) + "階"));
+          row.appendChild(num(s.h, "", v => { s.h = v; stairChanged(); }, i + ":" + k + ":h" + j));
+          if (j < f.y0) { s.y = ""; const x = num("", "不用填", () => {}, i + ":" + k + ":y" + j); x.disabled = true; row.appendChild(x); }
+          else row.appendChild(num(s.y, "", v => { s.y = v; stairChanged(); }, i + ":" + k + ":y" + j));
+          const a = mk("div", "flab"); if (j) a.dataset.ang = colName(fl.c + 3) + (f.r0 + j); row.appendChild(a);
+          bd.appendChild(row);
+        });
+        const ctl = mk("div", "rowbtns");
+        const add = mk("button", "btn sm", "＋一階"); add.onclick = () => { g.steps = g.steps || []; if (g.steps.length >= f.n) return toast("這一段最多 " + f.n + " 階"); const last = g.steps[g.steps.length - 1]; g.steps.push(last ? { h: last.h, y: last.y } : { h: "", y: "" }); stairChanged(); stairDrawFloors(); };
+        const del = mk("button", "btn sm", "－一階"); del.onclick = () => { if (g.steps && g.steps.length) { g.steps.pop(); stairChanged(); stairDrawFloors(); } };
+        ctl.appendChild(add); ctl.appendChild(del); bd.appendChild(ctl);
+        bd.appendChild(mk("div", "flab", "迴轉平台（公分）"));
+        const pl = mk("div", "stpl");
+        L.platNames.forEach((nm, j) => { const cell = mk("div"); cell.appendChild(mk("label", "", nm)); cell.appendChild(num(g.plat[j], "", v => { g.plat[j] = v; stairChanged(); }, i + ":" + k + ":p" + j)); pl.appendChild(cell); });
+        bd.appendChild(pl);
+      });
+      wrap.appendChild(bd);
+    }
+    box.appendChild(wrap);
+  });
+}
+$("btn-stair-app").onclick = async () => {
+  const c = C; if (!c) return;
+  try {
+    const xs = (await tplIndex()).filter(t => t.kind === "xlsx");
+    if (!xs.length) return toast("模板庫裡沒有爬梯機記錄表，請先匯入", true);
+    const ab = await DB.get("tpl", xs[0].key);
+    if (!ab || await sha256(ab) !== xs[0].sha) return toast("爬梯機原檔對不上當初匯入的內容，請重新匯入", true);
+    const wb = await xlOpen(ab), L = stairLayout(wb, await xlCheckboxes(wb));
+    xlCompute(wb, new Map());                      // 每一條公式先整條看過、再空算一次：記錄表若有填寫器不會算的寫法，這裡就擋下
+    if (!C || C.id !== c.id) return;
+    const fits = !!c.stair && Array.isArray(c.stair.floors) && c.stair.floors.length === L.floors.length &&
+                 c.stair.floors.every(x => x.f && x.f.length === L.flights.length);
+    if (c.stair && !fits) {                        // 記錄表換了新版，舊的量測對不上：先問，舊的留一份
+      const had = Array.isArray(c.stair.floors) && c.stair.floors.some(x => (x.f || []).some(g => g && stairUsed(g)));
+      if (had && !confirm("記錄表換了新版（樓層或每層的段數不一樣），這個個案之前填的量測對不上新的版面。\n\n按「確定」：從空白重新填（舊的量測會留一份備份，不會直接消失）。\n按「取消」：先不開。")) return;
+      if (had) c.stairOld = { at: Date.now(), data: c.stair };
+    }
+    const d = fits ? c.stair : stairBlank(L);
+    d.floors.forEach(fd => fd.f.forEach((g, k) => (g.steps || []).forEach((st, j) => { if (j < L.flights[k].y0) st.y = ""; })));   // 以前填在斜線格的斜邊長：拿掉
+    const first = d.floors.findIndex(x => x.f.some(stairUsed));
+    const keep = L.res.modes.filter(m => ST.cid === c.id && ST.modes.has(m.name)).map(m => m.name);
+    Object.assign(ST, { wb, L, d, ab, sha: xs[0].sha, key: xs[0].key, cid: c.id, open: first < 0 ? 0 : first, comp: null, res: null,
+                        modes: new Set(keep.length ? keep : L.res.modes.filter(m => m.name !== "中心借用").map(m => m.name)) });
+    stairDraw(); show("v-stair");
+  } catch (e) { toast(e.message || String(e), true); }
+};
+$("st-back").onclick = async () => {
+  if (ST.busy) return toast("正在帶進編號 19，請稍候");     // 帶到一半就離開，剛存的機型照片可能被當成沒人用而清掉
+  clearTimeout(ST.t);
+  const id = ST.cid;
+  if (C && C.id === id) { C.stair = ST.d; try { await saveCase(); } catch (e) { toast("量測資料沒存成功", true); } }
+  ST.wb = null; ST.comp = null; ST.res = null;
+  openCase(id);
+};
+const stairSay = (t, bad) => { const m = $("st-msg"); m.hidden = false; m.textContent = t; m.className = "note" + (bad ? " bad" : ""); };
+async function stairBuildXlsx() {                  // 每次都從原檔重新開一份來寫，不沿用上一次改過的
+  const wb = await xlOpen(ST.ab), inputs = stairInputs(ST.L, ST.d, stairWho()), comp = xlCompute(wb, inputs);
+  return await xlWrite(wb, inputs, comp);
+}
+$("st-xlsx").onclick = async () => {
+  const b = $("st-xlsx"); b.disabled = true;
+  try {
+    const bytes = await stairBuildXlsx();
+    await offerShare([{ name: tplStem(ST.key) + safeName(nameTail(C)) + ".xlsx", bytes: bytes.buffer, type: XLSX_MIME }]);
+  } catch (e) { toast("記錄表沒產出來：" + (e.message || e), true); }
+  b.disabled = false;
+};
+/* ── 帶進編號 19 ─────────────────────────────────────────
+   樓梯紀錄表＝真的 Excel 截圖（家裡 Mac 的 Excel 用官方原檔填值後截的，跟你以前自己截的一樣）；
+   機型＝每種服務方式一段，名稱是文字（標楷體）、下面是照片（從記錄表裡取出），排法照原本的腳本。 */
+const cvJpeg = cv => new Promise((res, rej) => cv.toBlob(b => b ? b.arrayBuffer().then(bytes => res({ bytes, w: cv.width, h: cv.height }), rej) : rej(new Error("圖片轉不出來")), "image/jpeg", 0.9));
+const loadPic = blob => new Promise((res, rej) => { const im = new Image(), u = URL.createObjectURL(blob);
+  im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error("圖片讀不了")); }; im.src = u; });
+/* 這一組量測（連同姓名、地址）的指紋：用來判斷「截圖之後有沒有再改過」 */
+async function stairDataKey(c) {
+  const b = (c && c.basic) || {};
+  return await sha256(new TextEncoder().encode(JSON.stringify([(c && c.stair) || null, b.name || "", ((b.liveSame || !b.live) ? b.house : b.live) || ""])));
+}
+/* 樓梯紀錄表的圖現在的狀態：none＝這個個案沒有填爬梯機；missing＝有填但圖還沒截到；stale＝截過，之後量測或姓名地址改了；ok */
+const stairHasData = c => { const d = c && c.stair; return !!d && Array.isArray(d.floors) && d.floors.some(x => (x.f || []).some(g => g && stairUsed(g))); };
+async function stairShotState(c) {
+  const sh = c && c.stairShot;
+  if (sh && sh.ok) return sh.key === await stairDataKey(c) ? "ok" : "stale";     // 截過圖：之後把量測清空也算「改過」
+  return stairHasData(c) ? "missing" : "none";
+}
+/* 要請家裡 Mac 的 Excel 填的內容：哪一格填什麼、要截哪幾塊。只傳這些，不傳檔案 */
+function stairShotReq() {
+  const L = ST.L, pre = L.sheet + "!", cells = [];
+  for (const [k, v] of stairInputs(L, ST.d, stairWho())) if (k.startsWith(pre)) cells.push([k.slice(pre.length), typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v]);
+  cells.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+  const blocks = new Set([1]);                    // 第一塊有姓名、三題是非與備註，一定要
+  L.floors.forEach((fl, i) => { if (ST.d.floors[i].f.some(stairUsed)) blocks.add(fl.block); });
+  return { v: 1, tpl: ST.sha, cells, blocks: [...blocks].sort((a, b) => a - b) };
+}
+async function stairFetchShots(req) {
+  if (req.cells.some(x => typeof x[1] === "string" && x[1].length > 300)) throw new Error("姓名、地址或備註太長（一格最多 300 個字）");
+  let r, j = null;
+  try {
+    const cfg = await kvGet("pdf"); if (!cfg) throw Object.assign(new Error("沒有設定"), { nocfg: true });
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 170000 + 80000 * (req.blocks.length - 1)), CAP = 24e6;      // 一塊 170 秒，每多一塊加 80 秒（電腦忙時 Excel 一塊要一分鐘）
+    try {                                          // 同一個計時器從送出管到「整份回應讀完」：連線卡在半路也會放手，畫面不會一直鎖著
+      r = await fetch(cfg.url + "/xlshot", { method: "POST", body: JSON.stringify(req), signal: ctl.signal, cache: "no-store", credentials: "omit",
+                                             headers: { "Content-Type": "application/json", "X-Filler-Token": cfg.token } });
+      const rd = r.body && r.body.getReader ? r.body.getReader() : null; let bytes;
+      if (rd) { const parts = []; let n = 0;
+        for (;;) { const x = await rd.read(); if (x.done) break; n += x.value.length; if (n > CAP) { ctl.abort(); throw Object.assign(new Error("太大"), { big: true }); } parts.push(x.value); }
+        bytes = new Uint8Array(n); let o = 0; for (const p of parts) { bytes.set(p, o); o += p.length; } }
+      else { bytes = new Uint8Array(await r.arrayBuffer()); if (bytes.length > CAP) throw Object.assign(new Error("太大"), { big: true }); }
+      try { j = JSON.parse(new TextDecoder("utf-8").decode(bytes)); } catch (e) {}
+    } finally { clearTimeout(tm); }
+  } catch (e) { throw new Error(e && e.nocfg ? "還沒設定家裡 Mac 的連線（到「設定」貼上連線設定）" : e && e.big ? "家裡 Mac 回傳的內容太大，不採用"
+                                                  : "連不到家裡 Mac，或等太久沒有回應（Mac 要醒著、手機要開 Tailscale）"); }
+  if (!r.ok) throw new Error((j && typeof j.msg === "string" && j.msg) || (r.status === 403 ? "家裡 Mac 不接受這支手機的連線設定" :
+                             r.status === 404 ? "家裡 Mac 的轉檔服務還是舊版，還不會截 Excel 的圖" : "家裡 Mac 回報錯誤（" + r.status + "）"));
+  if (!j || !Array.isArray(j.shots) || j.shots.length !== req.blocks.length || !j.results || !j.results.cells || typeof j.results.cells !== "object" ||
+      j.shots.some((x, i) => !x || String(x.block) !== String(req.blocks[i]) || typeof x.png !== "string" || x.png.length < 1000 || x.png.length > 8e6))
+    throw new Error("家裡 Mac 回傳的內容不完整");
+  return j;
+}
+/* Excel 自己算的適用機型，跟填寫器算的逐格比。回傳不一樣的清單（空的＝完全相同） */
+function stairCheckResults(res) {
+  const L = ST.L, bad = [];
+  for (const mode of L.res.modes) for (const mc of L.res.machines) {
+    const ref = colName(mc.c) + mode.r, k = L.res.sheet + "!" + ref;
+    if (!ST.comp.has(k)) continue;                // 這種服務方式沒有這台
+    const mine = ST.comp.get(k), mt = mine instanceof XErr ? "（錯誤值）" : String(mine), xl = res.cells[ref];
+    if (typeof xl !== "string" || xl !== mt) bad.push(mode.name + "／" + mc.name + "：Excel「" + (typeof xl === "string" ? xl : "沒有回傳") + "」、填寫器「" + mt + "」");
+  }
+  return bad;
+}
+/* Excel 截回來的圖：四周是白紙，裁到只剩表格（留一點邊），存成照片 */
+async function stairCropShot(b64) {
+  const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const im = await loadPic(new Blob([u], { type: "image/png" })), W = im.naturalWidth, H = im.naturalHeight;
+  if (!(W >= 200 && H >= 200) || W * H > 16e6) throw new Error("截回來的圖大小不對");
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const g = cv.getContext("2d", { willReadFrequently: true }); g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.drawImage(im, 0, 0);
+  const px = g.getImageData(0, 0, W, H).data; let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) { const row = y * W * 4;
+    for (let x = 0; x < W; x++) { const i = row + x * 4;
+      if (px[i] < 235 || px[i + 1] < 235 || px[i + 2] < 235) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } } }
+  if (x1 - x0 < 150 || y1 - y0 < 150) throw new Error("截回來的圖是空白的");
+  const pad = 8; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(W - 1, x1 + pad); y1 = Math.min(H - 1, y1 + pad);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, out = document.createElement("canvas"); out.width = w; out.height = h;
+  const og = out.getContext("2d"); og.fillStyle = "#fff"; og.fillRect(0, 0, w, h); og.drawImage(cv, x0, y0, w, h, 0, 0, w, h);
+  return await cvJpeg(out);
+}
+async function stairMachinePic(img) {              // 機型照片：放在白底的固定框裡，每張一樣大
+  const type = img.ext === "png" ? "image/png" : img.ext === "webp" ? "image/webp" : "image/jpeg";
+  const im = await loadPic(new Blob([img.bytes], { type })), W = 800, H = 600;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+  const k = Math.min((W - 30) / im.naturalWidth, (H - 30) / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k;
+  g.drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+  return await cvJpeg(cv);
+}
+$("st-to19").onclick = async () => {
+  if (ST.busy) return;
+  const b = $("st-to19"), c = C, view = $("v-stair"); b.disabled = true; ST.busy = true; view.inert = true;   // 做完之前整頁先不給按、不給改：回來的圖才對得上送出去的那一組數字
+  const made = []; let key = "";
+  try {
+    clearTimeout(ST.t); c.stair = ST.d; await saveCase(); stairCalc(); stairPaintRes();
+    const r = c.reports.find(x => x.num === 19);
+    if (!r) { stairSay("這個個案還沒有加「編號 19」的報告。請先回個案頁按「＋ 加一份報告」加進來。", true); return; }
+    const empty = !ST.d.floors.some(x => x.f.some(stairUsed));
+    key = c.id + "|" + r.rid;
+    const o = await loadReport(c.id, r.rid), F = o.model.fields, flat = f => f.block.text.replace(/\s+/g, "");
+    const sRec = F.find(f => f.type === "ph" && /^樓梯紀錄表/.test(flat(f))), sMac = F.find(f => f.type === "ph" && /建議使用以下爬梯機款式/.test(flat(f)));
+    if (!sRec || !sMac) { stairSay("這份編號 19 的模板裡，找不到「樓梯紀錄表」或「建議使用以下爬梯機款式」的位置，沒辦法自動帶入。", true); return; }
+    if (empty && !phParse(o.values[sRec.id]).auto.length && !phParse(o.values[sMac.id]).auto.length && !c.stairShot) { stairSay("還沒有填任何樓梯量測。", true); return; }
+    stairSay(empty ? "處理中…" : "處理中…樓梯紀錄表的圖要請家裡 Mac 的 Excel 截，大約 15～30 秒，請不要關掉。");
+    const put = async pic => { const id = "ph_st" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      await DB.put("files", key + "|" + id, { bytes: pic.bytes, w: pic.w, h: pic.h, at: Date.now() }); made.push(id); return id; };
+    // ① 樓梯紀錄表：量測沒變、上次的圖也還在，就沿用；不然請家裡 Mac 的 Excel 截
+    const dkey = await stairDataKey(c), curRec = phParse(o.values[sRec.id]);
+    const had = curRec.auto.flatMap(it => (it && Array.isArray(it.pics)) ? it.pics : []);
+    let recAuto = null, shotOk = false, shotMsg = "";
+    if (empty) recAuto = [];                       // 量測清空了：先前帶進去的圖與機型都拿掉
+    else if (c.stairShot && c.stairShot.ok && c.stairShot.key === dkey && c.stairShot.tpl === ST.sha && had.length) {
+      let all = true; for (const id of had) if (!(await DB.get("files", key + "|" + id))) all = false;
+      if (all) { recAuto = curRec.auto; shotOk = true; shotMsg = "樓梯紀錄表沿用上次的 Excel 截圖（量測沒有變）"; }
+    }
+    if (!recAuto) {
+      const mark = made.length;
+      try {
+        const req = stairShotReq(), got = await stairFetchShots(req), diff = stairCheckResults(got.results);
+        if (diff.length) throw Object.assign(new Error("家裡 Mac 的 Excel 算出來的適用機型，跟填寫器算的不一樣（" + diff.slice(0, 3).join("；") + (diff.length > 3 ? "…等 " + diff.length + " 格" : "") +
+                                                        "）。為了安全這次整個不帶進報告，請把這段訊息回報。"), { fatal: true });
+        recAuto = [];
+        for (const x of got.shots) recAuto.push({ pics: [await put(await stairCropShot(x.png))], n: 1 });
+        shotOk = true; shotMsg = "樓梯紀錄表：Excel 截圖 " + got.shots.length + " 張（Excel 算的適用機型也跟這裡一致）";
+      } catch (e) {
+        if (e && e.fatal) throw e;
+        for (const id of made.splice(mark)) { try { await DB.del("files", key + "|" + id); } catch (x) {} }
+        recAuto = []; shotMsg = "樓梯紀錄表的圖這次沒有放進去：" + (e.message || e) + "。等連得到家裡 Mac 再按一次「帶進編號 19」";
+      }
+    }
+    // ② 適用機型：每種服務方式一段
+    const imgs = await xlSheetImages(ST.wb, ST.L.res.sheet), lost = [], picOf = new Map(), macAuto = [], told = [];
+    for (const mode of (empty ? [] : ST.res)) {
+      if (!ST.modes.has(mode.name)) continue;
+      const ok = mode.machines.filter(x => x.status === "適用"); told.push(mode.name + " " + ok.length + " 台");
+      if (!ok.length) continue;
+      for (const m of ok) if (!picOf.has(m.col)) {   // 同一台在好幾種服務方式都適用：照片只存一份
+        const im = imgs.find(x => x.col === m.col && x.row === ST.L.res.row + 1);
+        if (!im) { lost.push(m.short); picOf.set(m.col, null); continue; }
+        picOf.set(m.col, await put(await stairMachinePic(im)));
+      }
+      const block = [{ t: mode.name, b: true, k: true }];
+      for (let i = 0; i < ok.length; i += 4) { const part = ok.slice(i, i + 4);
+        block.push({ tbl: [part.map(m => picOf.get(m.col) ? { t: m.name, pic: picOf.get(m.col) } : { t: m.name })], border: false, cols: 4, sz: 9, va: "bottom" }); }
+      macAuto.push({ tbl: [[{ items: block }]], border: false, cols: 1, pad: 0, va: "top" });      // 包成一塊：標題和機型一起換頁
+    }
+    // 換掉上一次帶進去的自動內容；你自己另外放的照片不動
+    const vals = o.values, old = [];
+    const setAuto = (slot, auto) => { const cur = phParse(vals[slot.id]); for (const it of cur.auto) old.push(...autoPics(it));
+      const v = phJoin(cur.n, cur.ids, auto); if (v) vals[slot.id] = v; else delete vals[slot.id]; };
+    setAuto(sRec, recAuto); setAuto(sMac, macAuto);
+    let size = 0; const seen = new Set();
+    for (const f of F) if (f.type === "ph") for (const id of phParse(vals[f.id]).all) { if (seen.has(id)) continue; seen.add(id);
+      const p = await DB.get("files", key + "|" + id); if (p) size += p.bytes.byteLength; }
+    if (size > PH_MAX) throw new Error("帶進去之後這份報告的照片會超過上限（約 12MB），請先到報告裡刪幾張照片");
+    const cc = await DB.get("cases", c.id);
+    if (!cc || !cc.reports.some(x => x.rid === r.rid)) throw new Error("這份報告已經不在了");
+    await DB.put("drafts", key, { values: vals, auto: o.auto, no: o.no, sha: r.tplSha, at: Date.now() });
+    made.length = 0;                               // 草稿已經記下這些照片，不用收回
+    for (const id of old) if (!seen.has(id)) { try { await DB.del("files", key + "|" + id); } catch (e) {} }
+    if (empty) delete c.stairShot; else c.stairShot = shotOk ? { ok: true, key: dkey, tpl: ST.sha, at: Date.now() } : { ok: false, at: Date.now() };
+    await saveCase();
+    if (empty) { stairSay("量測是空的：已把先前帶進編號 19 的樓梯紀錄表與機型拿掉（你自己另外放的照片不動）。"); return; }
+    stairSay((shotOk ? "已帶進編號 19。" : "機型已帶進編號 19，但") + shotMsg + "。適用機型：" + (told.join("、") || "沒有選服務方式") +
+             (lost.length ? "（" + lost.join("、") + " 在記錄表裡找不到照片，只放了名稱）" : "") + "。服務方式那一行請到報告裡自己框選。", !shotOk);
+  } catch (e) {
+    for (const id of made) { try { await DB.del("files", key + "|" + id); } catch (x) {} }
+    stairSay("沒有帶成功：" + (e.message || e), true);
+  } finally { b.disabled = false; ST.busy = false; view.inert = false; }
+};
+
+setTimeout(() => { if (navigator.onLine !== false) kaiLoad(); }, 4000);
 
 /* ══ 啟動 ═══════════════════════════════════════════════════ */
 (async () => {
