@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4t6/HOt0tjcWymE8zJf9XCrmqJJfITEZU+POi/CN1Pc='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-APe+IIekj1APw5mhDAUSvurDYqxWRjff0P7cuXfsUv0='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>扶老圖片工具</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -132,11 +132,11 @@ textarea{display:block;width:100%;border:1px solid var(--line);border-radius:10p
              平面圖（房間方框、牆、門弧、馬桶／洗手台／浴缸等符號），匯出成圖片從手機分享出去。
    資料：只存在這支手機（IndexedDB），不上傳到任何地方；沒有連網功能。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v3";
+const VERSION = "v4";
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 let toastT = null;
-function toast(msg, bad) { const el = $("toast"); el.textContent = msg; el.className = "toast show" + (bad ? " err" : ""); clearTimeout(toastT); toastT = setTimeout(() => el.className = "toast", bad ? 4200 : 2400); }
+function toast(msg, bad, ms) { const el = $("toast"); el.textContent = msg; el.className = "toast show" + (bad ? " err" : ""); clearTimeout(toastT); toastT = setTimeout(() => el.className = "toast", ms || (bad ? 4200 : 2400)); }
 const LOCAL = location.hostname === "127.0.0.1" || location.hostname === "localhost";   // 只有開發測試時為真
 const pad2 = n => String(n).padStart(2, "0");
 const today = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
@@ -150,11 +150,11 @@ const DB = {
   db: null, opening: null,
   open() { if (DB.opening) return DB.opening;       // 正在連線中就共用同一次，不要同時開好幾條
     DB.opening = DB.open0().finally(() => { DB.opening = null; }); return DB.opening; },
-  open0() { return new Promise((res, rej) => { const r = indexedDB.open("fulao1", 1);
+  open0() { return new Promise((res, rej) => { const r = indexedDB.open("fulao1", 1), tm = setTimeout(() => rej(new Error("手機的資料庫沒有回應")), 5000);       // 開了卻一直沒回應：5 秒就放棄，不讓後面所有動作跟著卡住
     r.onupgradeneeded = () => { for (const s of ["cases", "pages", "blobs"]) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s); };
-    r.onsuccess = () => { const db = r.result; DB.db = db; db.onclose = () => { if (DB.db === db) DB.db = null; };
+    r.onsuccess = () => { clearTimeout(tm); const db = r.result; DB.db = db; db.onclose = () => { if (DB.db === db) DB.db = null; };
       db.onversionchange = () => { try { db.close(); } catch (e) {} if (DB.db === db) DB.db = null; }; res(); };
-    r.onerror = () => rej(r.error || new Error("資料庫打不開")); r.onblocked = () => rej(new Error("資料庫被另一個視窗佔住")); }); },
+    r.onerror = () => { clearTimeout(tm); rej(r.error || new Error("資料庫打不開")); }; r.onblocked = () => { clearTimeout(tm); rej(new Error("資料庫被另一個視窗佔住")); }; }); },
   /* 開一筆交易來做事。資料庫的連線有時會自己斷掉（例如 iPhone 從背景回來）：交易開不起來就重新連線、再試一次。
      body(t, res, rej)：在這筆交易裡做事，做完自己叫 res／rej（交易一開就要馬上用，中間不能等別的事） */
   run(stores, mode, body) {
@@ -403,9 +403,15 @@ async function drawThumb(cv, page) {
 /* ══ 個案清單與個案頁 ═══════════════════════════════════ */
 let C = null;                                     // 目前打開的個案
 /* 記住「現在停在哪裡」（只記個案與頁面的編號，不是個資）。iPhone 會把放在背景的網頁工具整個關掉，回來時從頭載入——
-   有記的話就直接回到剛才那個個案、那一頁，不用從清單再點進去。超過六小時就不回去了，從個案清單開始 */
+   有記的話就直接回到剛才那個個案、那一頁，不用從清單再點進去。
+   只在「離開不到半小時」才回去（時間從最後一次操作、或切到背景那一刻算起）；隔更久就從個案清單開始——
+   免得到了下一家打開，還停在上一個個案裡，把照片加錯個案 */
 function markAt(o) { try { if (o) localStorage.setItem("fulao.at", JSON.stringify({ ...o, t: Date.now() })); else localStorage.removeItem("fulao.at"); } catch (e) {} }
-function lastAt() { try { const o = JSON.parse(localStorage.getItem("fulao.at") || "null"); return o && o.c && Date.now() - o.t < 6 * 3600e3 ? o : null; } catch (e) { return null; } }
+function lastAt() { try { const o = JSON.parse(localStorage.getItem("fulao.at") || "null"); return o && o.c && Date.now() - o.t < 30 * 60e3 ? o : null; } catch (e) { return null; } }
+function touchAt() { try { const o = JSON.parse(localStorage.getItem("fulao.at") || "null"); if (o && o.c) { o.t = Date.now(); localStorage.setItem("fulao.at", JSON.stringify(o)); } } catch (e) {} }       // 還在用／剛離開：把時間更新成現在
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") touchAt(); });
+window.addEventListener("pagehide", touchAt);
+let THUMBS = [];                                  // 個案頁上現在那幾張縮圖（畫布與頁面資料）：從背景回來時就地重畫用
 let viewTok = 0;                                  // 清單畫面每重畫一次加一；資料讀到一半又有人要求重畫，舊的那一次就作廢
 function show(id) { const was = $(id).hidden; for (const v of ["v-home", "v-case", "v-rec"]) $(v).hidden = v !== id; if (was) window.scrollTo(0, 0); }
 /* 會動到資料的動作一個一個來（新增、刪除、排序、匯出不交錯）；做的時候清單畫面先鎖住，免得做到一半又切到別的個案 */
@@ -438,9 +444,9 @@ async function openCase0(id) {
   if (!c) { toast("找不到這個個案", true); return goHome(); }
   const pages = []; for (const pid of c.pages) { const p = await DB.get("pages", pid); if (tok !== viewTok) return; if (p) pages.push(p); }
   C = c; show("v-case"); markAt({ c: c.id }); $("case-title").textContent = c.name; $("case-sub").textContent = "評估日期 " + c.date + "｜共 " + pages.length + " 頁（匯出時照這個順序編號）"; prefLabels(); recLabel();
-  const box = $("pages"), thumbs = []; box.textContent = "";
+  const box = $("pages"), thumbs = []; box.textContent = ""; THUMBS = thumbs;
   pages.forEach((p, i) => {
-    const el = mk("div", "pg"), cv = mk("canvas"); el.dataset.id = p.id; el.appendChild(cv); el.appendChild(mk("div", "n", (i + 1) + "・" + (p.type === "photo" ? "照片頁" : "平面圖")));
+    const el = mk("div", "pg"), cv = mk("canvas"); cv.width = 480; cv.height = 270; el.dataset.id = p.id; el.appendChild(cv); el.appendChild(mk("div", "n", (i + 1) + "・" + (p.type === "photo" ? "照片頁" : "平面圖")));
     const ops = mk("div", "ops"), add = (t, fn) => { const b = mk("button", "", t); b.onclick = e => { e.stopPropagation(); fn(); }; ops.appendChild(b); };
     add("編輯", () => editPage(p.id)); add("↑", () => movePage(c.id, p.id, -1)); add("↓", () => movePage(c.id, p.id, 1)); add("刪", () => delPage(c.id, p.id));
     el.appendChild(ops); cv.onclick = () => editPage(p.id); box.appendChild(el);
@@ -534,7 +540,8 @@ function recFlush() {                             // 寫進手機（跟改個案
   return mutCase(cid, c => { c.rec = v; }).then(() => { if (RC && RC.cid === cid) { RC.saved = Math.max(RC.saved, rev); recState(); } });
 }
 function recAuto() { recT = null; recFlush().catch(() => { recState("還沒存成功，會再試"); clearTimeout(recT); recT = setTimeout(recAuto, 2000); }); }
-function recTouch() { RC.rev++; recState(); clearTimeout(recT); recT = setTimeout(recAuto, 400); }
+function recTouch(now) { RC.rev++; recState(); touchAt(); clearTimeout(recT); recT = setTimeout(recAuto, now ? 0 : 150); }       // 點選的立刻存；打字的稍等一下（連打時不用每個字都寫）
+const recNow = () => { if (RC && RC.rev !== RC.saved) { clearTimeout(recT); recAuto(); } };       // 打完一格離開時：有還沒存的就馬上存
 function recPaint() {                             // 只更新勾選的樣子與補充欄的顯示，不重建畫面（正在打字的欄位不會跳掉）
   const b = $("rec-body");
   for (const e of b.querySelectorAll("[data-c]")) e.classList.toggle("on", !!RC.v[e.dataset.c]);
@@ -544,23 +551,23 @@ function recPaint() {                             // 只更新勾選的樣子與
 function recToggle(sec, k) {
   const on = !RC.v[k]; RC.v[k] = on;
   if (on && sec.none) { if (k !== sec.none) RC.v[sec.none] = false; else for (const s of REC.flatMap(t => t.secs)) if (s.none === k && s.checks) for (const o of s.checks) if (o[0] !== k) RC.v[o[0]] = false; }
-  recTouch(); recPaint();
+  recTouch(true); recPaint();
 }
 async function openRec() {                        // 進來時重新讀手機裡最新的那一份（另一個視窗可能剛改過）
   const cid = C && C.id; if (!cid) return; const c = await DB.get("cases", cid); if (!c) { toast("找不到這個個案", true); return goHome(); }
   C = c; RC = { cid: c.id, v: clone(c.rec || {}), rev: 0, saved: 0, fail: 0 };
   if (RC.v.aid_t && !RC.v.aid_more) RC.v.aid_more = RC.v.aid_t; delete RC.v.aid_t;       // v1 的欄位名稱
   const body = $("rec-body"); body.textContent = "";
-  const inp = (k, ph, cls) => { const i = mk("input", cls); i.type = "text"; i.autocomplete = "off"; i.maxLength = 200; if (ph) i.placeholder = ph; i.value = RC.v[k] || ""; i.dataset.k = k; i.oninput = () => { RC.v[k] = i.value.trim(); recTouch(); }; return i; };
+  const inp = (k, ph, cls) => { const i = mk("input", cls); i.type = "text"; i.autocomplete = "off"; i.maxLength = 200; if (ph) i.placeholder = ph; i.value = RC.v[k] || ""; i.dataset.k = k; i.oninput = () => { RC.v[k] = i.value.trim(); recTouch(); }; i.onchange = recNow; return i; };
   const chip = (txt, fn) => { const b = mk("button", "chip", txt); b.type = "button"; b.onclick = fn; return b; };
   for (const tab of REC) { body.appendChild(mk("div", "rec-tab", tab.tab));
     for (const sec of tab.secs) { const box = mk("div", "box"); box.appendChild(mk("div", "rec-h", sec.h));
       if (sec.nums) { const grid = mk("div", "rec-grid"); for (const [k, lab, unit] of sec.nums) { const f = mk("label", "rec-f"); f.appendChild(mk("span", "", lab)); const i = inp(k, "", ""); i.inputMode = "decimal"; i.maxLength = 8; f.appendChild(i); f.appendChild(mk("span", "u", unit)); grid.appendChild(f); } box.appendChild(grid); }
-      if (sec.pick) { const row = mk("div", "chips"); for (const o of sec.opts) { const b = chip(o, () => { RC.v[sec.pick] = RC.v[sec.pick] === o ? "" : o; recTouch(); recPaint(); }); b.dataset.p = sec.pick; b.dataset.o = o; row.appendChild(b); } box.appendChild(row); }
+      if (sec.pick) { const row = mk("div", "chips"); for (const o of sec.opts) { const b = chip(o, () => { RC.v[sec.pick] = RC.v[sec.pick] === o ? "" : o; recTouch(true); recPaint(); }); b.dataset.p = sec.pick; b.dataset.o = o; row.appendChild(b); } box.appendChild(row); }
       if (sec.checks) { const row = mk("div", "chips"); for (const [k, lab] of sec.checks) { const b = chip(lab, () => recToggle(sec, k)); b.dataset.c = k; row.appendChild(b); } box.appendChild(row);
         for (const [k, lab, more] of sec.checks) if (more) { const i = inp(k + "_t", lab + "：補充說明（可不填）", "rec-in"); i.dataset.d = k; box.appendChild(i); } }
       if (sec.more) box.appendChild(inp(sec.more, sec.moreph || "其他", "rec-in"));
-      if (sec.area) { const t = mk("textarea"); t.maxLength = 2000; t.value = RC.v[sec.area] || ""; t.dataset.k = sec.area; t.oninput = () => { RC.v[sec.area] = t.value.trim(); recTouch(); }; box.appendChild(t); }
+      if (sec.area) { const t = mk("textarea"); t.maxLength = 2000; t.value = RC.v[sec.area] || ""; t.dataset.k = sec.area; t.oninput = () => { RC.v[sec.area] = t.value.trim(); recTouch(); }; t.onchange = recNow; box.appendChild(t); }
       body.appendChild(box); } }
   recPaint(); recState(); show("v-rec"); markAt({ c: cid, r: 1 });
 }
@@ -623,9 +630,9 @@ function edAuto() {                               // 自動存檔；沒成功就
   edFlush().then(r => { if (r === "conflict") toast("這一頁在另一個視窗被改過了；按「完成」時再決定要不要用這邊的蓋過去", true); },
     () => { ED.fail++; toast(ED.fail <= 3 ? "還沒存成功，兩秒後再試" : "還沒存成功；按「完成」會再存一次", true); if (ED.fail <= 3 && ED.page) { clearTimeout(saveT); saveT = setTimeout(edAuto, 2000); } });
 }
-function edSave() {                               // 每改一次叫一次：記一筆「有新的修改」，稍等一下再寫（連續拖動時不用每一格都寫）
-  ED.rev++; if (ED.hist.length > 40) ED.hist.splice(0, ED.hist.length - 40);
-  clearTimeout(saveT); saveT = setTimeout(edAuto, 250);
+function edSave() {                               // 每改完一筆叫一次（手指放開、按鈕動作；拖動途中不會叫）：馬上寫進手機，不等——工具隨時可能被系統關掉
+  ED.rev++; if (ED.hist.length > 40) ED.hist.splice(0, ED.hist.length - 40); touchAt();
+  clearTimeout(saveT); edAuto();
 }
 function edFit(center) {                          // 畫布在螢幕上顯示多大：平常縮到剛好放得下；按「放大」是兩倍，用兩根手指拖著看
   const st = $("ed-stage"), z = ED.zoom; $("ed-zoom").textContent = z > 1 ? "縮小" : "放大";
@@ -809,8 +816,13 @@ window.addEventListener("pagehide", edBackground);
    資料庫連線也可能斷了 → 先輕輕試一下，斷了會自動重連，等一下要存的時候才不會失敗 */
 function onShow() {
   DB.get("cases", "_ping").catch(() => {});
-  if (ED.page) { edFit(); edDraw(); }
-  else if (C && !$("v-case").hidden && !BUSY) openCase(C.id);
+  fitVV();                                          // 鍵盤開著時切走，回來後記的畫面高度可能是舊的：重算
+  if (ED.page) { const p = ED.page; edFit(); edDraw();
+    if (p.type === "photo") pageImgs(p, true).then(imgs => { if (ED.page === p) { ED.imgs = imgs; edDraw(); } }).catch(() => {});       // 連照片的解碼資料都被清掉的話：重新讀一次再畫
+    if (ED.rev !== ED.savedRev && !ED.conflict) edAuto(); }                  // 切到背景時那一筆如果沒存成功，回來補存
+  else if (!$("v-case").hidden) { const tok = viewTok, list = THUMBS;       // 個案頁：就地把縮圖重畫，不重讀資料、不動畫面（不會跟回來後的第一下點擊搶先後）
+    (async () => { for (const [cv, pg] of list) { if (tok !== viewTok) return; await drawThumb(cv, pg).catch(() => {}); } })(); }
+  if (RC && RC.rev !== RC.saved) recAuto();
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") onShow(); });
 window.addEventListener("pageshow", e => { if (e.persisted) onShow(); });
@@ -829,8 +841,11 @@ if (window.visualViewport) { window.visualViewport.addEventListener("resize", fi
   const at = lastAt(), c0 = at ? await DB.get("cases", at.c).catch(() => null) : null;       // 上次停在哪裡（工具被 iPhone 關掉、重開時）
   if (!c0) return goHome();
   await openCase(c0.id);
-  if (at.p && c0.pages.includes(at.p)) await editPage(at.p); else if (at.r) await serial(openRec).catch(readErr);
-  toast("已回到你上次停的地方");
+  if (!C || C.id !== c0.id) return goHome();        // 個案頁讀不出來：回個案清單，不要停在空白畫面
+  let ok = true, more = "。剛拍的照片如果沒出現，請再加一次";
+  if (at.p && c0.pages.includes(at.p)) { await editPage(at.p); ok = !!ED.page; more = ""; }
+  else if (at.r) { await serial(openRec).catch(readErr); ok = !!RC; more = ""; }
+  if (ok) toast("已回到「" + c0.name + "」上次停的地方" + more, false, 7000);       // 講出是哪個個案、顯示久一點；沒回去成功就留著原本的錯誤訊息
 })();
 </script>
 </body>
