@@ -4,7 +4,7 @@
    · 只存「成功的回應」：GitHub 偶爾回錯誤頁時，不能把離線可用的那一版蓋掉。
    · 網頁本體先連網拿最新，連不到才用快取。改版要把下面的版號加一。 */
 const PREFIX = "assistive-filler-";
-const V = PREFIX + "v5";
+const V = PREFIX + "v6";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EaSmsUneM1J3FFcpvKbGnSp86fU3yq4lTS5rbSWaBpo=' 'sha256-fpuz6zq8CO9uX9nJuyQcEpV4K1lTBAxZ03W3Y4vtzpM='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6OOGSLYxPfJbTuP759qTieq6I0XPrz5piVMwaTKPeGQ=' 'sha256-lHgAipOfl8zLI/FP6QkYzr0bzSEDKv/RinpIVrB4fwk='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -104,6 +104,29 @@ body.phmode .phrow,.phrow.show{display:block}
 .phctl select{padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:var(--bg);font-size:14px}
 .tools button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:0 11px;font-size:14px;font-weight:600;cursor:pointer}
 .tools button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.card.delctl{background:var(--cream);border-style:dashed;padding:8px 12px}
+.card.delctl .flab{margin-top:0}
+.card.gone{opacity:.32}
+.phthumb img{cursor:pointer}
+.phthumb .phedit{position:absolute;left:0;right:0;bottom:0;font-size:11px;line-height:18px;text-align:center;
+  background:rgba(0,0,0,.55);color:#fff;pointer-events:none}
+/* ── 照片標註 ── */
+#mark{position:fixed;inset:0;z-index:80;background:#111;color:#fff;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#mark .mk-top{display:flex;align-items:center;gap:8px;padding:8px 10px}
+#mark .mk-top .hint{flex:1;font-size:12.5px;color:#d6d3d1;text-align:center;min-width:0}
+#mark button{border:1px solid #57534e;background:#292524;color:#fff;border-radius:10px;padding:9px 13px;font-weight:600;font-size:14.5px;cursor:pointer}
+#mark button.pri{background:var(--orange);border-color:var(--orange)}
+#mark button.on{background:#fff;color:#111;border-color:#fff}
+#mark button:disabled{opacity:.4}
+#mark .mk-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 6px}
+#mark canvas{max-width:100%;max-height:100%;touch-action:none;background:#000}
+#mark .mk-tools{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;justify-content:center}
+#mark .mk-colors{display:flex;gap:8px;justify-content:center;padding:0 10px 6px}
+#mark .mk-colors span{width:28px;height:28px;border-radius:50%;border:2px solid #57534e;cursor:pointer}
+#mark .mk-colors span.on{border-color:#fff;box-shadow:0 0 0 2px #fff}
+#mark .mk-ask{display:flex;gap:6px;padding:6px 10px}
+#mark .mk-ask input{flex:1;min-width:0;padding:10px 11px;border-radius:10px;border:1px solid #57534e;background:#fff;color:#111;font-size:16px}
 .fhint{font-size:12px;color:var(--muted);margin-top:3px}
 footer#foot{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bg);
   border-top:1px solid var(--line);padding:9px 12px calc(env(safe-area-inset-bottom) + 9px);
@@ -241,6 +264,16 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
   <button class="btn pri" id="export">匯出 Word</button>
 </footer>
 
+<div id="mark" hidden>
+  <div class="mk-top"><button id="mk-cancel">取消</button><div class="hint" id="mk-hint"></div><button class="pri" id="mk-done">完成</button></div>
+  <div class="mk-stage"><canvas id="mk-cv"></canvas></div>
+  <div class="mk-ask" id="mk-ask" hidden><input id="mk-input" type="text" autocomplete="off"><button class="pri" id="mk-ok">確定</button><button id="mk-no">取消</button></div>
+  <div class="mk-colors" id="mk-colors"></div>
+  <div class="mk-tools">
+    <button id="mk-rail">扶手線</button><button id="mk-dim">尺寸</button><button id="mk-text">文字</button>
+    <button id="mk-undo">復原</button><button id="mk-del">刪除選取</button>
+  </div>
+</div>
 <div class="sheet" id="sheet" hidden><div class="in" id="sheet-in"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -254,7 +287,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v5";
+const VERSION = "v6";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -551,6 +584,7 @@ function parseDoc(xmlDoc) {
   gridMerge(blocks);
   cellMerge(blocks);
   photoSlots(blocks, fields);
+  tableControls(blocks, fields, body);
   return { fields, blocks, integ: integrity(xmlDoc, fields) };
 }
 
@@ -789,6 +823,161 @@ function photoSlots(blocks, fields) {
     else { const f0 = b.items.find(i => i.type !== "alt"); if (f0) add(b, "P" + f0.id, b.anchor, ""); }
   }
   blocks.length = 0; for (const b of out) blocks.push(b);
+}
+
+/* ── 表格的刪除選項 ─────────────────────────────────────
+   每張最外層、裡面有題目的表格給一個選項：保留全部／只留有勾有填的列／整張刪掉。
+   預設是保留；沒選就完全不動。例：編號 19 用不到的空間、沒申請的項次。 */
+function topTable(node) { let t = null; for (let p = node; p && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_W, "tbl")) t = p; return t; }
+function ownRow(node, tbl) {                       // node 所在、屬於 tbl 自己（不是巢狀表）的那一列
+  let r = null;
+  for (let p = node; p && p !== tbl && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_W, "tr")) r = p;
+  return r;
+}
+function fieldEl(f) { return f.sdt || f.node || (f.nodes && f.nodes[0]) || f.cell || f.anchor || (f.parts && f.parts[0].segs[0].t) || null; }
+function elText(el) {
+  let t = ""; const ts = el.getElementsByTagNameNS(NS_W, "t");
+  for (let i = 0; i < ts.length; i++) t += ts[i].textContent || "";
+  return t.replace(/[□☐■☑☒✅▓]/g, "").replace(/\s+/g, " ").trim();
+}
+function tableControls(blocks, fields, body) {
+  const order = new Map(), all = body.getElementsByTagNameNS(NS_W, "tbl");
+  for (let i = 0, n = 0; i < all.length; i++) if (topTable(all[i]) === all[i]) order.set(all[i], n++);
+  const out = [], seen = new Set();
+  for (const b of blocks) {
+    const tbl = b.tr ? topTable(b.tr) : null;
+    if (tbl && order.has(tbl)) {
+      b.tblNo = order.get(tbl);
+      if (b.kind === "q" && !seen.has(tbl)) {
+        seen.add(tbl);
+        let first = null;
+        for (let c = tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
+        const rows = first ? tblRows(first) : [];
+        let titleP = null, titleText = "";
+        for (let p = tbl.previousElementSibling, k = 0; p && k < 3; p = p.previousElementSibling, k++) {
+          if (!isEl(p, NS_W, "p")) break;
+          const t = elText(p); if (!t) continue;
+          if (t.length <= 90 && !RE_SECTION.test(t) && !p.getElementsByTagNameNS(NS_W, "sdt").length && !kid(kid(p, NS_W, "pPr"), NS_W, "sectPr")) { titleP = p; titleText = t; }
+          break;
+        }
+        const label = (first ? elText(first) : "") || titleText || ("第 " + (order.get(tbl) + 1) + " 張表");
+        const it = { type: "del", id: "D" + order.get(tbl), tbl, rows: rows.length, label: label.length > 30 ? label.slice(0, 30) + "…" : label,
+                     titleP, titleText, orig: "", idx: fields.length };
+        const nb = { kind: "q", text: "〔表格〕" + it.label, items: [it], delCtl: true, tblNo: order.get(tbl), tr: null, tc: null, anchor: null };
+        it.block = nb; fields.push(it); out.push(nb);
+      }
+    }
+    out.push(b);
+  }
+  blocks.length = 0; for (const b of out) blocks.push(b);
+}
+function detach(el) {                              // 拿掉一個區塊；兩張表不能因此黏在一起；包著它的空殼控制項一起拿掉（拿掉後同樣再檢查）
+  for (;;) {
+    const host = el.parentNode; if (!host) return;
+    const prev = el.previousElementSibling, next = el.nextElementSibling;
+    host.removeChild(el);
+    if (prev && next && isEl(prev, NS_W, "tbl") && isEl(next, NS_W, "tbl")) host.insertBefore(host.ownerDocument.createElementNS(NS_W, "w:p"), next);
+    if (isEl(host, NS_W, "sdtContent") && !host.firstElementChild && host.parentNode && host.parentNode.parentNode) { el = host.parentNode; continue; }
+    return;
+  }
+}
+function removeRow(tr) {
+  const rows = tblRows(tr), next = rows[rows.indexOf(tr) + 1];
+  if (next) {                                      // 直向合併格的「起頭」在被刪的這一列：把起頭與內容交給下一列
+    const theirs = rowCells(next);
+    for (const c of rowCells(tr)) {
+      const vm = kid(kid(c.tc, NS_W, "tcPr"), NS_W, "vMerge");
+      if (!vm || wAttr(vm, "val") !== "restart") continue;
+      const tgt = theirs.find(x => x.col === c.col && x.span === c.span);
+      const tvm = tgt && kid(kid(tgt.tc, NS_W, "tcPr"), NS_W, "vMerge");
+      if (!tvm || (wAttr(tvm, "val") || "continue") !== "continue") continue;
+      tvm.setAttributeNS(NS_W, "w:val", "restart");
+      for (let k = tgt.tc.lastElementChild, pv; k; k = pv) { pv = k.previousElementSibling; if (!isEl(k, NS_W, "tcPr")) tgt.tc.removeChild(k); }
+      for (let k = c.tc.firstElementChild; k; k = k.nextElementSibling) if (!isEl(k, NS_W, "tcPr")) tgt.tc.appendChild(k.cloneNode(true));
+    }
+  }
+  detach(tr);
+}
+/* 「只留有勾有填的列」怎麼算——
+   · 有題目的列＝有方框或有填空控制項的列。只有照片位置、或只有空白格（留給手寫的簽章、日期…）的列，不算有題目。
+   · 沒有題目的列（標題、說明、簽章欄）留著——除非它所屬的小標題底下，題目列全部都刪掉了（見最後一點）。
+   · 有填＝跟空白模板不一樣：你勾的方框、你打的字（或自動帶入的）、你框選的甲/乙、放了照片。模板本來就勾好、印好的不算。
+   · 同一個直向合併小標題底下的幾列算一組：組裡有一列有填時，同組「沒有方框、只有文字」的列（例如「上述障礙原因或尺寸說明」）跟著留；
+     同組其他有方框的列，還是各自看有沒有填。
+   · 一個小標題底下的題目列全部都刪掉時，同組沒有題目的列（多半是它的說明）也一起刪，不留下孤零零的一列。 */
+function rowsToDrop(d, model, values) {
+  const cur = f => values[f.id] !== undefined ? values[f.id] : f.orig;
+  const differs = f => String(cur(f) == null ? "" : cur(f)).trim() !== "" && String(cur(f)) !== String(f.orig == null ? "" : f.orig);
+  const filled = f => f.type === "cb" ? (!!cur(f) && !f.orig) : f.type === "ph" ? phParse(cur(f)).ids.length > 0 : differs(f);
+  const has = new Set(), keep = new Set(), boxed = new Set();
+  for (const f of model.fields) {
+    if (f.type !== "cb" && f.type !== "txt" && f.type !== "ph" && f.type !== "alt") continue;
+    const el = fieldEl(f); if (!el || topTable(el) !== d.tbl) continue;
+    const r = ownRow(el, d.tbl); if (!r) continue;
+    if (f.type === "cb" || (f.type === "txt" && !f.cell)) has.add(r);
+    if (f.type === "cb") boxed.add(r);
+    if (filled(f)) keep.add(r);
+  }
+  let first = null;
+  for (let c = d.tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
+  const rows = first ? tblRows(first) : [];
+  // 每一列在各欄屬於哪個直向合併群組（用群組起頭那一列的序號當代號），以及這一列最右邊的合併欄
+  const open = {}, gid = [], deep = [];
+  rows.forEach((tr, r) => {
+    const g = {}; let m = -1;
+    for (const c of rowCells(tr)) {
+      const vm = kid(kid(c.tc, NS_W, "tcPr"), NS_W, "vMerge"), v = vm ? (wAttr(vm, "val") || "continue") : "";
+      if (v === "restart") open[c.col] = r; else if (v !== "continue") delete open[c.col];
+      if (v) { g[c.col] = open[c.col] !== undefined ? open[c.col] : r; m = Math.max(m, c.col); }
+    }
+    gid.push(g); deep.push(m);
+  });
+  const members = (col, start) => { const out = []; rows.forEach((tr, r) => { if (gid[r][col] === start) out.push(r); }); return out; };
+  const seed = rows.map(tr => keep.has(tr));
+  rows.forEach((tr, r) => {
+    if (!seed[r] || deep[r] < 0) return;
+    const ms = members(deep[r], gid[r][deep[r]]);
+    if (!ms.every(k => deep[k] === deep[r])) return;                       // 不是最內層的一組
+    for (const k of ms) if (!boxed.has(rows[k])) keep.add(rows[k]);        // 同組只有文字的列跟著留
+  });
+  const drop = new Set(rows.filter(tr => has.has(tr) && !keep.has(tr)));
+  const seen = new Set();
+  rows.forEach((tr, r) => {
+    if (deep[r] < 0) return;
+    const key = deep[r] + ":" + gid[r][deep[r]]; if (seen.has(key)) return; seen.add(key);
+    const ms = members(deep[r], gid[r][deep[r]]);
+    if (!ms.every(k => deep[k] === deep[r])) return;
+    if (ms.some(k => has.has(rows[k])) && ms.every(k => !keep.has(rows[k]) && (!has.has(rows[k]) || drop.has(rows[k]))))
+      for (const k of ms) drop.add(rows[k]);
+  });
+  return rows.filter(tr => drop.has(tr));
+}
+/* 要刪什麼，一律在「還沒動文件」的時候先算好（planDeletes），等勾選、填字、框線都寫完才動手刪（applyDeletes）。
+   先算的原因：寫框線時會把文字切段、換掉原本的節點，之後才算就會認不出那一格在哪一列；
+   而且這樣算出來的結果，跟填寫畫面卡片上預告的「會刪掉幾列」用的是同一份文件狀態，兩邊一定一致。 */
+function planDeletes(model, values) {
+  const plan = [];
+  for (const d of model.fields) {
+    if (d.type !== "del") continue;
+    const mode = String(values[d.id] || "");
+    if (!mode) continue;
+    if (mode === "rows") plan.push({ d, mode, rows: rowsToDrop(d, model, values) });
+    else if (mode === "all" || mode === "all+title") plan.push({ d, mode });
+    else throw new Error("表格的刪除選項有看不懂的值，為了安全不匯出");
+  }
+  return plan;
+}
+function applyDeletes(plan) {
+  for (const p of plan) {
+    const d = p.d; if (!d.tbl.parentNode) continue;
+    if (p.mode === "rows") {
+      for (const tr of p.rows) if (tr.parentNode) removeRow(tr);
+      if (!d.tbl.getElementsByTagNameNS(NS_W, "tr").length) detach(d.tbl);
+    } else {
+      detach(d.tbl);
+      if (p.mode === "all+title" && d.titleP && d.titleP.parentNode) detach(d.titleP);
+    }
+  }
 }
 
 function splitBoxes(s) {
@@ -1114,7 +1303,7 @@ function addChildren(xdoc, tag, items, first) {      // 在根元素裡加幾個
   return out;
 }
 async function applyPhotos(d, values, getPhoto) {
-  const jobs = d.model.fields.filter(f => f.type === "ph" && phParse(values[f.id]).ids.length);
+  const jobs = d.model.fields.filter(f => f.type === "ph" && phParse(values[f.id]).ids.length && d.doc.documentElement.contains(f.anchor));
   if (!jobs.length) return null;
   if (!getPhoto) throw new Error("這份有附照片，但現在讀不到照片（請回個案裡再匯出）");
   const dec = new TextDecoder("utf-8"), enc = new TextEncoder();
@@ -1209,16 +1398,18 @@ async function buildDocx(origAb, values, getPhoto) {
   const d = await openDocx(origAb);
   if (!d.model.integ.ok) throw new Error("這份模板有對不上的勾選項，為了安全不匯出（請回報）");
   const plc = await placeholderStyle(d.entries);
+  const plan = planDeletes(d.model, values);        // 要刪的表與列：趁文件還沒被動過先算好
   const known = new Set();
   for (const f of d.model.fields) {
     known.add(f.id);
     const v = values[f.id];
-    if (f.type === "alt" || f.type === "ph" || !changed(f, v)) continue;
+    if (f.type === "alt" || f.type === "ph" || f.type === "del" || !changed(f, v)) continue;
     if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc);
   }
   for (const k of Object.keys(values)) if (!known.has(k)) throw new Error("草稿與這份模板對不上（模板可能換過版），為了安全不匯出");
   applyFrames(d.model.fields, values);              // 框線放在勾選與填字之後
-  const ph = await applyPhotos(d, values, getPhoto);  // 照片最後
+  applyDeletes(plan);                               // 再刪掉選了不要的表格與列（清單是一開始就算好的）
+  const ph = await applyPhotos(d, values, getPhoto);  // 照片最後（已經被刪掉的位置不放）
   const bytes = new TextEncoder().encode(new XMLSerializer().serializeToString(d.doc));
   const packed = await deflateRaw(bytes);
   const out = d.entries.map(e => e === d.de ? { ...e, method: packed ? 8 : 0, crc: crc32(bytes), usize: bytes.length, raw: packed || bytes }
@@ -1287,6 +1478,7 @@ async function kvGet(k, d) { const v = await DB.get("kv", k); return v === undef
 /* ── 畫面切換 ───────────────────────────────────────────── */
 const VIEWS = ["v-home", "v-case", "v-basic", "v-tpl", "v-set"];
 function endSession() {                          // 離開填寫畫面：這一次開啟到此為止
+  if (!$("mark").hidden) markClose();
   if (!S.ses) return;
   for (const u of S.ses.urls) URL.revokeObjectURL(u);
   S.ses.urls.clear(); S.ses = null;
@@ -1398,10 +1590,41 @@ function render() {
     frag.appendChild(card(b));
   }
   app.appendChild(frag);
+  app.querySelectorAll(".card.delctl").forEach(x => x._paint && x._paint());   // 卡片都放上去之後，才標得出「整張刪掉」的那幾題
   refreshCount(); growAll();
 }
+function delCard(b) {
+  const f = b.items[0], c = mk("div", "card delctl"); c.dataset.txt = b.text;
+  c.appendChild(mk("div", "flab", "這張表：" + f.label));
+  const sel = mk("select", "fld"); sel.dataset.fid = f.id;
+  const opts = [["", "保留全部"]];
+  if (f.rows > 1 && S.mode === "case") opts.push(["rows", "只留有勾選或有填寫的列（其餘刪掉）"]);   // 要跟空白模板比才知道哪些是你填的，所以只在個案裡提供
+  if (f.titleText) opts.push(["all+title", "整張刪掉，連上面的標題「" + (f.titleText.length > 12 ? f.titleText.slice(0, 12) + "…" : f.titleText) + "」"]);
+  opts.push(["all", f.titleText ? "整張刪掉，標題留著" : "整張刪掉"]);
+  opts.forEach(([v, t]) => sel.appendChild(new Option(t, v)));
+  const hint = mk("div", "fhint"), list = mk("div", "fhint"); list.hidden = true;
+  const tell = () => {                             // 會刪哪幾列：隨著你勾選、填寫即時更新
+    const v = String(cur(f) || "");
+    if (v !== "rows") { hint.textContent = v ? "匯出時不會有這張表。" : ""; list.hidden = true; list.textContent = ""; return; }
+    const drop = rowsToDrop(f, S.model, S.values);
+    hint.textContent = "匯出時會刪掉 " + drop.length + " 列、留下 " + (f.rows - drop.length) + " 列（刪的是你沒勾也沒填的；標題列、同一小標題底下的說明列會留著）。點這裡看會刪哪幾列。";
+    list.textContent = drop.length ? "會刪掉：" + drop.map(tr => "「" + (elText(tr).slice(0, 14) || "（空白列）") + "」").join("、") : "目前沒有要刪的列。";
+  };
+  hint.onclick = () => { if (String(cur(f) || "") === "rows") list.hidden = !list.hidden; };
+  const paint = () => {
+    const v = String(cur(f) || ""); sel.value = v; sel.classList.toggle("filled", !!v);
+    tell();
+    document.querySelectorAll('.card[data-tbl="' + b.tblNo + '"]').forEach(x => { if (!x.classList.contains("delctl")) x.classList.toggle("gone", v.startsWith("all")); });
+  };
+  sel.onchange = () => { setVal(f, sel.value); paint(); };
+  c.appendChild(sel); c.appendChild(hint); c.appendChild(list);
+  c._paint = paint; c._tell = tell;
+  return c;
+}
 function card(b) {
+  if (b.delCtl) return delCard(b);
   const c = mk("div", "card");
+  if (b.tblNo !== undefined) c.dataset.tbl = b.tblNo;
   c.dataset.txt = b.find || b.text;
   c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
   const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt");
@@ -1538,7 +1761,28 @@ function photoRow(f, b, named) {
         ses.ph.delete(id);
         try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {}
       }); };
-      box.appendChild(im); box.appendChild(x); thumbs.appendChild(box);
+      im.onclick = () => {
+        if (ses.lock) return toast("正在匯出或離開，請稍候再標註");
+        getPhotoOf(ses, id).then(rec => {
+          if (!rec || !live()) return;
+          markOpen(rec, out => enqueue(async () => {             // 標註完成：存成一張新的、換掉原本那張
+            if (!live()) return;
+            if (await photoTotal(ses) - rec.bytes.byteLength + out.bytes.byteLength > PH_MAX) { toast("標註後這份報告的照片會超過上限（約 12MB），這次的標註沒有存", true); return; }
+            if (!live()) return;
+            const nid = "ph_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            const nrec = { bytes: out.bytes, w: out.w, h: out.h, at: Date.now(), base: out.base, marks: out.marks };
+            await DB.put("files", phKeyOf(ses, nid), nrec);
+            if (!live()) { try { await DB.del("files", phKeyOf(ses, nid)); } catch (e) {} return; }
+            ses.ph.set(nid, nrec);
+            const w = st(); setVal(f, phJoin(w.n, w.ids.map(k => k === id ? nid : k))); paint();
+            const saved = await flush();
+            if (!saved || !live()) return;
+            ses.ph.delete(id);
+            try { await DB.del("files", phKeyOf(ses, id)); } catch (e) {}
+          }));
+        }).catch(() => {});
+      };
+      box.appendChild(im); box.appendChild(mk("span", "phedit", "點圖標註")); box.appendChild(x); thumbs.appendChild(box);
       getPhotoOf(ses, id).then(ph => {
         if (!live() || !box.isConnected) return;
         if (!ph) { box.appendChild(mk("div", "fhint", "找不到")); return; }
@@ -1575,6 +1819,161 @@ function photoRow(f, b, named) {
   paint();
   return row;
 }
+/* ── 照片標註：畫粗線（扶手）、尺寸線加數字、文字 ───────────────
+   座標一律用照片本身的像素；畫面只是把它縮小顯示。完成時把標註壓進一張新的 JPEG，
+   原圖與標註內容一起留著，之後點進來還能繼續改。 */
+const MK = { img: null, w: 0, h: 0, shapes: [], tool: "rail", color: "#e11d48", sel: -1, drag: null, onDone: null, base: null, asking: null, dirty: false };
+const MK_COLORS = ["#e11d48", "#f59e0b", "#2563eb", "#16a34a", "#111111", "#ffffff"];
+function mkPt(e) { const cv = $("mk-cv"), r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; }
+function mkUnit() { return Math.max(MK.w, MK.h) / 150; }
+function mkLabel(g, s, x, y, color) {
+  const u = mkUnit(), fs = Math.round(u * 5.2);
+  g.font = "bold " + fs + 'px -apple-system,"PingFang TC","Noto Sans TC",sans-serif'; g.textBaseline = "middle"; g.textAlign = "center";
+  const w = g.measureText(s).width + fs * 0.7, h = fs * 1.45;
+  x = Math.min(Math.max(x, w / 2 + 2), MK.w - w / 2 - 2); y = Math.min(Math.max(y, h / 2 + 2), MK.h - h / 2 - 2);
+  g.fillStyle = color === "#ffffff" ? "rgba(0,0,0,.72)" : "rgba(255,255,255,.9)"; g.fillRect(x - w / 2, y - h / 2, w, h);
+  g.fillStyle = color; g.fillText(s, x, y);
+  return { x, y, w, h };
+}
+function mkDraw(final) {
+  const cv = $("mk-cv"), g = cv.getContext("2d"), u = mkUnit();
+  g.clearRect(0, 0, MK.w, MK.h); g.drawImage(MK.img, 0, 0, MK.w, MK.h);
+  MK.shapes.forEach((s, i) => {
+    g.strokeStyle = s.c; g.fillStyle = s.c; g.lineCap = "round"; g.lineJoin = "round";
+    if (s.t === "rail" || s.t === "dim") {
+      g.lineWidth = s.t === "rail" ? u * 2.2 : u * 0.9;
+      g.beginPath(); g.moveTo(s.x1, s.y1); g.lineTo(s.x2, s.y2); g.stroke();
+      if (s.t === "dim") {
+        const a = Math.atan2(s.y2 - s.y1, s.x2 - s.x1), L = u * 4.2;
+        for (const [x, y, d] of [[s.x1, s.y1, a], [s.x2, s.y2, a + Math.PI]]) {     // 兩端的箭頭
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x + L * Math.cos(d - 0.42), y + L * Math.sin(d - 0.42));
+          g.lineTo(x + L * Math.cos(d + 0.42), y + L * Math.sin(d + 0.42)); g.closePath(); g.fill();
+        }
+        if (s.s) s.box = mkLabel(g, s.s, (s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, s.c);
+      }
+    } else if (s.t === "text") s.box = mkLabel(g, s.s, s.x, s.y, s.c);
+    if (!final && i === MK.sel) {                                        // 選取中的：端點畫圈提示可以拖
+      g.strokeStyle = "#fff"; g.lineWidth = u * 0.5;
+      for (const [x, y] of s.t === "text" ? [[s.x, s.y]] : [[s.x1, s.y1], [s.x2, s.y2]]) { g.beginPath(); g.arc(x, y, u * 2.6, 0, 6.3); g.stroke(); }
+    }
+  });
+  $("mk-del").disabled = MK.sel < 0; $("mk-undo").disabled = !MK.shapes.length;
+}
+function mkHit(p) {                                 // 回傳 { i, part }：part＝1／2（端點）、"label"（文字或數字）
+  const r = mkUnit() * 5.5;
+  for (let i = MK.shapes.length - 1; i >= 0; i--) {
+    const s = MK.shapes[i], near = (x, y) => Math.hypot(p.x - x, p.y - y) <= r;
+    if (s.t === "text") { const b = s.box; if (b && Math.abs(p.x - b.x) <= b.w / 2 + r / 3 && Math.abs(p.y - b.y) <= b.h / 2 + r / 3) return { i, part: "label" }; continue; }
+    if (near(s.x1, s.y1)) return { i, part: 1 };
+    if (near(s.x2, s.y2)) return { i, part: 2 };
+    const b = s.box; if (s.t === "dim" && b && Math.abs(p.x - b.x) <= b.w / 2 + r / 3 && Math.abs(p.y - b.y) <= b.h / 2 + r / 3) return { i, part: "label" };
+    const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L2 = dx * dx + dy * dy || 1, k = Math.min(1, Math.max(0, ((p.x - s.x1) * dx + (p.y - s.y1) * dy) / L2));
+    if (Math.hypot(p.x - (s.x1 + k * dx), p.y - (s.y1 + k * dy)) <= r * 0.55) return { i, part: "body" };       // 線身
+  }
+  return null;
+}
+function mkAsk(ph, init, cb) {                      // 在標註畫面裡問一行字（不用系統的對話框）
+  MK.asking = cb; $("mk-ask").hidden = false; const inp = $("mk-input");
+  inp.placeholder = ph; inp.value = init || ""; inp.focus();
+}
+function mkAnswer(ok) {
+  const cb = MK.asking; MK.asking = null; $("mk-ask").hidden = true;
+  const v = $("mk-input").value.trim(); $("mk-input").blur();
+  if (cb) cb(ok && v ? v : null);
+  mkDraw();
+}
+function mkTool(t) {
+  MK.tool = t; for (const k of ["rail", "dim", "text"]) $("mk-" + k).classList.toggle("on", k === t);
+  $("mk-hint").textContent = (t === "rail" ? "拖一條線＝扶手" : t === "dim" ? "拖出要量的那一段，再輸入尺寸" : "點一下要放字的位置") + "｜點線可選取再調整";
+}
+function markOpen(rec, onDone) {
+  const src = rec.base || rec.bytes, u = URL.createObjectURL(new Blob([src], { type: "image/jpeg" })), im = new Image();
+  im.onerror = () => { URL.revokeObjectURL(u); toast("這張照片打不開", true); };
+  im.onload = () => {
+    URL.revokeObjectURL(u);
+    Object.assign(MK, { img: im, w: im.naturalWidth, h: im.naturalHeight, shapes: JSON.parse(JSON.stringify(rec.marks || [])), sel: -1, drag: null,
+                        onDone, base: src, asking: null, dirty: false, saving: false, pid: null });
+    const cv = $("mk-cv"); cv.width = MK.w; cv.height = MK.h;
+    const box = $("mk-colors"); box.textContent = "";
+    MK_COLORS.forEach(c => { const d = mk("span"); d.style.background = c; d.classList.toggle("on", c === MK.color);
+      d.onclick = () => { MK.color = c; box.querySelectorAll("span").forEach(x => x.classList.toggle("on", x === d));
+                          if (MK.sel >= 0) { MK.shapes[MK.sel].c = c; MK.dirty = true; mkDraw(); } }; box.appendChild(d); });
+    $("mk-ask").hidden = true; $("mark").hidden = false; mkTool(MK.tool); mkDraw();
+  };
+  im.src = u;
+}
+function markClose() { $("mark").hidden = true; MK.img = null; MK.shapes = []; MK.onDone = null; MK.base = null; MK.asking = null; MK.saving = false; MK.pid = null; MK.drag = null; }
+(() => {
+  const cv = $("mk-cv");
+  // 規則：點一下線或字＝選取；已選取的才能拖端點調整、拖線身整個移動、點字改字。
+  //       沒選取的地方一拖就是畫新的（所以 L 型扶手可以從上一段的端點接著畫）。
+  cv.addEventListener("pointerdown", e => {
+    if (MK.asking || !MK.img || MK.pid != null) return;        // 一次只認一根手指
+    MK.pid = e.pointerId;
+    e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+    const p = mkPt(e), hit = mkHit(p);
+    MK.drag = hit && hit.i === MK.sel ? { i: hit.i, part: hit.part, p0: p, last: p, moved: false } : { pend: hit, p0: p, last: p, moved: false };
+  });
+  cv.addEventListener("pointermove", e => {
+    const d = MK.drag; if (!d || !MK.img || e.pointerId !== MK.pid) return;
+    const p = mkPt(e);
+    if (!d.moved && Math.hypot(p.x - d.p0.x, p.y - d.p0.y) > mkUnit() * 1.5) d.moved = true;
+    if (!d.moved) return;
+    if (d.pend !== undefined) {                    // 拖起來了：畫新的（文字工具不畫線）
+      if (MK.tool === "text") return;
+      MK.shapes.push({ t: MK.tool, x1: d.p0.x, y1: d.p0.y, x2: p.x, y2: p.y, c: MK.color, s: "" });
+      MK.sel = -1; MK.drag = { i: MK.shapes.length - 1, part: 2, p0: d.p0, last: p, moved: true, fresh: true };
+      mkDraw(); return;
+    }
+    const s = MK.shapes[d.i]; if (!s) return;
+    const x = Math.min(Math.max(p.x, 0), MK.w), y = Math.min(Math.max(p.y, 0), MK.h);
+    if (s.t === "text") { s.x = x; s.y = y; }
+    else if (d.part === 1) { s.x1 = x; s.y1 = y; }
+    else if (d.part === 2) { s.x2 = x; s.y2 = y; }
+    else { const dx = p.x - d.last.x, dy = p.y - d.last.y; s.x1 += dx; s.x2 += dx; s.y1 += dy; s.y2 += dy; }   // 拖線身或數字：整個移動
+    d.last = p; mkDraw();
+  });
+  const up = e => {
+    if (e.pointerId !== MK.pid) return;
+    MK.pid = null;
+    const d = MK.drag; MK.drag = null; if (!d || !MK.img) return;
+    if (d.pend !== undefined) {                    // 沒有拖＝點一下
+      if (d.pend) MK.sel = d.pend.i;               // 點到既有的：選取
+      else {
+        MK.sel = -1;                               // 點空白：取消選取；文字工具則在這裡放字
+        if (MK.tool === "text") mkAsk("要放的字", "", v => { if (v) { MK.shapes.push({ t: "text", x: d.p0.x, y: d.p0.y, c: MK.color, s: v }); MK.dirty = true; } });
+      }
+      mkDraw(); return;
+    }
+    const s = MK.shapes[d.i]; if (!s) return;
+    if (d.fresh) {
+      if (Math.hypot(s.x2 - s.x1, s.y2 - s.y1) < mkUnit() * 4) { MK.shapes.splice(d.i, 1); mkDraw(); return; }   // 太短：當成誤觸
+      MK.dirty = true;
+      if (s.t === "dim") mkAsk("尺寸，例如 80 公分", "", v => { if (v) s.s = v; else { const k = MK.shapes.indexOf(s); if (k >= 0) MK.shapes.splice(k, 1); } });
+    } else if (d.moved) MK.dirty = true;
+    else if (d.part === "label") mkAsk(s.t === "dim" ? "尺寸，例如 80 公分" : "要放的字", s.s, v => { if (v) { s.s = v; MK.dirty = true; } });   // 已選取、點一下字：改字
+    mkDraw();
+  };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  $("mk-rail").onclick = () => mkTool("rail"); $("mk-dim").onclick = () => mkTool("dim"); $("mk-text").onclick = () => mkTool("text");
+  $("mk-undo").onclick = () => { if (MK.shapes.length) { MK.shapes.pop(); MK.sel = -1; MK.dirty = true; mkDraw(); } };
+  $("mk-del").onclick = () => { if (MK.sel >= 0) { MK.shapes.splice(MK.sel, 1); MK.sel = -1; MK.dirty = true; mkDraw(); } };
+  $("mk-ok").onclick = () => mkAnswer(true); $("mk-no").onclick = () => mkAnswer(false);
+  $("mk-input").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); mkAnswer(true); } });
+  $("mk-cancel").onclick = () => { if (MK.dirty && !confirm("放棄這次的標註？")) return; markClose(); };
+  $("mk-done").onclick = () => {
+    if (MK.saving) return;
+    if (MK.asking) mkAnswer(true);                 // 字還在輸入框裡就按完成：照樣收進去
+    if (!MK.dirty) return markClose();
+    MK.saving = true;
+    const done = MK.onDone, base = MK.base, w = MK.w, h = MK.h, marks = JSON.parse(JSON.stringify(MK.shapes.map(s => { const o = { ...s }; delete o.box; return o; })));
+    MK.sel = -1; mkDraw(true);
+    $("mk-cv").toBlob(b => {
+      if (!b) { MK.saving = false; return toast("標註沒存成功", true); }
+      b.arrayBuffer().then(bytes => { markClose(); if (done) done({ bytes, w, h, base, marks }); }, () => { MK.saving = false; toast("標註沒存成功", true); });
+    }, "image/jpeg", 0.85);
+  };
+})();
 $("phmode").onclick = () => { const on = document.body.classList.toggle("phmode"); $("phmode").classList.toggle("on", on);
                               toast(on ? "每一題下面都會出現「＋照片」" : "已收起（有照片的題目仍會顯示）"); };
 function grow(el) {
@@ -1596,7 +1995,11 @@ function refreshCount() {
 }
 const draftKey = () => S.mode === "case" ? S.caseId + "|" + S.rid : "af4:" + S.sha;
 let saveT = null;
-function save() { if (!S.model) return; S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400); }
+let tellT = null;
+function save() {
+  if (!S.model) return; S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400);
+  clearTimeout(tellT); tellT = setTimeout(() => { if (S.model) document.querySelectorAll(".card.delctl").forEach(x => x._tell && x._tell()); }, 300);
+}
 /* 回傳 true＝草稿確實存進手機了（或本來就沒有要存的）；false＝沒存成功。一次只跑一個，後呼叫的排在前一個後面。 */
 let flushP = Promise.resolve(true);
 function flush() { flushP = flushP.then(doFlush, doFlush); return flushP; }
@@ -1979,6 +2382,7 @@ function mapBasic(model, c) {
   };
   let inBasic = false, done = false;
   for (const blk of model.blocks) {
+    if (blk.delCtl) continue;
     const t = blk.text;
     if (!inBasic) { if (/基本資料/.test(t)) inBasic = true; if (blk.kind === "head") continue; }
     if (inBasic && !done) {
