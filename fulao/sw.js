@@ -3,7 +3,7 @@
    · 只存「成功的回應」。網頁本體先連網拿最新，但最多等 2.5 秒——訊號很差時不要讓人對著白畫面等，先用手機裡存的那一份。
    · 改版要把下面的版號加一。 */
 const PREFIX = "fulao-tool-";
-const V = PREFIX + "v2";
+const V = PREFIX + "v3";
 const CORE = ["./", "./index.html", "./manifest.webmanifest"];      // 少一個就裝不起來
 const EXTRA = ["./icon-180.png", "./icon-512.png"];                 // 抓不到也不影響安裝
 const WAIT = 2500;

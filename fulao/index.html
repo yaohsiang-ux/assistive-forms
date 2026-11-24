@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/sk1tpp1bmVQkmwQgpP86C8Os/BmqlyMBWLfbArb+MY='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4t6/HOt0tjcWymE8zJf9XCrmqJJfITEZU+POi/CN1Pc='; style-src 'unsafe-inline'; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>扶老圖片工具</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -132,7 +132,7 @@ textarea{display:block;width:100%;border:1px solid var(--line);border-radius:10p
              平面圖（房間方框、牆、門弧、馬桶／洗手台／浴缸等符號），匯出成圖片從手機分享出去。
    資料：只存在這支手機（IndexedDB），不上傳到任何地方；沒有連網功能。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v2";
+const VERSION = "v3";
 const $ = id => document.getElementById(id);
 const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 let toastT = null;
@@ -158,11 +158,15 @@ const DB = {
   /* 開一筆交易來做事。資料庫的連線有時會自己斷掉（例如 iPhone 從背景回來）：交易開不起來就重新連線、再試一次。
      body(t, res, rej)：在這筆交易裡做事，做完自己叫 res／rej（交易一開就要馬上用，中間不能等別的事） */
   run(stores, mode, body) {
-    const go = () => new Promise((res, rej) => { let t; try { t = DB.db.transaction(stores, mode); } catch (e) { DB.db = null; return rej(e); } body(t, res, rej); });
-    return (DB.db ? go() : DB.open().then(go)).catch(e => { if (DB.db) throw e; return DB.open().then(go); });
+    const go = () => new Promise((res, rej) => { let t; try { t = DB.db.transaction(stores, mode); } catch (e) { DB.drop(); return rej(e); } body(t, res, rej); });
+    // 連線斷掉的幾種樣子：連線已經被丟掉、交易開不起來、或交易開了才報「連線中斷」（iPhone 從背景回來時會遇到）。失敗的交易什麼都沒寫進去，所以重做一次是安全的
+    const lost = e => !DB.db || /^(UnknownError|InvalidStateError|TransactionInactiveError)$/.test((e && e.name) || "");
+    return (DB.db ? go() : DB.open().then(go)).catch(e => { if (!lost(e)) throw e; DB.drop(); return DB.open().then(go); });
   },
+  drop() { const d = DB.db; DB.db = null; try { if (d) d.close(); } catch (e) {} },       // 把壞掉的連線丟掉，下次要用時重開
+  why: (t, ev, msg) => t.error || (ev && ev.target && ev.target.error) || new Error(msg),       // 失敗的原因：交易的，沒有就拿那一筆請求的
   tx(store, mode, fn) { return DB.run(store, mode, (t, res, rej) => { let out;
-    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    t.oncomplete = () => res(out); t.onerror = t.onabort = ev => rej(DB.why(t, ev, "沒存成功"));
     const rq = fn(t.objectStore(store)); if (rq) rq.onsuccess = () => { out = rq.result; }; }); },
   get: (s, k) => DB.tx(s, "readonly", o => o.get(k)),
   put: (s, k, v) => DB.tx(s, "readwrite", o => o.put(v, k)),
@@ -171,19 +175,19 @@ const DB = {
   /* 改個案：讀最新的那一筆 → 改 → 連同頁面與照片寫回，全部在「同一筆交易」裡——全部成功才算數；另一個分頁同時在改也不會互相蓋掉。
      fn(c, t)：直接改 c；要一起寫或刪的頁面、照片，用 t.objectStore(...) 在這同一筆交易裡做（不能在裡面等別的事，交易會自己結束） */
   mutate(cid, fn) { return DB.run(["cases", "pages", "blobs"], "readwrite", (t, res, rej) => { let out = null, err = null;
-    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(err || t.error || new Error("沒存成功"));
+    t.oncomplete = () => res(out); t.onerror = t.onabort = ev => rej(err || DB.why(t, ev, "沒存成功"));
     const rq = t.objectStore("cases").get(cid);
     rq.onsuccess = () => { try { const c = rq.result; if (!c) throw new Error("找不到這個個案"); fn(c, t); c.at = Date.now(); t.objectStore("cases").put(c, cid); out = c; } catch (e) { err = e; try { t.abort(); } catch (x) {} } }; }); },
   /* 刪掉整個個案：個案、它的每一頁、每一頁的照片，同一筆交易 */
   dropCase(cid) { return DB.run(["cases", "pages", "blobs"], "readwrite", (t, res, rej) => { const pages = t.objectStore("pages"), blobs = t.objectStore("blobs");
-    t.oncomplete = () => res(); t.onerror = t.onabort = () => rej(t.error || new Error("沒刪成功"));
+    t.oncomplete = () => res(); t.onerror = t.onabort = ev => rej(DB.why(t, ev, "沒刪成功"));
     const rq = t.objectStore("cases").get(cid);
     rq.onsuccess = () => { for (const pid of (rq.result && rq.result.pages) || []) { const r2 = pages.get(pid); r2.onsuccess = () => { for (const k of (r2.result && r2.result.photos) || []) blobs.delete(k); pages.delete(pid); }; }
       t.objectStore("cases").delete(cid); }; }); },
   /* 存一頁：這一頁還在、而且從我讀出來之後沒有被別的視窗改過，才寫。每寫一次版本號（v）加一。
      回傳新的版本號（數字）；"gone"＝已經被刪掉，不寫回去；"conflict"＝別的視窗改過了，不蓋掉它（force 為真才蓋） */
   savePage(pg, base, force) { return DB.run("pages", "readwrite", (t, res, rej) => { let out = "gone"; const o = t.objectStore("pages");
-    t.oncomplete = () => res(out); t.onerror = t.onabort = () => rej(t.error || new Error("沒存成功"));
+    t.oncomplete = () => res(out); t.onerror = t.onabort = ev => rej(DB.why(t, ev, "沒存成功"));
     const rq = o.get(pg.id); rq.onsuccess = () => { const cur = rq.result; if (!cur) return; if (!force && (cur.v || 0) !== base) { out = "conflict"; return; } pg.v = (cur.v || 0) + 1; o.put(pg, pg.id); out = pg.v; }; }); },
 };
 
@@ -398,6 +402,10 @@ async function drawThumb(cv, page) {
 
 /* ══ 個案清單與個案頁 ═══════════════════════════════════ */
 let C = null;                                     // 目前打開的個案
+/* 記住「現在停在哪裡」（只記個案與頁面的編號，不是個資）。iPhone 會把放在背景的網頁工具整個關掉，回來時從頭載入——
+   有記的話就直接回到剛才那個個案、那一頁，不用從清單再點進去。超過六小時就不回去了，從個案清單開始 */
+function markAt(o) { try { if (o) localStorage.setItem("fulao.at", JSON.stringify({ ...o, t: Date.now() })); else localStorage.removeItem("fulao.at"); } catch (e) {} }
+function lastAt() { try { const o = JSON.parse(localStorage.getItem("fulao.at") || "null"); return o && o.c && Date.now() - o.t < 6 * 3600e3 ? o : null; } catch (e) { return null; } }
 let viewTok = 0;                                  // 清單畫面每重畫一次加一；資料讀到一半又有人要求重畫，舊的那一次就作廢
 function show(id) { const was = $(id).hidden; for (const v of ["v-home", "v-case", "v-rec"]) $(v).hidden = v !== id; if (was) window.scrollTo(0, 0); }
 /* 會動到資料的動作一個一個來（新增、刪除、排序、匯出不交錯）；做的時候清單畫面先鎖住，免得做到一半又切到別的個案 */
@@ -419,7 +427,7 @@ function askCase(c) {                             // 新增或修改個案：姓
     const no = mk("button", "btn wide", "取消"); no.onclick = () => { closeSheet(); res(null); }; box.appendChild(ok); box.appendChild(no); $("sheet").hidden = false; });
 }
 async function goHome0() {
-  const tok = ++viewTok; C = null; show("v-home");
+  const tok = ++viewTok; C = null; show("v-home"); markAt(null);
   const cases = (await DB.all("cases")).sort((a, b) => (b.at || 0) - (a.at || 0)); if (tok !== viewTok) return;
   const list = $("case-list"); list.textContent = "";
   if (!cases.length) list.appendChild(mk("p", "sub", "還沒有個案。按上面的「＋ 新個案」開始。"));
@@ -429,7 +437,7 @@ async function openCase0(id) {
   const tok = ++viewTok, c = await DB.get("cases", id); if (tok !== viewTok) return;
   if (!c) { toast("找不到這個個案", true); return goHome(); }
   const pages = []; for (const pid of c.pages) { const p = await DB.get("pages", pid); if (tok !== viewTok) return; if (p) pages.push(p); }
-  C = c; show("v-case"); $("case-title").textContent = c.name; $("case-sub").textContent = "評估日期 " + c.date + "｜共 " + pages.length + " 頁（匯出時照這個順序編號）"; prefLabels(); recLabel();
+  C = c; show("v-case"); markAt({ c: c.id }); $("case-title").textContent = c.name; $("case-sub").textContent = "評估日期 " + c.date + "｜共 " + pages.length + " 頁（匯出時照這個順序編號）"; prefLabels(); recLabel();
   const box = $("pages"), thumbs = []; box.textContent = "";
   pages.forEach((p, i) => {
     const el = mk("div", "pg"), cv = mk("canvas"); el.dataset.id = p.id; el.appendChild(cv); el.appendChild(mk("div", "n", (i + 1) + "・" + (p.type === "photo" ? "照片頁" : "平面圖")));
@@ -554,7 +562,7 @@ async function openRec() {                        // 進來時重新讀手機裡
       if (sec.more) box.appendChild(inp(sec.more, sec.moreph || "其他", "rec-in"));
       if (sec.area) { const t = mk("textarea"); t.maxLength = 2000; t.value = RC.v[sec.area] || ""; t.dataset.k = sec.area; t.oninput = () => { RC.v[sec.area] = t.value.trim(); recTouch(); }; box.appendChild(t); }
       body.appendChild(box); } }
-  recPaint(); recState(); show("v-rec");
+  recPaint(); recState(); show("v-rec"); markAt({ c: cid, r: 1 });
 }
 function recText(v) {                             // 整理成一段文字（不含姓名），照系統的分頁與欄位順序
   const out = [];
@@ -777,7 +785,7 @@ async function openEditor(pid) {                  // 一律在排隊裡呼叫（
     edPos.clear(); Object.assign(ED, { page: p, imgs, sel: null, drag: null, pid: null, hist: [], seq: 0, rev: 0, savedRev: 0, base: p.v || 0, conflict: false, fail: 0, closeFail: 0, savedJson: JSON.stringify(edStrip(p)), asking: null, zoom: 1, busy: false, tool: p.type === "photo" ? "rail" : "room" });
     if (p.type === "photo") { const rs = photoRects(imgs.map(im => ({ w: im.naturalWidth, h: im.naturalHeight }))), x0 = rs.length ? rs[0].x : 0, x1 = rs.length ? rs[rs.length - 1].x + rs[rs.length - 1].w : PW;
       ED.view = { x: Math.max(0, x0 - 20), y: 0, w: Math.min(PW, x1 + 20) - Math.max(0, x0 - 20), h: PH }; }          // 編輯時只看照片那一塊（兩邊的白邊不顯示），手機上才夠大
-    $("ed-ask").hidden = true; $("ed").hidden = false; edFit(); edTools(); edDraw();
+    $("ed-ask").hidden = true; $("ed").hidden = false; edFit(); edTools(); edDraw(); markAt({ c: c.id, p: pid });
   } catch (e) { ED.page = null; $("ed").hidden = true; toast("這一頁打不開：" + ((e && e.message) || e), true); }
   finally { ED.opening = false; }
 }
@@ -797,6 +805,15 @@ $("ed-cancel").onclick = () => { if (ED.busy) return; if (ED.asking) edAnswer(fa
 const edBackground = () => { if (!ED.page) return; edCancelGesture(); edPos.clear(); if (ED.rev !== ED.savedRev) edFlush().catch(() => {}); };       // 只要還有沒寫成功的修改就寫（包含剛剛失敗的那一次）
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") edBackground(); });
 window.addEventListener("pagehide", edBackground);
+/* 從背景回到前景：iPhone 可能已經把畫布清空了（資料都在，只是畫面變空白，看起來像東西不見）→ 重畫一次；
+   資料庫連線也可能斷了 → 先輕輕試一下，斷了會自動重連，等一下要存的時候才不會失敗 */
+function onShow() {
+  DB.get("cases", "_ping").catch(() => {});
+  if (ED.page) { edFit(); edDraw(); }
+  else if (C && !$("v-case").hidden && !BUSY) openCase(C.id);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") onShow(); });
+window.addEventListener("pageshow", e => { if (e.persisted) onShow(); });
 /* iPhone 鍵盤跳出來時，把編輯畫面與對話框縮到鍵盤上方（不然打字的那一列會被鍵盤蓋住） */
 function fitVV() { const v = window.visualViewport; if (!v) return; const st = document.documentElement.style; st.setProperty("--vvh", v.height + "px"); st.setProperty("--vvt", v.offsetTop + "px"); if (ED.page) { edFit(); edDraw(); } }
 if (window.visualViewport) { window.visualViewport.addEventListener("resize", fitVV); window.visualViewport.addEventListener("scroll", fitVV); }
@@ -809,7 +826,11 @@ if (window.visualViewport) { window.visualViewport.addEventListener("resize", fi
   try { await DB.open(); } catch (e) { toast("手機的儲存空間打不開：" + (e.message || e), true); return; }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
-  goHome();
+  const at = lastAt(), c0 = at ? await DB.get("cases", at.c).catch(() => null) : null;       // 上次停在哪裡（工具被 iPhone 關掉、重開時）
+  if (!c0) return goHome();
+  await openCase(c0.id);
+  if (at.p && c0.pages.includes(at.p)) await editPage(at.p); else if (at.r) await serial(openRec).catch(readErr);
+  toast("已回到你上次停的地方");
 })();
 </script>
 </body>
