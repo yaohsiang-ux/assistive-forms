@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-P4WhEoKr9Ykn3KlIZvN/jAxbNDd9S1gmDPNITtnXzls=' 'sha256-Jn9aUse8jiFqaHIBFeKKBnh3mU6ioRN0MZxk6GtYfIY='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VJlhXw4UEo1n+EUnJp+ceWqb5TqAYGyy4p8ek+R8JaQ=' 'sha256-Jn9aUse8jiFqaHIBFeKKBnh3mU6ioRN0MZxk6GtYfIY='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -331,7 +331,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v8";
+const VERSION = "v9";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -1325,10 +1325,13 @@ function setCheckbox(f, on) {
     f.node.textContent = s.slice(0, f.charIdx) + (on ? "☑" : "□") + s.slice(f.charIdx + 1);
   }
 }
-function setText(f, val, plcStyle) {
+function setText(f, val, plcStyle, styleHas) {
   if (f.sdt) {
     const info = sdtInfo(f.sdt), doc = f.sdt.ownerDocument, cont = info.cont;
     if (!cont) return;
+    // 沒有「提示字」旗標、裡面卻只有套了提示字樣式的空白：一樣當成提示字（要趁還沒寫字之前看）
+    const hadPlc = !info.plc && !!plcStyle && !sdtText(cont).trim() &&
+                   Array.from(cont.getElementsByTagNameNS(NS_W, "rStyle")).some(x => wAttr(x, "val") === plcStyle);
     if (info.plc && val !== "") info.pr.removeChild(kid(info.pr, NS_W, "showingPlcHdr"));
     if (info.date && f.kind === "date") {
       if (val) info.date.setAttributeNS(NS_W, "w:fullDate", val + "T00:00:00Z");
@@ -1364,6 +1367,37 @@ function setText(f, val, plcStyle) {
     if (plcStyle && val !== "") {                            // 拿掉灰色的提示字樣式
       const rs = cont.getElementsByTagNameNS(NS_W, "rStyle");
       for (let i = rs.length - 1; i >= 0; i--) if (wAttr(rs[i], "val") === plcStyle) rs[i].parentNode.removeChild(rs[i]);
+    }
+    // 這一格原本顯示的是提示字：照 Word 的做法，把這一格自己指定的格式（字型、樣式、顏色…）整組套到打進去的那一小段字上。
+    // 提示字那一段帶的是提示字樣式或作者直接設的灰色、新細明體；只把提示字樣式拿掉的話，這一格指定的樣式（例如「標楷12底線」）不會自己回來。
+    // 原本就有內容（不是提示字）的格子不動：那是別人已經排好的格式。
+    if ((info.plc || hadPlc) && val !== "") {
+      const src = kid(info.pr, NS_W, "rPr"), r = t0.parentNode;
+      if (r && isEl(r, NS_W, "r")) {
+        const pr = src ? src.cloneNode(true) : doc.createElementNS(NS_W, "w:rPr"), rc = kid(pr, NS_W, "rPrChange");
+        let rs = kid(pr, NS_W, "rStyle"), rf = kid(pr, NS_W, "rFonts");
+        if (rc) pr.removeChild(rc);                                                                    // 修訂紀錄不能跟著複製到字上
+        if (rf) { rf.removeAttributeNS(NS_W, "hint"); if (!rf.attributes.length) { pr.removeChild(rf); rf = null; } }   // hint 只是輸入時的提示，Word 寫出來的字不帶
+        if (rs && plcStyle && wAttr(rs, "val") === plcStyle) { pr.removeChild(rs); rs = null; }          // 萬一這一格指定的就是提示字樣式：不要把灰色帶進來
+        if (!pr.firstElementChild) {                              // 這一格沒有指定任何格式：維持提示字那一段原本的字型、字級、底線，只把提示字的灰色拿掉
+          const oc = kid(kid(r, NS_W, "rPr"), NS_W, "color");
+          if (oc && /^808080$/i.test(wAttr(oc, "val") || "")) oc.parentNode.removeChild(oc);
+        } else {                                                  // 這一格有指定格式：整組換成它指定的
+          const old = kid(r, NS_W, "rPr"), orf = kid(old, NS_W, "rFonts"), sid = rs ? wAttr(rs, "val") : null;
+          // 字型：這一格自己寫的優先；這一格指定的樣式有管的照樣式（跟 Word 一樣）；兩邊都沒管的那一類，沿用提示字那一段原本明寫的
+          // （有的格子是「提示字寫了標楷體、這一格與樣式都沒寫」，不沿用的話會從標楷體變回範本預設字型）
+          if (orf) for (const a of ["ascii", "hAnsi", "eastAsia", "cs"]) {
+            const th = a === "cs" ? "cstheme" : a + "Theme", v = orf.getAttributeNS(NS_W, a);
+            if (!v || orf.getAttributeNS(NS_W, th) || (rf && (rf.getAttributeNS(NS_W, a) || rf.getAttributeNS(NS_W, th)))) continue;   // 提示字那一類若是跟著主題字型走的，明寫的那個只是快取，不沿用
+            if (sid && styleHas && styleHas(sid, a)) continue;
+            if (styleHas && styleHas.def && styleHas.def[a] === v) continue;   // 跟文件預設一樣的字型（新細明體）不用沿用：沿用了反而擋住段落樣式自己的標楷體
+            if (!rf) { rf = doc.createElementNS(NS_W, "w:rFonts"); pr.insertBefore(rf, rs ? rs.nextSibling : pr.firstChild); }   // rFonts 要排在樣式後面、其他設定前面
+            rf.setAttributeNS(NS_W, "w:" + a, v);
+          }
+          if (old) r.removeChild(old);
+          r.insertBefore(pr, r.firstChild);
+        }
+      }
     }
   } else if (f.cell) {
     // 表格的空白格：在那一格的第一段加上文字，字型沿用那一段原本的設定（跟在 Word 裡直接打字一樣），
@@ -1762,6 +1796,31 @@ async function placeholderStyle(entries) {
     new TextDecoder("utf-8").decode(await entryBytes(se)));
   return m ? m[1] : null;
 }
+/* 樣式表裡，某個樣式（連同它繼承的樣式）有沒有指定某一類字型（ascii／hAnsi／eastAsia／cs）。
+   用途：填字時決定「這一類字型要不要沿用提示字原本寫的」——樣式有管的就照樣式。樣式表讀不到時一律回「沒有」。 */
+async function styleFontSlots(entries) {
+  const se = entries.find(x => x.name === "word/styles.xml");
+  if (!se) return () => false;
+  let sd;
+  try { sd = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(await entryBytes(se)), "application/xml"); } catch (e) { return () => false; }
+  if (sd.getElementsByTagName("parsererror").length) return () => false;
+  const own = new Map(), base = new Map(), st = sd.getElementsByTagNameNS(NS_W, "style");
+  for (let i = 0; i < st.length; i++) {
+    const id = wAttr(st[i], "styleId"); if (!id) continue;
+    const rf = kid(kid(st[i], NS_W, "rPr"), NS_W, "rFonts"), s = new Set();
+    if (rf) for (const a of ["ascii", "hAnsi", "eastAsia", "cs"])
+      if (rf.getAttributeNS(NS_W, a) || rf.getAttributeNS(NS_W, a === "cs" ? "cstheme" : a + "Theme")) s.add(a);
+    own.set(id, s); base.set(id, wAttr(kid(st[i], NS_W, "basedOn"), "val"));
+  }
+  const has = (id, slot) => {
+    for (let k = 0; id && k < 20; k++, id = base.get(id)) { const s = own.get(id); if (s && s.has(slot)) return true; }
+    return false;
+  };
+  has.def = {};                                    // 文件預設的字型（docDefaults）
+  const dd = sd.getElementsByTagNameNS(NS_W, "rPrDefault")[0], df = dd ? kid(kid(dd, NS_W, "rPr"), NS_W, "rFonts") : null;
+  if (df) for (const a of ["ascii", "hAnsi", "eastAsia", "cs"]) { const v = df.getAttributeNS(NS_W, a); if (v) has.def[a] = v; }
+  return has;
+}
 function changed(f, v) {
   if (v === undefined) return false;
   return f.type === "cb" ? !!v !== f.orig : String(v) !== f.orig;
@@ -1772,13 +1831,14 @@ async function buildDocx(origAb, values, getPhoto) {
   const d = await openDocx(origAb);
   if (!d.model.integ.ok) throw new Error("這份模板有對不上的勾選項，為了安全不匯出（請回報）");
   const plc = await placeholderStyle(d.entries);
+  const styleHas = await styleFontSlots(d.entries);
   const plan = planDeletes(d.model, values);        // 要刪的表與列：趁文件還沒被動過先算好
   const known = new Set();
   for (const f of d.model.fields) {
     known.add(f.id);
     const v = values[f.id];
     if (f.type === "alt" || f.type === "ph" || f.type === "del" || !changed(f, v)) continue;
-    if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc);
+    if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc, styleHas);
   }
   for (const k of Object.keys(values)) if (!known.has(k)) throw new Error("草稿與這份模板對不上（模板可能換過版），為了安全不匯出");
   applyFrames(d.model.fields, values);              // 框線放在勾選與填字之後
