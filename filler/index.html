@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VJlhXw4UEo1n+EUnJp+ceWqb5TqAYGyy4p8ek+R8JaQ=' 'sha256-Jn9aUse8jiFqaHIBFeKKBnh3mU6ioRN0MZxk6GtYfIY='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dVKZfBd4Z3yY84oNARThYqyCf8dleWcPCwoPr6ZCWfI=' 'sha256-Y7fWME3jUGdvenGUcGFB8WviLp6pfJzSIO8CCjz2+7A='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -111,6 +111,8 @@ body.phmode .phrow,.phrow.show{display:block}
 .card.delctl{background:var(--cream);border-style:dashed;padding:8px 12px}
 .card.delctl .flab{margin-top:0}
 .card.gone{opacity:.32}
+.card.unictl{border-color:var(--gold)}
+body:not(.phmode) .card.viauni:not(.has){display:none}
 /* ── 爬梯機評估 ── */
 .stfl{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden;background:var(--card)}
 .stfl>.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;font-weight:600;cursor:pointer}
@@ -331,7 +333,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v9";
+const VERSION = "v10";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -662,6 +664,7 @@ function parseDoc(xmlDoc) {
   cellMerge(blocks);
   photoSlots(blocks, fields);
   tableControls(blocks, fields, body);
+  uniReasons(blocks, fields);
   contextTitles(blocks);
   nameFields(blocks);
   return { fields, blocks, integ: integrity(xmlDoc, fields) };
@@ -693,7 +696,7 @@ function contextTitles(blocks) {
   const isLab = b => b.kind === "head" || (b.kind === "q" && !!b.altOnly);
   const isSec = b => b.kind === "head" && secHead(b.text);
   const cut = (t, n) => t.length > n ? t.slice(0, n) + "…" : t;
-  const vis = blocks.filter(b => !b.delCtl && !b.phOnly);
+  const vis = blocks.filter(b => !b.delCtl && !b.phOnly && !b.uniCtl);
   const phHead = new Set();                         // 後面緊跟著「只放照片」位置的標題（例：評估單位用印）：那張卡片自己會寫，不重複顯示
   blocks.forEach((b, i) => { const n = blocks[i + 1]; if (b.kind === "head" && n && n.phOnly && n.text === b.text) phHead.add(b); });
   const byTc = new Map(), byTr = new Map();         // 每一格、每一列裡有哪些區塊（照文件順序）
@@ -779,7 +782,7 @@ function nameFields(blocks) {
   const sq = s => (s || "").replace(/[\s\u3000]+/g, " ").trim();
   const wordy = s => /[\u4e00-\u9fffA-Za-z]/.test(s);
   for (const b of blocks) {
-    if (b.kind !== "q" || b.cellFld || b.grid || b.delCtl) continue;
+    if (b.kind !== "q" || b.cellFld || b.grid || b.delCtl || b.uniCtl) continue;
     let prevBase = "", prevUnit = "", prevTxt = false;
     const seq = b.items.filter(f => f.type === "cb" || (f.type === "txt" && !f.pad && !f.cell));
     const at = new Map(b.items.map((x, i) => [x, i]));
@@ -1083,6 +1086,102 @@ function elText(el) {
   let t = ""; const ts = el.getElementsByTagNameNS(NS_W, "t");
   for (let i = 0; i < ts.length; i++) t += ts[i].textContent || "";
   return t.replace(/[□☐■☑☒✅▓]/g, "").replace(/\s+/g, " ").trim();
+}
+/* ── 「使用理由」整張表只寫一次 ─────────────────────────────
+   評估結果那張表每一項（每一列）各有一格「使用理由」，實際上一份報告只會寫一次（負責人以前的成品也是）。
+   · 同一張表有兩格以上的「使用理由」空白格時，多給一格「整張表的使用理由」（身分 U＋表序），放在這張表的最後面
+   · 匯出時把字寫進「第一個有勾選的項目」那一列的使用理由格，格線不動（負責人 11/26 裁定）
+   · 原本逐列的那幾格照舊留在模型裡（舊草稿的值照樣匯出），只是平常不放到畫面上 */
+const UNI_LABEL = "使用理由";
+function uniReasons(blocks, fields) {
+  const byTbl = new Map();
+  for (const b of blocks) {
+    if (!b.cellFld || b.tblNo === undefined) continue;
+    for (const it of b.items) if (it.cell && it.label === UNI_LABEL) {
+      if (!byTbl.has(b.tblNo)) byTbl.set(b.tblNo, []);
+      byTbl.get(b.tblNo).push({ it, b });
+    }
+  }
+  for (const [no, list] of byTbl) {
+    if (list.length < 2) continue;                                      // 只有一格：本來就只寫一次，不用多給
+    const tbl = topTable(list[0].it.cell);
+    const colOf = tc => { const r = ownRow(tc, tbl), c = r && rowCells(r).find(x => x.tc === tc); return c ? c.col : -1; };
+    // 都要在同一個格線欄（巢狀表裡的、別欄的不算）：取格數最多的那一欄
+    const byCol = new Map();
+    for (const x of list) { if (vmCont(x.it.cell)) continue; const c = colOf(x.it.cell); if (c >= 0) { if (!byCol.has(c)) byCol.set(c, []); byCol.get(c).push(x); } }
+    let col = -1, mine = [];
+    for (const [c, xs] of byCol) if (xs.length > mine.length) { col = c; mine = xs; }
+    if (mine.length < 2) continue;
+    // 每一格使用理由「管」哪幾列：自己那一列＋往下連續的直向合併下半格。只有這幾格可以寫、只有這幾列的方框算數——
+    // 同一張表裡別的空白格（簽章、備註、跨欄的格子）與別的區段的方框一律不碰。
+    // 下半格也要記：刪列時合併的起頭會換到下一列的那一格（removeRow）。
+    let first = null;
+    for (let c = tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
+    const rows = first ? tblRows(first) : [], at = tr => { const c = rowCells(tr).find(x => x.col === col); return c ? c.tc : null; };
+    const tcs = new Map(), rowG = new Map();         // 格 → 第幾組；列 → 第幾組
+    mine.forEach((x, g) => {
+      let r = rows.indexOf(ownRow(x.it.cell, tbl)); if (r < 0) return;
+      tcs.set(x.it.cell, g); rowG.set(rows[r], g);
+      for (r++; r < rows.length; r++) { const tc = at(rows[r]); if (!tc || !vmCont(tc)) break; tcs.set(tc, g); rowG.set(rows[r], g); }
+    });
+    const cbs = [];
+    for (const x of fields) { if (x.type !== "cb") continue; const el = fieldEl(x); if (!el || topTable(el) !== tbl) continue; const row = ownRow(el, tbl); if (rowG.has(row)) cbs.push({ x, row }); }
+    const it = { type: "txt", kind: "text", uni: true, id: "U" + no, tbl, col, cells: mine.map(x => x.it), tcs, rowG, cbs, label: UNI_LABEL, ctx: "", next: "", orig: "", idx: fields.length };
+    const nb = { kind: "q", text: "使用理由（這張表寫一次就好）", items: [it], uniCtl: true, tblNo: no, tr: null, tc: null, anchor: null };
+    it.block = nb; fields.push(it);
+    for (const x of mine) { x.it.viaUni = true; x.b.viaUni = x.b.items.every(i => i.viaUni || i.type === "ph"); }   // 整張卡片只有使用理由格（與它的照片位置）：平常整張收起來
+    let last = -1; blocks.forEach((b, i) => { if (b.tblNo === no) last = i; });
+    blocks.splice(last + 1, 0, nb);
+  }
+}
+function inDoc(el) { for (let p = el; p; p = p.parentNode) if (p.nodeType === 9) return true; return false; }   // 還在文件裡（沒被刪掉）
+function vmCont(tc) { const vm = kid(kid(tc, NS_W, "tcPr"), NS_W, "vMerge"); return !!vm && (wAttr(vm, "val") || "continue") === "continue"; }   // 直向合併的下半格
+function uniPick(f, values, attached) {            // 有使用理由的那幾列裡，第一個有勾選的項目：回 { row, label, mine }；沒有就回 null
+  let pre = null;
+  for (const { x, row } of f.cbs) {
+    if (!(values[x.id] !== undefined ? values[x.id] : x.orig) || (attached && !inDoc(row))) continue;
+    if (!x.orig) return { row, label: String(x.label || ""), mine: true };          // 你自己勾的優先
+    if (!pre) pre = { row, label: String(x.label || ""), mine: false };             // 範本預先勾好的（例：編號 01 的項次31）：你都沒勾別的才用它
+  }
+  return pre;
+}
+function cellFree(tc) {                            // 這一格除了我們自己寫的字以外沒有別的內容（可以放心寫）
+  if (!tc || !kid(tc, NS_W, "p")) return false;
+  const ours = cellOurs(tc), ts = tc.getElementsByTagNameNS(NS_W, "t");
+  // 跟解析時認空白格的規則一致：格子裡有圖就不算空白格；例外是已經有我們寫的字（同格的照片可以留著）
+  for (const tag of ours ? ["sdt", "tbl", "pict", "object", "sym", "fldChar", "fldSimple"] : ["sdt", "tbl", "drawing", "pict", "object", "sym", "fldChar", "fldSimple"])
+    if (tc.getElementsByTagNameNS(NS_W, tag).length) return false;
+  for (let i = 0; i < ts.length; i++) if ((ts[i].textContent || "").trim() && !(ours && ours.ts.has(ts[i]))) return false;
+  return true;
+}
+/* 把「整張表的使用理由」寫進文件。一定排在刪列之後：刪列時合併格的起頭會換到下一列，等刪完才知道實際要寫在哪一格。
+   只寫進 uniReasons 記下來的那幾格（f.tcs）；找不到、或那一格不是空白格，就丟錯不匯出——不寫到別的格子，也不默默丟掉。 */
+function applyUni(model, values) {
+  for (const f of model.fields) {
+    if (!f.uni) continue;
+    const val = String(values[f.id] == null ? "" : values[f.id]);
+    if (!val.trim()) continue;
+    const del = String(values["D" + f.id.slice(1)] || "");
+    if (del.startsWith("all")) continue;                                // 這張表選了整張刪掉：理由跟著不寫（畫面上有提示）
+    const nowhere = () => new Error("「使用理由」沒有地方可以寫：這張表沒有留下可以寫的那一列（多半是選了「只留有勾選的列」但沒有勾任何項目）。請勾選項目，或把使用理由清空。");
+    const pick = uniPick(f, values, true);
+    if (!inDoc(f.tbl) || (del === "rows" && !(pick && pick.mine))) throw nowhere();   // 只留有勾選的列：一定要有你自己勾的項目（跟畫面上的提示一致）
+    let first = null;
+    for (let c = f.tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
+    const rows = first ? tblRows(first) : [];
+    const at = tr => { const c = rowCells(tr).find(x => x.col === f.col); return c && f.tcs.has(c.tc) ? c.tc : null; };   // 這一列的使用理由格（只認記下來的那幾格）
+    let target = null;
+    if (pick) {                                                         // 有勾選的那一列：往上找到管這一列的那一格（直向合併時，字在合併的起頭那一格）
+      for (let i = rows.indexOf(pick.row); i >= 0; i--) { const tc = at(rows[i]); if (!tc) break; if (!vmCont(tc)) { target = tc; break; } }
+      if (target && f.tcs.get(target) !== f.rowG.get(pick.row)) target = null;       // 要是同一組（合併格沒有順利交接時不跨到別的項目去）
+    } else {                                                            // 都沒勾：寫在第一個理由格
+      for (const tr of rows) { const tc = at(tr); if (tc && !vmCont(tc)) { target = tc; break; } }
+    }
+    if (!target) throw nowhere();
+    if (!cellFree(target)) throw new Error("「使用理由」要寫的那一格已經有別的內容（文字、圖片或控制項），為了不蓋掉它，這一份不匯出。請把使用理由清空，或回報這份範本的編號。");
+    const prev = cellOurs(target);                                      // 這一格若已經有逐列寫的理由（舊草稿）：接在後面，不蓋掉
+    setText({ cell: target, id: "cu" + f.id.slice(1) }, prev && prev.text.trim() ? prev.text + "\n" + val : val, null);
+  }
 }
 function tableControls(blocks, fields, body) {
   const order = new Map(), all = body.getElementsByTagNameNS(NS_W, "tbl");
@@ -1837,12 +1936,13 @@ async function buildDocx(origAb, values, getPhoto) {
   for (const f of d.model.fields) {
     known.add(f.id);
     const v = values[f.id];
-    if (f.type === "alt" || f.type === "ph" || f.type === "del" || !changed(f, v)) continue;
+    if (f.uni || f.type === "alt" || f.type === "ph" || f.type === "del" || !changed(f, v)) continue;   // 整張表的使用理由等刪完列再寫（applyUni）
     if (f.type === "cb") setCheckbox(f, !!v); else setText(f, String(v), plc, styleHas);
   }
   for (const k of Object.keys(values)) if (!known.has(k)) throw new Error("草稿與這份模板對不上（模板可能換過版），為了安全不匯出");
   applyFrames(d.model.fields, values);              // 框線放在勾選與填字之後
   applyDeletes(plan);                               // 再刪掉選了不要的表格與列（清單是一開始就算好的）
+  applyUni(d.model, values);                        // 整張表只寫一次的「使用理由」：列刪完才知道要寫在哪一格；照片排在它後面
   const ph = await applyPhotos(d, values, getPhoto);  // 照片最後（已經被刪掉的位置不放）
   const bytes = new TextEncoder().encode(new XMLSerializer().serializeToString(d.doc));
   const packed = await deflateRaw(bytes);
@@ -2574,6 +2674,7 @@ function render() {
   }
   app.appendChild(frag);
   app.querySelectorAll(".card.delctl").forEach(x => x._paint && x._paint());   // 卡片都放上去之後，才標得出「整張刪掉」的那幾題
+  app.querySelectorAll(".card.unictl, .card.viauni").forEach(x => x._tell && x._tell());   // 使用理由：會寫在哪一列的提示、逐列格子要不要顯示
   refreshCount(); growAll();
 }
 function delCard(b) {
@@ -2604,16 +2705,46 @@ function delCard(b) {
   c._paint = paint; c._tell = tell;
   return c;
 }
+function uniCard(b) {                             // 「整張表的使用理由」那一張卡片
+  const f = b.items[0], c = mk("div", "card unictl"); c.dataset.txt = ci(b.text); c.dataset.tbl = b.tblNo;
+  c.appendChild(mk("div", "q", b.text));
+  const inp = mk("textarea", "fld"); inp.rows = 1; inp.value = cur(f) || ""; inp.placeholder = "填寫…"; inp.dataset.fid = f.id;
+  const hint = mk("div", "fhint");
+  c._tell = () => {                                // 會寫在哪一列：隨著你勾選即時更新
+    const p = uniPick(f, S.values), del = String(S.values["D" + f.id.slice(1)] || "");
+    const name = x => x.label.length > 20 ? x.label.slice(0, 20) + "…" : (x.label || "那個項目");
+    hint.textContent = del.startsWith("all") ? "這張表選了整張刪掉，理由不會寫進去。"
+      : p && p.mine ? "會寫在你勾選的「" + name(p) + "」那一列。"
+      : del === "rows" ? "這張表你還沒有勾選項目。選了「只留有勾選的列」又沒勾任何一項的話，這裡填的理由沒有地方可以寫，匯出會被擋下。"
+      : p ? "這張表你還沒有勾選項目；目前會寫在範本預先勾好的「" + name(p) + "」那一列，勾了別的項目就改寫在那一列。"
+      : "這張表還沒有勾選項目：勾了之後，理由會寫在第一個勾選的那一列（都沒勾就寫在第一列）。";
+    // 上面逐列的格子裡已經有理由（舊草稿、或直接開一份已經寫好的檔）：提醒一下，免得同一段理由寫兩次
+    if (f.cells.some(x => String(cur(x) || "").trim())) hint.textContent += " 注意：上面某一列已經有寫好的使用理由，要改請直接改那一列；在這裡再填會另外加上去。";
+  };
+  inp.oninput = () => { setVal(f, inp.value); inp.classList.toggle("filled", !!cur(f)); grow(inp); };
+  inp.classList.toggle("filled", !!cur(f));
+  c.appendChild(inp); c.appendChild(hint);
+  return c;
+}
 function card(b) {
   if (b.delCtl) return delCard(b);
+  if (b.uniCtl) return uniCard(b);
   const c = mk("div", "card");
+  // 逐列的使用理由格：平常收起來（改用整張表那一格）；裡面已經有字或照片、或按了「照片」時才出現
+  if (b.viaUni) {
+    c.classList.add("viauni");
+    c._tell = () => { const has = b.items.some(i => i.type === "ph" ? phAny(cur(i)) : !!cur(i));
+                      if (has || !c.contains(document.activeElement)) c.classList.toggle("has", has); };   // 正在這張卡片裡打字時先不收（清空重打時卡片不會突然消失）
+    c.addEventListener("focusout", () => setTimeout(() => { if (c.isConnected && S.model) c._tell(); }, 0));
+  }
   if (b.tblNo !== undefined) c.dataset.tbl = b.tblNo;
   c.dataset.txt = ci([b.title, b.cont, b.ctxName, b.find || b.text].filter(Boolean).join(" "));   // 搜尋用：連寫在別處的題目名稱一起找（相容字先換掉）
   if (b.title) c.appendChild(mk("div", "qt", b.title));                 // 這一題的名稱寫在別的格子裡（例：左格是項目名稱、右格是選項）
   if (b.cont) c.appendChild(mk("div", "qc", "↳ 接上一行：" + b.cont));     // 這一行是上一題選項的延續
   c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
   // 排版用的空格不放到畫面上（舊草稿裡若已經填了字，照樣顯示讓你處理）
-  const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt" && !(i.pad && !cur(i)));
+  // 同一張卡片還有別的空白格時（例：對應原則＋使用理由），卡片照常顯示，只把空的使用理由那一格收起來
+  const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt" && !(i.pad && !cur(i)) && !(i.viaUni && !b.viaUni && !cur(i)));
   const alts = b.items.filter(i => i.type === "alt"), phs = b.items.filter(i => i.type === "ph");
   if (cbs.length) {
     const wrap = mk("div", "chips");
@@ -3017,7 +3148,7 @@ function growAll() {
 }
 function counts(model, values) {
   const v = f => values[f.id] !== undefined ? values[f.id] : f.orig;
-  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt" && !f.hidden && !(f.pad && !v(f)));
+  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt" && !f.hidden && !(f.pad && !v(f)) && !(f.viaUni && !v(f)));
   return { cb: cb.length, tx: tx.length, on: cb.filter(f => v(f)).length, fi: tx.filter(f => v(f)).length };
 }
 function refreshCount() {
@@ -3029,7 +3160,7 @@ let saveT = null;
 let tellT = null;
 function save() {
   if (!S.model) return; S.dirty = true; refreshCount(); clearTimeout(saveT); saveT = setTimeout(flush, 400);
-  clearTimeout(tellT); tellT = setTimeout(() => { if (S.model) document.querySelectorAll(".card.delctl").forEach(x => x._tell && x._tell()); }, 300);
+  clearTimeout(tellT); tellT = setTimeout(() => { if (S.model) document.querySelectorAll(".card.delctl, .card.unictl, .card.viauni").forEach(x => x._tell && x._tell()); }, 300);
 }
 /* 回傳 true＝草稿確實存進手機了（或本來就沒有要存的）；false＝沒存成功。一次只跑一個，後呼叫的排在前一個後面。 */
 let flushP = Promise.resolve(true);
