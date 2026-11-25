@@ -4,7 +4,7 @@
    · 只存「成功的回應」：GitHub 偶爾回錯誤頁時，不能把離線可用的那一版蓋掉。
    · 網頁本體先連網拿最新，連不到才用快取。改版要把下面的版號加一。 */
 const PREFIX = "assistive-filler-";
-const V = PREFIX + "v7";
+const V = PREFIX + "v8";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 const FONTS = PREFIX + "font-kai-20261028";      // 照片標註用的楷體（約 4MB）：放自己的快取，填寫器改版時不用重抓；字型換版才改這個名字
 

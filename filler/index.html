@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Snt+eL2U9I9LBDLYvLC7jqmzO/zCwg5edaiEfNk128M=' 'sha256-8k/sj5xfkN9f361RVaSpeuIxzmBmTmHPIUoVk7Q/q/w='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-P4WhEoKr9Ykn3KlIZvN/jAxbNDd9S1gmDPNITtnXzls=' 'sha256-Jn9aUse8jiFqaHIBFeKKBnh3mU6ioRN0MZxk6GtYfIY='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -84,6 +84,10 @@ main#app{padding:10px 12px 96px;max-width:760px;margin:0 auto}
   border-left:4px solid var(--gold);padding-left:9px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin:7px 0}
 .q{font-size:14px;margin-bottom:7px;white-space:pre-wrap;word-break:break-word}
+.sub{margin:15px 2px 3px;font-size:13.5px;font-weight:700;line-height:1.5;word-break:break-word}
+.sub.gone{opacity:.32}
+.qt{font-size:14px;font-weight:700;margin-bottom:5px;word-break:break-word}
+.qc{font-size:12px;color:var(--muted);margin-bottom:3px;word-break:break-word}
 .fld{display:block;width:100%;margin:5px 0 0;padding:8px 10px;border:1px solid var(--line);
   border-radius:9px;background:var(--bg);resize:none;overflow:hidden;min-height:40px;height:40px;line-height:1.5}
 select.fld,input.fld{height:42px}
@@ -327,7 +331,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v7";
+const VERSION = "v8";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -487,7 +491,7 @@ function parseDoc(xmlDoc) {
   for (let i = 0; i < tAll.length; i++) tIdx.set(tAll[i], i);
   const tcAll = xmlDoc.getElementsByTagNameNS(NS_W, "tc"), tcIdx = new Map();
   for (let i = 0; i < tcAll.length; i++) tcIdx.set(tcAll[i], i);
-  const fields = [], blocks = [], seenWid = new Map();
+  const fields = [], blocks = [], seenWid = new Map(), hostDone = new Set();
   let anon = 0, prevText = "", curTr = null, curTc = null, curP = null;   // curP＝這一題在文件裡的位置（照片接在它後面）
   const fid = info => {
     if (info.wid == null) return "x" + (anon++);
@@ -501,7 +505,12 @@ function parseDoc(xmlDoc) {
       if (isEl(c, NS_W, "sdt")) {
         const info = sdtInfo(c);
         if (info.kind === "cb") out.push({ k: "cb", el: c, info });
-        else if (info.cont && info.cont.getElementsByTagNameNS(NS_W, "sdt").length) inline(info.cont, out, nested);
+        else if (info.cont && info.cont.getElementsByTagNameNS(NS_W, "sdt").length) {
+          const from = out.length; inline(info.cont, out, nested);
+          // 外層是文字控制項、裡面只有方框沒有別的填空格（例：「坐面最寬處：  (□臀寬)」）：外層自己就是要打字的地方，先記在這幾段文字上
+          if (info.kind === "text" && !out.slice(from).some(x => x.k === "fld"))
+            for (let k = from; k < out.length; k++) if (out[k].k === "t" && !out[k].host) out[k].host = c;
+        }
         else out.push({ k: "fld", el: c, info });
       } else if (isEl(c, NS_W, "t")) out.push({ k: "t", el: c });
       else if (isEl(c, NS_W, "p")) nested.push(c);          // 文字方塊裡的段落：另外成一段，不重複走
@@ -539,6 +548,25 @@ function parseDoc(xmlDoc) {
         items.push(it); text.push("＿"); ctx = "";
       } else {
         const s = t.el.textContent || "";
+        if (t.host && !hostDone.has(t.host) && /[：:][\s\u3000]*$/.test(ctx) && /^[\s\u3000]/.test(s) && !/[□☐■☑☒✅]/.test(s)) {
+          // 外層文字控制項裡、冒號後面的空白，而且空白後面緊接「(□…」——也就是「坐面最寬處：  (□臀寬)」這種寫法：這就是要填的地方。一個外層只給一格。
+          // · 括號後面要緊接方框；「姿勢： (請擇一)□正常」這種括號裡是說明文字的不算
+          // · 空白本身夠寬（四格以上）的不走這裡：照舊式空白處理，欄位身分跟以前一樣（舊草稿對得上）
+          // · 空白黏在「(」前面時，「 (」必須是那一小段（run）的第一段字，寫字時才插得進正確的位置；不是就不給這一格
+          let j = i, w = 0; const nodes = [];
+          while (j < toks.length && toks[j].k === "t" && toks[j].host === t.host && (toks[j].el.textContent || "").length
+                 && !(toks[j].el.textContent || "").trim()) { w += colw(toks[j].el.textContent); nodes.push(toks[j++].el); }
+          const nx = toks[j], nt = nx && nx.k === "t" && nx.host === t.host ? (nx.el.textContent || "") : "";
+          const paren = /^[\s\u3000]*[(（]$/.test(nt) && toks[j + 1] && toks[j + 1].k === "cb";   // 「(」後面緊接方框
+          const before = paren && /^[\s\u3000]/.test(nt) ? nx.el : null;
+          if (paren && w < 4 && (nodes.length || (before && firstInRun(before)))) {
+            hostDone.add(t.host);
+            items.push({ type: "txt", kind: "text", nodes, before, inBox: true, id: "h" + tIdx.get(nodes[0] || before), ctx,
+                         next: peekText(toks, j), label: fieldLabel(ctx, text, prevText), orig: "", blank: true });
+            text.push("＿"); ctx = "";
+            if (nodes.length) { text.push(nodes.map(n => n.textContent).join("")); i = j - 1; continue; }
+          }
+        }
         if (/[□☐■☑☒✅]/.test(s)) {                               // 純文字方框：一個 □ 就是一個選項
           const segs = splitBoxes(s);
           segs.forEach((seg, k) => {
@@ -559,8 +587,17 @@ function parseDoc(xmlDoc) {
           const run = nodes.map(n => n.textContent).join("");
           const more = toks.slice(j).some(x => x.k !== "t" || (x.el.textContent || "").trim());
           if (total >= 4 && text.join("").trim() && (/[：:]\s*$/.test(ctx) || more)) {
+            // 緊接在填空控制項後面的空白（「1.姓名：＿        2.身分證字號：」中間那段）是排版用的間隔，不是另一格：
+            // 欄位身分照舊留著（舊草稿若已經在裡面打了字，照樣顯示、照樣匯出），只是平常不放到畫面上
+            // 　例外：後面緊接一小段沒有冒號、不是題號的字（單位：公分、毫米、mL…）——那是「《下拉》    公分」這種真的要填的格，不藏
+            let after = ""; for (let k = j; k < toks.length && toks[k].k === "t" && after.length < 30; k++) after += toks[k].el.textContent || "";
+            // 　「後面是單位」＝空白後面第一小段字（到標點或空白為止，六個字以內）以中英文開頭、而且後面不是冒號（「聯絡電話：」是下一個標籤，「公分，寬度：」的「公分」是單位）
+            const wm = /^[\s\u3000]*([^\s\u3000，,；;、。:：(（)）]{1,6})(?=$|[\s\u3000，,；;、。(（)）])/.exec(ci(after));
+            const unitAfter = !!wm && /^[\u4e00-\u9fffA-Za-z%％°]/.test(wm[1]);
+            // 空白後面直接就是填空控制項（「(左)        《控制項》」）也是間隔：要填的是那個控制項。下拉選單不算（可能是「數字＋單位下拉」）
+            const pad = (!!toks[j] && toks[j].k === "fld" && !toks[j].info.list) || (i > 0 && toks[i - 1].k === "fld" && !unitAfter);
             items.push({ type: "txt", kind: "text", nodes, id: "r" + tIdx.get(nodes[0]), ctx, next: peekText(toks, j),
-                         label: fieldLabel(ctx, text, prevText), orig: "", blank: true });
+                         label: pad ? "（排版用的空格，不必填）" : fieldLabel(ctx, text, prevText), orig: "", blank: true, pad });
             ctx = "";
           } else ctx += run;
           text.push(run); i = j - 1;
@@ -625,7 +662,169 @@ function parseDoc(xmlDoc) {
   cellMerge(blocks);
   photoSlots(blocks, fields);
   tableControls(blocks, fields, body);
+  contextTitles(blocks);
+  nameFields(blocks);
   return { fields, blocks, integ: integrity(xmlDoc, fields) };
+}
+
+/* ── 讓每一題都看得出在問什麼（只影響畫面，不動文件） ──────────────
+   模板裡很多題目的名稱不在選項那一行：寫在上一行（「使用環境特性(可複選)：」）、左邊的格子（「骨盆(可複選)」），
+   或是左格一排名稱、右格一排選項（操作輪椅技巧九項）。這裡替每一題補上它的名稱：
+   · b.sub   ：這個短標題要顯示（不是章節、但它底下有題目）
+   · b.title ：這一題的名稱寫在別處，顯示在題目上方（一項對一項的表；或上面的標題沒顯示）
+   · b.cont  ：這一行整行從方框開始，是上一題選項的延續（註明接的是哪一題） */
+const SUB_MAX = 60;
+// 模板裡有些字用的是「外觀相同、內碼不同」的相容字（年、度、輪、來…）：比對與搜尋前先換成一般的字
+const ci = s => (s || "").replace(/[\uf900-\ufaff]/g, c => c.normalize("NFKC"));
+function secHead(t) {                              // 章節標題：「三、…」「【…】」；後面帶一長串【說明】的也算（「五、規格配置建議【推車之使用者免填…】」）
+  if (!isSection(t)) return false;
+  if (t.length <= 40) return true;
+  const pre = t.replace(/【[^】]*】[\s\u3000]*$/, "").trim();          // 整段都包在【】裡的長說明（【注意事項：……】）不算
+  return !!pre && pre.length <= 40 && isSection(pre);
+}
+function ownLead(b) {                              // 這一題自己開頭的名稱（第一個方框或填空之前的字）；沒有就回空字串
+  const t = b.text || "", k = t.search(/[□＿]/);
+  const head = (k < 0 ? t : t.slice(0, k)).replace(/[\s\u3000(（\[【「]+$/, "").trim();
+  const h = ci(head);
+  return /[\u4e00-\u9fffA-Za-z]/.test(h) && (/[\u4e00-\u9fffA-Za-z0-9]{2}/.test(h) || /[：:]$/.test(h)) ? head : "";
+}
+function contextTitles(blocks) {
+  const plain = b => b.kind === "q" && !b.delCtl && !b.phOnly && !b.cellFld && !b.grid && !b.altOnly;
+  const isLab = b => b.kind === "head" || (b.kind === "q" && !!b.altOnly);
+  const isSec = b => b.kind === "head" && secHead(b.text);
+  const cut = (t, n) => t.length > n ? t.slice(0, n) + "…" : t;
+  const vis = blocks.filter(b => !b.delCtl && !b.phOnly);
+  const phHead = new Set();                         // 後面緊跟著「只放照片」位置的標題（例：評估單位用印）：那張卡片自己會寫，不重複顯示
+  blocks.forEach((b, i) => { const n = blocks[i + 1]; if (b.kind === "head" && n && n.phOnly && n.text === b.text) phHead.add(b); });
+  const byTc = new Map(), byTr = new Map();         // 每一格、每一列裡有哪些區塊（照文件順序）
+  for (const b of vis) {
+    if (!b.tr) continue;
+    if (!byTr.has(b.tr)) byTr.set(b.tr, []);
+    byTr.get(b.tr).push(b);
+    if (b.tc) { if (!byTc.has(b.tc)) byTc.set(b.tc, []); byTc.get(b.tc).push(b); }
+  }
+  const after = new Map(), solo = new Set();        // 表格裡的標題：同一列、它後面還有沒有一般的題目；整列只有一格有字
+  for (const [tr, list] of byTr) {
+    // 左格一排名稱、右格一排選項，數量相同（五項以上）：一項對一項，名稱直接當那一題的題目
+    const tcs = []; for (const b of list) if (b.tc && !tcs.includes(b.tc)) tcs.push(b.tc);
+    for (let i = 1; i < tcs.length; i++) {
+      const L = byTc.get(tcs[i - 1]), R = byTc.get(tcs[i]);
+      if (R.length < 5 || R.length !== L.length) continue;      // 五項以上才配：三、四行的，左邊很可能是同一個名稱或說明拆成幾行寫
+      if (!L.every(isLab) || !R.every(b => plain(b) && !ownLead(b))) continue;
+      // 要有「每一項用同一把尺評」的證據才配：右邊各行的整組選項（不只第一個）有三分之二以上一模一樣，
+      // 而且左邊每一行都像一個完整的項目（不是「參數設定/」「(乘坐時)」這種同一個名稱拆成好幾行寫的片段）。配錯比不配更糟，證據不夠就不配。
+      const sig = new Map(); let top = 0;
+      for (const b of R) {
+        const k = b.items.filter(x => x.type === "cb").map(x => ci(x.label)).join("\u0001");
+        if (!k) { top = -1; break; }
+        const n = (sig.get(k) || 0) + 1; sig.set(k, n); if (n > top) top = n;
+      }
+      if (top * 3 < R.length * 2) continue;
+      // 左邊有一行是表頭（冒號結尾）或備註（※／註 開頭）時，右邊可能靠空白段落對齊，整組會錯位一格：不配
+      if (L.some(b => /^[(（※註注]/.test(b.text) || /[\/／、，,(（：:]$/.test(b.text) || b.text.length < 4)) continue;
+      R.forEach((b, k) => { b.title = cut(L[k].text, SUB_MAX); if (L[k].kind === "head") L[k].used = true; });
+    }
+    let seen = false;
+    for (let i = list.length - 1; i >= 0; i--) { if (plain(list[i])) seen = true; else if (list[i].kind === "head") after.set(list[i], seen); }
+    if (tcs.length === 1 && list.every(isLab)) solo.add(tr);
+  }
+  // 左邊那格的名稱若拆成好幾行寫，接起來才是完整的名稱
+  const labText = i => {
+    let t = vis[i].text;
+    for (let k = i - 1; k >= 0 && vis[i].tc && isLab(vis[k]) && !isSec(vis[k]) && vis[k].tc === vis[i].tc && (vis[k].text + t).length <= 40; k--) t = vis[k].text + t;
+    return t;
+  };
+  const fromLab = new Set();                        // 名稱來自左邊那一格的題目
+  let started = false, prev = null; const eff = new Map();   // started＝過了文件開頭的標題；eff＝每一題實際在問的名稱（自己的、或接來的）
+  for (let i = 0; i < vis.length; i++) {
+    const b = vis[i];
+    if (b.kind === "head") {
+      if (isSec(b)) started = true;
+      else b.sub = started && !b.used && !phHead.has(b) && b.text.length <= SUB_MAX && (!b.tr || !!after.get(b) || solo.has(b.tr));
+      prev = b; continue;
+    }
+    started = true;
+    if (plain(b)) {
+      const own = ownLead(b);
+      if (b.title) eff.set(b, b.title);
+      else if (own) eff.set(b, own);
+      else if (prev && isLab(prev) && prev.tr === b.tr) {                 // 名稱在上一行或左邊那格
+        // 那一行要「真的可以當名稱」才接：畫面上有顯示的（小標題、章節、框選卡片）；沒顯示的只認短的或冒號結尾的。
+        // 長篇注意事項、照片位置的標題（「評估單位用印」）、已經配給別題的名稱都不算——不接，也不往下一行帶。
+        const shown = prev.kind !== "head" || prev.sub || isSec(prev);
+        const hidden = !shown && !prev.used && !phHead.has(prev) && (prev.text.length <= SUB_MAX || /[：:][\s\u3000]*$/.test(prev.text));
+        if (shown || hidden) {
+          const name = labText(i - 1);
+          eff.set(b, name); if (b.tr && prev.tc !== b.tc) fromLab.add(b);   // 名稱真的在「別的格子」才算來自左格
+          if (hidden) b.title = cut(name, SUB_MAX);                         // 那個標題沒顯示（文件開頭、或太長）：直接寫在這一題上
+          else b.ctxName = name;                                            // 已經顯示在上面了，不重複寫；只記下來讓搜尋找得到
+        }
+      }
+      // 同一格裡接著上一題；隔壁格只有在「名稱寫在左邊那一格」（扶手｜選項｜選項｜選項）時才接，上一格自己開頭的名稱（「位置：」）不往隔壁帶
+      else if (prev && plain(prev) && eff.get(prev) && (prev.tc === b.tc || (b.tr && prev.tr === b.tr && fromLab.has(prev)))) {
+        eff.set(b, eff.get(prev)); b.cont = cut(eff.get(prev), 40); if (fromLab.has(prev)) fromLab.add(b);
+      }
+    }
+    prev = b;
+  }
+}
+/* ── 填空格的名稱：帶上後面的單位，並把「前一格的單位」從名稱裡拿掉（只影響畫面） ──
+   例：「身高約：＿ 公分，體重約：＿公斤」→「身高約：＿公分」「體重約：＿公斤」
+       「髖關節限制：＿ (左) ＿ (右)」→「髖關節限制：＿(左)」「髖關節限制：＿(右)」（原本第二格會被標成「(左)」） */
+const RE_UNIT = /^[\s\u3000]{0,3}(公分|公尺|公厘|毫米|公斤|公克|英吋|吋|度|年|個月|月|日|歲|次|個|組|小時|分鐘|秒|分貝|號字|樓|層|階|色|[%％]|D|cm|mm|kg|mL|ml)(?=$|[\s\u3000，,；;、。(（)）×xX*／\/~～\-－—+＋])/;
+const RE_SIDE = /^[(（](左|右|左側|右側|L|R)[)）]$/;   // 左右標記：只在「標籤：＿ (左) ＿ (右)」這種寫法才拿來當名稱
+const RE_SIDE_HEAD = /^[(（](?:左|右|左側|右側|L|R)[)）](?=$|[\s\u3000，,；;、。:：])/;   // 第二格後面的標記：後面可以緊接標點（「(右)，備註：」）
+const RE_LINK = /^[×xX*~～\-－—=＝+＋\/／]+$/;      // 兩格之間只有這種連接符號（「＿公分 ×＿公分」）
+function nameFields(blocks) {
+  const sq = s => (s || "").replace(/[\s\u3000]+/g, " ").trim();
+  const wordy = s => /[\u4e00-\u9fffA-Za-z]/.test(s);
+  for (const b of blocks) {
+    if (b.kind !== "q" || b.cellFld || b.grid || b.delCtl) continue;
+    let prevBase = "", prevUnit = "", prevTxt = false;
+    const seq = b.items.filter(f => f.type === "cb" || (f.type === "txt" && !f.pad && !f.cell));
+    const at = new Map(b.items.map((x, i) => [x, i]));
+    // 兩格之間的字（中間若夾著排版空格，空格前面那段也算）
+    const between = (f, g) => { let t = ""; for (let i = at.get(f) + 1; i <= at.get(g); i++) if (b.items[i].type === "txt") t += b.items[i].ctx || ""; return sq(ci(t)); };
+    // 這一格前面的字（前面若緊鄰排版空格，空格之前那段也算；「髖關節限制：        《控制項》」的名稱在空格前面）
+    const ctxOf = f => { let t = f.ctx || ""; for (let i = at.get(f) - 1; i >= 0 && b.items[i].type === "txt" && b.items[i].pad; i--) t = (b.items[i].ctx || "") + t; return sq(ci(t)); };
+    let prevF = null;
+    for (let n = 0; n < seq.length; n++) {
+      const f = seq[n], g = seq[n + 1];
+      if (f.type === "cb") { prevTxt = false; prevBase = ""; prevUnit = ""; prevF = null; continue; }   // 中間隔了方框：前一格的名稱不沿用
+      // 「髖關節限制：＿ (左) ＿ (右)」：標籤以冒號結尾、兩格中間整段只有一個左右標記、第二格後面是另一個左右標記 → 兩格分別是那一邊。
+      // 只認這一種寫法（標記在格子後面）；標記寫在格子前面的（「(左)＿ (右)＿」）名稱本來就對，不動。
+      const c0 = ctxOf(f);
+      if (g && g.type === "txt" && /[：:]$/.test(c0)) {
+        const m1 = between(f, g), mm = RE_SIDE_HEAD.exec(sq(ci(g.next))), m2 = mm ? mm[0] : "";
+        if (RE_SIDE.test(m1) && m2 && m1 !== m2) {
+          const lab = tailLabel(c0);
+          f.show = lab + "＿" + m1; g.show = lab + "＿" + m2;
+          prevTxt = true; prevBase = lab; prevUnit = m2; prevF = g; n++; continue;
+        }
+      }
+      if (/＿/.test(f.label || "")) { prevTxt = true; prevBase = ""; prevUnit = ""; prevF = f; continue; }   // 名稱本身就怪的（取到上一行）：不動
+      const m = RE_UNIT.exec(ci(f.next)), unit = m ? m[1] : "";
+      let base = ci(f.label), link = "";
+      if (!prevTxt && c0 && c0 !== sq(ci(f.ctx))) base = tailLabel(c0);    // 前面隔著排版空格：名稱在空格之前
+      if (prevTxt) {
+        let ctx = prevF ? between(prevF, f) : sq(ci(f.ctx));
+        if (prevUnit && ctx.startsWith(prevUnit)) ctx = ctx.slice(prevUnit.length).replace(/^[\s，,；;、。/／]+/, "");
+        const mu = RE_UNIT.exec(ctx);
+        if (mu && mu[0].length === ctx.length) { base = prevBase; }        // 兩格中間只有單位（「＿   公分 ＿公分」）：那是前一格的，這一格沿用前一格的名稱
+        else if (wordy(ctx)) base = tailLabel(ctx);
+        else if (!ctx || RE_LINK.test(ctx)) { base = prevBase; link = ctx; }   // 沒有自己的名稱（「＿公分 ×＿公分」）：沿用前一格的
+        // 其餘（「(1)＿ (2)＿」這種編號）：名稱照舊
+      }
+      const lent = base === prevBase && prevTxt && !link && !unit;        // 沿用了前一格的名稱、又沒有單位可以區分：不改（免得兩格同名）
+      base = (base || "").replace(/^[，,、；;)）/／\s]+/, "");               // 「，頻率：」→「頻率：」
+      const k = Math.max(base.lastIndexOf("：", base.length - 2), base.lastIndexOf(":", base.length - 2));
+      // 「…輪椅必填)：前座高(FSH)」→「前座高(FSH)」：冒號前面是被切掉一半的括號說明時，名稱取冒號後面
+      if (k >= 0 && wordy(base.slice(k + 1)) && /[)）]/.test(base.slice(0, k)) && !/[(（]/.test(base.slice(0, k))) base = base.slice(k + 1).trim();
+      const show = ((base || "") + (link ? " " + link + " " : "") + (unit ? "＿" + unit : "")).trim();
+      if (show && show !== ci(f.label) && !lent) f.show = show;
+      prevBase = base; prevUnit = unit; prevTxt = true; prevF = f;
+    }
+  }
 }
 
 /* ── 題目文字裡的「甲/乙」：可以單獨把其中一邊框起來（跟在 Word 裡加「字元框線」一樣） ──
@@ -781,7 +980,7 @@ function colHeader(rows, at, col) {             // 往上找同一欄最近一�
 }
 /* ── 表格裡的空白格：同一列相鄰的併成一題；題目用左邊的字，每格的名稱用欄標題 ── */
 function cellMerge(blocks) {
-  const out = [], rowsOf = new Map();
+  const out = [], rowsOf = new Map(), fldTc = new Set(blocks.filter(b => b.kind === "q" && b.tc).map(b => b.tc));   // 有題目（方框、填空、空白格）的格子
   const cut = (t, n) => t.length > n ? t.slice(0, n) + "…" : t;
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
@@ -793,7 +992,11 @@ function cellMerge(blocks) {
     const rows = rowsOf.get(b.tr), at = rows.indexOf(b.tr);
     const before = first ? cells.filter(x => x.col < first.col).map(x => cellText(x.tc)).filter(Boolean) : [];
     const left = before[before.length - 1] || "", lead = before[0] || "";
-    const rowLab = left && left.length <= 16 ? left : (lead || left);     // 「標題｜空格」取左邊那格；一整列項目取第一格
+    // 「標題｜空格」取左邊那格；一整列項目取第一格。第一格與這個空格之間「全是靜態文字」時（「項次1 推車-一般型｜無此給付項目｜無對應原則｜＿」）兩個都寫，才看得出是哪一項；
+    // 中間夾著別的可填格（「聯絡地址｜＿｜聯絡電話｜＿」「性別｜□男□女｜出生年月日｜＿」）代表這一列是一對一對的：只取左邊那格，不把不相干的名稱黏在一起
+    const lc = first ? cells.find(x => x.col < first.col && cellText(x.tc)) : null;
+    const solid = !!lc && cells.every(x => x.col <= lc.col || x.col >= first.col || (!!cellText(x.tc) && !fldTc.has(x.tc)));
+    const rowLab = left && left.length <= 16 ? (solid && lead !== left ? cut(lead, 26) + "｜" + left : left) : (lead || left);
     const labs = [];
     for (const g of grp) {
       const it = g.items[0], cell = cells.find(x => x.tc === g.tc);
@@ -860,7 +1063,8 @@ function photoSlots(blocks, fields) {
     } else if (b.grid) continue;
     else if (b.cellFld) { for (const it of b.items.slice()) if (it.cell) add(b, "P" + it.id, kid(it.cell, NS_W, "p"), it.label); }
     else if (b.altOnly) { if (titled(b)) add(b, "Pt" + b.ti, b.anchor, ""); }
-    else { const f0 = b.items.find(i => i.type !== "alt"); if (f0) add(b, "P" + f0.id, b.anchor, ""); }
+    // 照片位置的身分跟著這一題的第一個欄位；v8 補的外層控制項空白不算，免得舊草稿裡附在這一題的照片對不上
+    else { const f0 = b.items.find(i => i.type !== "alt" && !i.inBox) || b.items.find(i => i.type !== "alt"); if (f0) add(b, "P" + f0.id, b.anchor, ""); }
   }
   blocks.length = 0; for (const b of out) blocks.push(b);
 }
@@ -874,7 +1078,7 @@ function ownRow(node, tbl) {                       // node 所在、屬於 tbl �
   for (let p = node; p && p !== tbl && p.nodeType === 1; p = p.parentNode) if (isEl(p, NS_W, "tr")) r = p;
   return r;
 }
-function fieldEl(f) { return f.sdt || f.node || (f.nodes && f.nodes[0]) || f.cell || f.anchor || (f.parts && f.parts[0].segs[0].t) || null; }
+function fieldEl(f) { return f.sdt || f.node || (f.nodes && f.nodes[0]) || f.before || f.cell || f.anchor || (f.parts && f.parts[0].segs[0].t) || null; }
 function elText(el) {
   let t = ""; const ts = el.getElementsByTagNameNS(NS_W, "t");
   for (let i = 0; i < ts.length; i++) t += ts[i].textContent || "";
@@ -1034,6 +1238,11 @@ function splitBoxes(s) {
   else if (cur) segs.push({ box: false, label: cur });
   return segs;
 }
+function firstInRun(t) {                         // 這段字是不是它那一小段（run）裡的第一段字（前面只有格式設定）
+  const r = t && t.parentNode; if (!r || !isEl(r, NS_W, "r")) return false;
+  for (let c = r.firstElementChild; c && c !== t; c = c.nextElementSibling) if (!isEl(c, NS_W, "rPr")) return false;
+  return true;
+}
 function peekText(toks, k) {                    // 從第 k 個起，緊接著的文字（到下一個格子或方框為止，最多幾個字）
   let out = "";
   for (; k < toks.length && out.length < 8; k++) { if (toks[k].k !== "t") break; out += toks[k].el.textContent || ""; }
@@ -1183,6 +1392,16 @@ function setText(f, val, plcStyle) {
     const bs = doc.createElementNS(NS_W, "w:bookmarkStart"), be = doc.createElementNS(NS_W, "w:bookmarkEnd"), bm = newBookmark(doc, f.id.slice(1));
     bs.setAttributeNS(NS_W, "w:id", bm.id); bs.setAttributeNS(NS_W, "w:name", bm.name); be.setAttributeNS(NS_W, "w:id", bm.id);
     p.appendChild(bs); p.appendChild(r); p.appendChild(be);
+  } else if (f.inBox) {
+    // 外層文字控制項裡的空白（例：「坐面最寬處：  (□臀寬)」）：字寫在冒號後面，後面的方框與文字原封不動
+    if (val === "") return;
+    if (f.nodes.length) { f.nodes[0].textContent = val; f.nodes[0].setAttributeNS(NS_XML, "xml:space", "preserve"); return; }
+    if (!firstInRun(f.before)) throw new Error("有一格的位置認不出來，為了不寫錯地方，這一份不匯出（請回報）");
+    const r0 = f.before.parentNode;
+    const doc = r0.ownerDocument, r = doc.createElementNS(NS_W, "w:r"), pr = kid(r0, NS_W, "rPr");
+    if (pr) r.appendChild(pr.cloneNode(true));                // 字型、顏色跟後面那段一樣
+    const t = doc.createElementNS(NS_W, "w:t"); t.textContent = val; t.setAttributeNS(NS_XML, "xml:space", "preserve");
+    r.appendChild(t); r0.parentNode.insertBefore(r, r0);
   } else if (f.nodes) {
     // 舊式空白格：字寫進第一段空白，並從後面的空白吃掉等寬，版面不會被擠開
     const lens = f.nodes.map(n => colw(n.textContent || ""));
@@ -2282,7 +2501,10 @@ function render() {
   let sn = 0;
   for (const b of S.model.blocks) {
     if (b.kind === "head") {
-      if (!isSection(b.text) || b.text.length > 40) continue;
+      if (!secHead(b.text)) {
+        if (b.sub) { const d = mk("div", "sub", b.text); if (b.tblNo !== undefined) d.dataset.tbl = b.tblNo; frag.appendChild(d); }   // 小標題（不是章節）
+        continue;
+      }
       const id = "s" + (sn++), d = mk("div", "sec", b.text);
       d.id = id; frag.appendChild(d); jump.appendChild(new Option(b.text, id));
       continue;
@@ -2295,7 +2517,7 @@ function render() {
   refreshCount(); growAll();
 }
 function delCard(b) {
-  const f = b.items[0], c = mk("div", "card delctl"); c.dataset.txt = b.text;
+  const f = b.items[0], c = mk("div", "card delctl"); c.dataset.txt = ci(b.text);
   c.appendChild(mk("div", "flab", "這張表：" + f.label));
   const sel = mk("select", "fld"); sel.dataset.fid = f.id;
   const opts = [["", "保留全部"]];
@@ -2315,7 +2537,7 @@ function delCard(b) {
   const paint = () => {
     const v = String(cur(f) || ""); sel.value = v; sel.classList.toggle("filled", !!v);
     tell();
-    document.querySelectorAll('.card[data-tbl="' + b.tblNo + '"]').forEach(x => { if (!x.classList.contains("delctl")) x.classList.toggle("gone", v.startsWith("all")); });
+    document.querySelectorAll('[data-tbl="' + b.tblNo + '"]').forEach(x => { if (!x.classList.contains("delctl")) x.classList.toggle("gone", v.startsWith("all")); });
   };
   sel.onchange = () => { setVal(f, sel.value); paint(); };
   c.appendChild(sel); c.appendChild(hint); c.appendChild(list);
@@ -2326,9 +2548,12 @@ function card(b) {
   if (b.delCtl) return delCard(b);
   const c = mk("div", "card");
   if (b.tblNo !== undefined) c.dataset.tbl = b.tblNo;
-  c.dataset.txt = b.find || b.text;
+  c.dataset.txt = ci([b.title, b.cont, b.ctxName, b.find || b.text].filter(Boolean).join(" "));   // 搜尋用：連寫在別處的題目名稱一起找（相容字先換掉）
+  if (b.title) c.appendChild(mk("div", "qt", b.title));                 // 這一題的名稱寫在別的格子裡（例：左格是項目名稱、右格是選項）
+  if (b.cont) c.appendChild(mk("div", "qc", "↳ 接上一行：" + b.cont));     // 這一行是上一題選項的延續
   c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
-  const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt");
+  // 排版用的空格不放到畫面上（舊草稿裡若已經填了字，照樣顯示讓你處理）
+  const cbs = b.items.filter(i => i.type === "cb"), txs = b.items.filter(i => i.type === "txt" && !(i.pad && !cur(i)));
   const alts = b.items.filter(i => i.type === "alt"), phs = b.items.filter(i => i.type === "ph");
   if (cbs.length) {
     const wrap = mk("div", "chips");
@@ -2343,8 +2568,8 @@ function card(b) {
     c.appendChild(wrap);
   }
   txs.forEach(f => {
-    const lab = mk("div", "flab", f.label);
-    if (txs.length === 1 && b.text.includes(f.label)) lab.hidden = true;
+    const lab = mk("div", "flab", f.show || f.label);
+    if (txs.length === 1 && b.text.includes(f.label) && !(f.inBox && cbs.length)) lab.hidden = true;   // 補的那一格跟方框同一張卡片時，名稱要留著（不然方框下面是一格沒名字的輸入框）
     const tag = mk("span", "tag", "自動帶入"); tag.hidden = S.auto[f.id] === undefined || !!S.no[f.id]; lab.appendChild(tag);
     if (!tag.hidden) lab.hidden = false;
     c.appendChild(lab);
@@ -2732,7 +2957,7 @@ function growAll() {
 }
 function counts(model, values) {
   const v = f => values[f.id] !== undefined ? values[f.id] : f.orig;
-  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt" && !f.hidden);
+  const cb = model.fields.filter(f => f.type === "cb"), tx = model.fields.filter(f => f.type === "txt" && !f.hidden && !(f.pad && !v(f)));
   return { cb: cb.length, tx: tx.length, on: cb.filter(f => v(f)).length, fi: tx.filter(f => v(f)).length };
 }
 function refreshCount() {
@@ -2778,8 +3003,8 @@ $("jump").onchange = e => { const el = document.getElementById(e.target.value);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); e.target.value = ""; };
 $("search").oninput = e => {
   const q = e.target.value.trim();
-  document.querySelectorAll(".card").forEach(c => { c.hidden = !!q && !c.dataset.txt.includes(q); });
-  document.querySelectorAll(".sec").forEach(s => { s.hidden = !!q; });
+  const cq = ci(q); document.querySelectorAll(".card").forEach(c => { c.hidden = !!q && !c.dataset.txt.includes(cq); });
+  document.querySelectorAll(".sec,.sub").forEach(s => { s.hidden = !!q; });
 };
 $("reset").onclick = () => {
   if (!confirm("清空這份的所有勾選與填寫？（原本的檔案不會變）")) return;
