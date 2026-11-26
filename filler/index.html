@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dVKZfBd4Z3yY84oNARThYqyCf8dleWcPCwoPr6ZCWfI=' 'sha256-Y7fWME3jUGdvenGUcGFB8WviLp6pfJzSIO8CCjz2+7A='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-75uuSRHGl7s+2g3TPfL3YdG/5gayocpWSuTOpAohADg=' 'sha256-FsrtXPcJnb0Q5+MIcZ/CMD2m1m6FVqVjTNipdxYZl5E='; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.ts.net:*; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>輔具報告填寫器</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -333,7 +333,7 @@ footer .st{flex:1;font-size:12px;color:var(--muted);line-height:1.35;min-width:0
          每次匯出都從原檔重新建一份再寫，不沿用上一次改過的內容。
          有附照片時，另外只「新增」照片檔並在關聯表、類型表各加一行，原有的檔案一個位元組都不動。
    ══════════════════════════════════════════════════════════ */
-const VERSION = "v10";
+const VERSION = "v11";
 const NS_W   = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 const NS_MC  = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -737,6 +737,68 @@ function contextTitles(blocks) {
     for (let k = i - 1; k >= 0 && vis[i].tc && isLab(vis[k]) && !isSec(vis[k]) && vis[k].tc === vis[i].tc && (vis[k].text + t).length <= 40; k--) t = vis[k].text + t;
     return t;
   };
+  // ── v11：同一格裡「某個方框項目的細項」怎麼認（只影響畫面上的註明） ──
+  const sub = new Set(), open = new Map(), indMemo = new Map();   // sub＝名稱是照細項規則配來的（不再往下一行帶）；open＝括號還沒關的那幾行
+  const parens = t => (t.match(/[(（]/g) || []).length - (t.match(/[)）]/g) || []).length;
+  const tidy = s => { s = s.replace(/[\s　]*[：:][\s　]*$/, ""); return parens(s) > 0 ? s + (/（/.test(s) && !/\(/.test(s) ? "）" : ")") : s; };
+  const inked = p => {                              // 段落第一個看得到的東西（定位點算 \t）
+    let hit = "";
+    (function walk(n) {
+      for (let c = n.firstElementChild; c && !hit; c = c.nextElementSibling) {
+        if (isEl(c, NS_W, "pPr") || isEl(c, NS_W, "rPr") || isEl(c, NS_W, "sdtPr") || isEl(c, NS_W, "sdtEndPr") || isEl(c, NS_MC, "Fallback")) continue;
+        if (isEl(c, NS_W, "tab")) hit = "\t"; else if (isEl(c, NS_W, "sym")) hit = "□"; else if (isEl(c, NS_W, "t")) hit = c.textContent || ""; else walk(c);
+      }
+    })(p);
+    return hit;
+  };
+  const indOf = p => {                              // 這個段落第一行從哪裡開始（單位 1/20 點）；看不準就回 null
+    if (!p) return null;
+    if (indMemo.has(p)) return indMemo.get(p);
+    let v = null; const pPr = kid(p, NS_W, "pPr");
+    if (!kid(pPr, NS_W, "pStyle") && !kid(pPr, NS_W, "numPr") && !/^[\s　]/.test(inked(p))) {
+      const ind = kid(pPr, NS_W, "ind"), has = n => { const x = wAttr(ind, n); return x != null && x !== ""; }, num = n => has(n) ? +wAttr(ind, n) : 0;
+      const L = has("left") ? num("left") : num("start");
+      // 用「字元數」寫的縮排（leftChars…）有值、對應的實際寬度卻是 0 或沒寫：Word 會照字元數算，這裡算不出來 → 看不準
+      const loose = ((num("leftChars") || num("startChars")) !== 0 && L === 0) || (num("hangingChars") !== 0 && num("hanging") === 0) || (num("firstLineChars") !== 0 && num("firstLine") === 0);
+      const x = L - num("hanging") + num("firstLine");
+      if (!loose && isFinite(x)) v = x;
+    }
+    indMemo.set(p, v); return v;
+  };
+  const picks = b => b.items.filter(f => f.type === "cb" || f.type === "txt");
+  const lead = pb => {                              // 這一行是「□項目」或「□項目：選項…」嗎？是就回項目名稱
+    if (!plain(pb) || !/^[\s　]*□/.test(pb.text)) return "";
+    const it = picks(pb);
+    if (!it.length || it[0].type !== "cb") return "";
+    if (it.length === 1) return it[0].label && it[0].label !== "（未命名）" ? tidy(it[0].label) : "";
+    const m = /^[\s　]*□[\s　]*([^□＿：:]{2,24})[：:]/.exec(pb.text);
+    return m && parens(m[1]) === 0 ? tidy(m[1].trim()) : "";         // 冒號在還沒關的括號裡（「□無（備註：不適用） □有」）不算
+  };
+  const subOf = (b, prev) => {
+    const o = open.get(prev);
+    // 上一行的括號還沒關：同一個項目（最多再接三行，範本漏打右括號時不會一路黏下去）
+    if (o) { const d = o.d + parens(b.text); if (d > 0 && o.n < 3) open.set(b, { name: o.name, d, n: o.n + 1 }); return o.name; }
+    const one = picks(prev).length === 1 ? lead(prev) : "";
+    // 括號開頭；「(1)」「（二）」是條列序號，不算
+    if (one && /^[\s　]*[(（]/.test(b.text) && !/^[\s　]*[(（][\s　]*[0-9０-９一二三四五六七八九十]{1,2}[\s　]*[)）]/.test(b.text)) {
+      const d = parens(b.text); if (d > 0) open.set(b, { name: one, d, n: 1 }); return one;
+    }
+    const ib = indOf(b.anchor);
+    // 上一行是單獨一個方框、冒號結尾：緊接的這一行是它的選項（這一行縮排比它淺就不是）。排在縮排規則前面——
+    // 「□大項／　□子項：／　□細項a □細項b」的細項屬於子項，不是往上找到的大項。
+    if (one && /[：:][\s　]*$/.test(prev.text)) { const ip = indOf(prev.anchor); if (ib == null || ip == null || ib >= ip) return one; }
+    if (ib != null) {                                // 往上找第一個縮排比較淺的那一行（差半個字以上才算）
+      const list = byTc.get(b.tc) || [];
+      for (let k = list.indexOf(b) - 1; k >= 0; k--) {
+        const ip = indOf(list[k].anchor);
+        if (ip == null) break;
+        if (ip + 120 <= ib) { const nm = lead(list[k]); if (nm) return nm; break; }
+        // 同一層有一個「□子項：」擋在中間：這一行多半是它的第二行細項，不越過它去掛更上面的大項（寧可不註明）
+        if (plain(list[k]) && picks(list[k]).length === 1 && /[：:][\s　]*$/.test(list[k].text)) break;
+      }
+    }
+    return "";
+  };
   const fromLab = new Set();                        // 名稱來自左邊那一格的題目
   let started = false, prev = null; const eff = new Map();   // started＝過了文件開頭的標題；eff＝每一題實際在問的名稱（自己的、或接來的）
   for (let i = 0; i < vis.length; i++) {
@@ -764,11 +826,114 @@ function contextTitles(blocks) {
         }
       }
       // 同一格裡接著上一題；隔壁格只有在「名稱寫在左邊那一格」（扶手｜選項｜選項｜選項）時才接，上一格自己開頭的名稱（「位置：」）不往隔壁帶
-      else if (prev && plain(prev) && eff.get(prev) && (prev.tc === b.tc || (b.tr && prev.tr === b.tr && fromLab.has(prev)))) {
+      else if (prev && plain(prev) && eff.get(prev) && !sub.has(prev) && (prev.tc === b.tc || (b.tr && prev.tr === b.tr && fromLab.has(prev)))) {
         eff.set(b, eff.get(prev)); b.cont = cut(eff.get(prev), 40); if (fromLab.has(prev)) fromLab.add(b);
+      }
+      // 同一格裡，這一行是上面某個「□項目」的細項（括號開頭、縮排比較深、或上一行以冒號結尾）；每一行各自找證據，不順著往下帶
+      else if (prev && plain(prev) && prev.tc && prev.tc === b.tc) {
+        const name = subOf(b, prev);
+        if (name) { eff.set(b, name); sub.add(b); b.cont = cut(name, 40); }
       }
     }
     prev = b;
+  }
+  // 四、表格裡還是沒有名稱的：用「這一列」左邊的純標題格（裡面沒有方框或填空）。直向合併的下半格往上找到起頭格；
+  //     左邊是另一個要填的項目格就跳過、再往左找（那不是這一列的名稱）。
+  const fldTc = new Set();                          // 有要填的東西的格子（放照片的位置也算；巢狀表格裡有欄位時，外層那一格也算）
+  for (const b of blocks) if (b.kind === "q" && b.tc && !b.altOnly && !b.delCtl && !b.uniCtl) for (let n = b.tc; n && n.nodeType === 1; n = n.parentNode) if (isEl(n, NS_W, "tc")) fldTc.add(n);
+  const titleText = tc => {                         // 這一格的字（方框符號不算）；範本用符號字型打的雙向箭頭補回來（床↔輪椅）
+    let s = "";
+    (function walk(n) {
+      for (let c = n.firstElementChild; c; c = c.nextElementSibling) {
+        if (isEl(c, NS_W, "tbl") || isEl(c, NS_MC, "Fallback")) continue;          // 巢狀表格裡的字、相容用的備援內容（會跟正文重複）不算
+        if (isEl(c, NS_W, "t")) s += c.textContent || "";
+        else if (isEl(c, NS_W, "sym")) { if (wAttr(c, "font") === "Symbol" && /^(F0)?AB$/i.test(wAttr(c, "char") || "")) s += "↔"; }
+        else walk(c);
+      }
+    })(tc);
+    return s.replace(/[□☐■☑☒✅▓]/g, "").replace(/[\s　]+/g, " ").trim();
+  };
+  // 表頭：這張表的第一列要「整列都是 16 字以內的名稱、沒有任何要填的東西、至少兩格」才算；不是這樣的表不配欄名。
+  // 名稱＝有中英文字、沒有數字（「A03」「03號」是資料不是欄名）、不是「不適用」這類填好的值。
+  // 同一張表中途又出現一列像表頭的（前面已經有過要填的列）：下面是另一區，欄名不再沿用第一列的（不顯示）。
+  const NOT_NAME = /^(不適用|免填|無|略|同上|N\/?A|公分|公尺|公厘|毫米|公斤|公克|英吋|吋|度|cm|mm|kg)$/i;   // 單位或固定的值：不是名稱
+  const notName = t => NOT_NAME.test(t.replace(/^[(（]+|[)）]+$/g, ""));
+  const nameLike = t => !!t && t.length <= 16 && /[一-鿿A-Za-z]/.test(ci(t)) && !/[0-9０-９]/.test(t) && !notName(t);
+  const rowsOf = new Map(), headOf = new Map();
+  const headCell = (rows, at, col, span) => {
+    if (at <= 0) return null;
+    if (!headOf.has(rows[0])) {
+      const cs0 = rowCells(rows[0]), H = cs0.map(x => ({ col: x.col, span: x.span, pure: !fldTc.has(x.tc) && !vmCont(x.tc), t: titleText(x.tc) }));
+      let ok = H.length >= 2 && H.every(x => x.pure && nameLike(x.t));
+      for (const x of ok ? cs0 : []) {              // 第一列的某一格直向合併往下蓋到有要填的列（「坐姿擺位」蓋住下面四列）：那是分區的列名，這一列不是表頭
+        if (!kid(kid(x.tc, NS_W, "tcPr"), NS_W, "vMerge")) continue;
+        for (let r = 1; r < rows.length && ok; r++) {
+          const cs = rowCells(rows[r]), c = cs.find(y => y.col === x.col);
+          if (!c || !vmCont(c.tc)) break;
+          if (cs.some(y => fldTc.has(y.tc))) ok = false;
+        }
+      }
+      if (ok) {                                     // 第一列的欄名管到哪一列為止
+        H.end = rows.length; let data = false;
+        for (let r = 1; r < rows.length; r++) {
+          const cs = rowCells(rows[r]);
+          if (cs.some(y => fldTc.has(y.tc))) { data = true; continue; }
+          if (data && cs.length >= 2 && cs.every(y => !vmCont(y.tc) && nameLike(titleText(y.tc)))) { H.end = r; break; }
+        }
+      }
+      headOf.set(rows[0], ok ? H : null);
+    }
+    const H = headOf.get(rows[0]);
+    return (H && at < H.end && H.find(x => x.col <= col && col + span <= x.col + x.span)) || null;
+  };
+  const colHead = (rows, at, col, span) => { const h = headCell(rows, at, col, span); return h ? h.t : ""; };
+  const vmAny = tc => !!kid(kid(tc, NS_W, "tcPr"), NS_W, "vMerge");
+  const spansDown = (rows, at, tc, col) => {        // 這一格是直向合併的起頭、而且下一列同一欄真的是它的下半格
+    if (!vmAny(tc) || at + 1 >= rows.length) return false;
+    const c = rowCells(rows[at + 1]).find(x => x.col === col);
+    return !!c && vmCont(c.tc);
+  };
+  for (const b of vis) {
+    if (!plain(b) || !b.tr || !b.tc || eff.has(b)) continue;
+    if (!rowsOf.has(b.tr)) rowsOf.set(b.tr, tblRows(b.tr));
+    const rows = rowsOf.get(b.tr), at = rows.indexOf(b.tr), cs = rowCells(b.tr), me = cs.findIndex(x => x.tc === b.tc);
+    if (me < 0 || at < 0) continue;
+    const ch = colHead(rows, at, cs[me].col, cs[me].span);
+    if (ch) b.colCtx = ch;
+    // 這一格自己跨好幾列（右邊一格「綜合判定」管左邊三列）：左邊這一列的小標題只是其中一列的，不能拿來當它的列名 → 不註明這一列
+    if (vmAny(b.tc) && (vmCont(b.tc) || spansDown(rows, at, b.tc, cs[me].col))) continue;
+    // 左邊「整格只有一個方框」的格子，可能是這一列的項目（□特殊開關｜細項…），也可能只是並排的選項、或另一組的開頭（｜□左腳｜…｜□右腳｜這一格｜）。
+    // 光看表格分不出來，所以：
+    //   · 只有「真的跨好幾列的直向合併格、這一列在它底下」才當成上一層的項目（item）；
+    //   · 其他的單一方框一律跳過，而且跳過之後就不再往左撿項目（single＝已經跨過一個，可能是另一組的開頭）；
+    //   · 整列往左都沒有純標題時，只有「緊鄰在左邊、又是這一列最左邊那一格」的單一方框才提一句位置：「這一列開頭：□特殊開關」。
+    let item = "", gap = false, first = "", single = false;               // gap＝項目的左邊還隔著別的題目（更左邊的標題是另一組的，不接）
+    for (let i = me - 1; i >= 0; i--) {
+      const here = cs[i].tc; let tc = here;
+      if (vmCont(tc)) for (let r = at - 1; r >= 0; r--) { const c = rowCells(rows[r]).find(x => x.col === cs[i].col); if (!c) break; if (!vmCont(c.tc)) { tc = c.tc; break; } }
+      if (fldTc.has(tc)) {                                                // 左邊這格有要填的東西：
+        if (item) { gap = true; continue; }
+        const L = byTc.get(tc) || [], nm = L.length === 1 && plain(L[0]) && picks(L[0]).length === 1 ? lead(L[0]) : "";
+        if (!nm || nm.length > 30) continue;                              //   有好幾個選項的是同一列的另一題，不是名稱：跳過，再往左找
+        if (tc !== here || spansDown(rows, at, here, cs[i].col)) { if (single) break; item = nm; }   //   跨列的項目；前面已經跨過別的單一方框就不撿了（整個不註明）
+        else { if (i === 0 && me === 1) first = nm; single = true; }
+        continue;
+      }
+      let t = titleText(tc); if (!t) continue;
+      if (t.length > 30) break;                                           // 太長的是說明文字，不是名稱
+      if (notName(t)) continue;                                           // 單位（公分）、固定的值（不適用）：不是名稱，再往左找
+      if (!/[一-鿿A-Za-z]/.test(ci(t))) {
+        // 沒有中英文字：只有「這一列最左邊那一格」的一兩位數序號（1、(2)、③）才當列名，並補上那一欄的欄名（「測驗次數 1」）；
+        // 中間欄的數字（年限 3、滿分 15）、符號（—、/）、金額、百分比（4,000、50%）不是名稱，跳過再往左找
+        if (i !== 0 || (!/^[(（]?[0-9０-９]{1,2}[)）.、]?$/.test(t) && !/^[①-⑳]$/.test(t))) continue;
+        const ht = colHead(rows, at, cs[i].col, cs[i].span);
+        if (ht) t = ht + " " + t;
+      }
+      if (item && gap) break;                                             // 另一組的標題：不接，只留項目（下面那一行）
+      b.rowCtx = item ? t + " › " + item : t; item = ""; first = ""; break;   // 「床↔輪椅 › 現況否」
+    }
+    if (item) b.rowCtx = item;
+    else if (first && !b.rowCtx) { b.rowCtx = "□" + first; b.rowHead = true; }
   }
 }
 /* ── 填空格的名稱：帶上後面的單位，並把「前一格的單位」從名稱裡拿掉（只影響畫面） ──
@@ -1136,12 +1301,30 @@ function uniReasons(blocks, fields) {
 }
 function inDoc(el) { for (let p = el; p; p = p.parentNode) if (p.nodeType === 9) return true; return false; }   // 還在文件裡（沒被刪掉）
 function vmCont(tc) { const vm = kid(kid(tc, NS_W, "tcPr"), NS_W, "vMerge"); return !!vm && (wAttr(vm, "val") || "continue") === "continue"; }   // 直向合併的下半格
+// 這一行是不是「□母項目 (□細項…)」或「□母項目：□細項…」：開頭的方框跟下一個方框之間，有還沒關的左括號，或以冒號結尾（括號要成對）。
+// 括號、冒號只是第一個選項自己的補充說明時不算（「□公分(cm) □英吋(in)」「□無（備註：不適用） □有」）。
+function headSubBlock(b) {
+  const t = (b && b.text) || "";
+  if (!/^[\s\u3000]*□/.test(t)) return false;
+  const i = t.indexOf("□"), k = t.indexOf("□", i + 1);
+  if (k < 0) return false;
+  const mid = t.slice(i + 1, k), depth = (mid.match(/[(（]/g) || []).length - (mid.match(/[)）]/g) || []).length;
+  return depth > 0 || (depth === 0 && /[：:][\s\u3000]*$/.test(mid));
+}
+// 範本預先勾好的「預設選項」：同一行有好幾個方框、範本先幫你勾了其中一個（長度單位：■公分 □英吋；或單獨一行的「■公分 □英吋」）。
+// 例外：它是一行開頭的方框、後面的方框是它的細項（「■項次… (□左側 □右側)」「■義肢：□美觀型 □功能型」）——那是這一列的項目，不是選項。
+function presetOpt(f) {
+  if (!f || f.type !== "cb" || !f.orig || !f.block) return false;
+  const cbs = f.block.items.filter(x => x.type === "cb");
+  if (cbs.length < 2) return false;
+  return !(cbs[0] === f && headSubBlock(f.block));
+}
 function uniPick(f, values, attached) {            // 有使用理由的那幾列裡，第一個有勾選的項目：回 { row, label, mine }；沒有就回 null
   let pre = null;
   for (const { x, row } of f.cbs) {
     if (!(values[x.id] !== undefined ? values[x.id] : x.orig) || (attached && !inDoc(row))) continue;
     if (!x.orig) return { row, label: String(x.label || ""), mine: true };          // 你自己勾的優先
-    if (!pre) pre = { row, label: String(x.label || ""), mine: false };             // 範本預先勾好的（例：編號 01 的項次31）：你都沒勾別的才用它
+    if (!pre && !presetOpt(x)) pre = { row, label: String(x.label || ""), mine: false };   // 範本預先勾好的（例：編號 01 的項次31）：你都沒勾別的才用它；預設選項（單位：公分）不算，跟刪列的認定一致
   }
   return pre;
 }
@@ -1165,7 +1348,7 @@ function applyUni(model, values) {
     if (del.startsWith("all")) continue;                                // 這張表選了整張刪掉：理由跟著不寫（畫面上有提示）
     const nowhere = () => new Error("「使用理由」沒有地方可以寫：這張表沒有留下可以寫的那一列（多半是選了「只留有勾選的列」但沒有勾任何項目）。請勾選項目，或把使用理由清空。");
     const pick = uniPick(f, values, true);
-    if (!inDoc(f.tbl) || (del === "rows" && !(pick && pick.mine))) throw nowhere();   // 只留有勾選的列：一定要有你自己勾的項目（跟畫面上的提示一致）
+    if (!inDoc(f.tbl) || (del === "rows" && !pick)) throw nowhere();   // 只留有勾選的列：要有勾著的項目（範本預先勾好的那一列現在也會留著）；跟畫面上的提示一致
     let first = null;
     for (let c = f.tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
     const rows = first ? tblRows(first) : [];
@@ -1251,8 +1434,12 @@ function removeRow(tr) {
 function rowsToDrop(d, model, values) {
   const cur = f => values[f.id] !== undefined ? values[f.id] : f.orig;
   const differs = f => String(cur(f) == null ? "" : cur(f)).trim() !== "" && String(cur(f)) !== String(f.orig == null ? "" : f.orig);
-  const filled = f => f.type === "cb" ? (!!cur(f) && !f.orig) : f.type === "ph" ? phAny(cur(f)) : differs(f);
-  const has = new Set(), keep = new Set(), boxed = new Set();
+  // 方框：匯出時是勾著的就算（範本預先勾好的也算，例：編號 01 的項次31——負責人 11/26 確認那是該勾的；你自己取消勾選的不算）。
+  // 例外是「預設選項」：範本在同一行的好幾個方框裡先幫你勾了一個（長度單位：■公分 □英吋）。那不算你選了這一列——
+  // 沒填尺寸時這一列照樣刪；同一組有別的列留下來時它才跟著留（單位那一行不會不見）。
+  const preset = f => !!cur(f) && presetOpt(f);
+  const filled = f => f.type === "cb" ? (!!cur(f) && !preset(f)) : f.type === "ph" ? phAny(cur(f)) : differs(f);
+  const has = new Set(), keep = new Set(), boxed = new Set(), dflt = new Set(), mixed = new Set();   // dflt＝有「預設選項」勾著的列；mixed＝還有不屬於那組選項的方框
   for (const f of model.fields) {
     if (f.type !== "cb" && f.type !== "txt" && f.type !== "ph" && f.type !== "alt") continue;
     const el = fieldEl(f); if (!el || topTable(el) !== d.tbl) continue;
@@ -1260,6 +1447,8 @@ function rowsToDrop(d, model, values) {
     if (f.type === "cb" || (f.type === "txt" && !f.cell)) has.add(r);
     if (f.type === "cb") boxed.add(r);
     if (filled(f)) keep.add(r);
+    if (preset(f)) dflt.add(r);
+    else if (f.type === "cb" && !(f.block && !headSubBlock(f.block) && f.block.items.some(x => preset(x)))) mixed.add(r);
   }
   let first = null;
   for (let c = d.tbl.firstElementChild; c && !first; c = c.nextElementSibling) first = isEl(c, NS_W, "tr") ? c : (isEl(c, NS_W, "sdt") ? c.getElementsByTagNameNS(NS_W, "tr")[0] : null);
@@ -1281,7 +1470,8 @@ function rowsToDrop(d, model, values) {
     if (!seed[r] || deep[r] < 0) return;
     const ms = members(deep[r], gid[r][deep[r]]);
     if (!ms.every(k => deep[k] === deep[r])) return;                       // 不是最內層的一組
-    for (const k of ms) if (!boxed.has(rows[k])) keep.add(rows[k]);        // 同組只有文字的列跟著留
+    // 同組只有文字的列跟著留；方框全是「預設選項那一組」的列（單位：■公分 □英吋）也跟著留——同一列還有別的沒勾的項目就不留
+    for (const k of ms) if (!boxed.has(rows[k]) || (dflt.has(rows[k]) && !mixed.has(rows[k]))) keep.add(rows[k]);
   });
   const drop = new Set(rows.filter(tr => has.has(tr) && !keep.has(tr)));
   const seen = new Set();
@@ -2715,8 +2905,8 @@ function uniCard(b) {                             // 「整張表的使用理由
     const name = x => x.label.length > 20 ? x.label.slice(0, 20) + "…" : (x.label || "那個項目");
     hint.textContent = del.startsWith("all") ? "這張表選了整張刪掉，理由不會寫進去。"
       : p && p.mine ? "會寫在你勾選的「" + name(p) + "」那一列。"
-      : del === "rows" ? "這張表你還沒有勾選項目。選了「只留有勾選的列」又沒勾任何一項的話，這裡填的理由沒有地方可以寫，匯出會被擋下。"
       : p ? "這張表你還沒有勾選項目；目前會寫在範本預先勾好的「" + name(p) + "」那一列，勾了別的項目就改寫在那一列。"
+      : del === "rows" ? "這張表沒有任何勾選的項目。選了「只留有勾選的列」又沒有勾著的項目的話，這裡填的理由沒有地方可以寫，匯出會被擋下。"
       : "這張表還沒有勾選項目：勾了之後，理由會寫在第一個勾選的那一列（都沒勾就寫在第一列）。";
     // 上面逐列的格子裡已經有理由（舊草稿、或直接開一份已經寫好的檔）：提醒一下，免得同一段理由寫兩次
     if (f.cells.some(x => String(cur(x) || "").trim())) hint.textContent += " 注意：上面某一列已經有寫好的使用理由，要改請直接改那一列；在這裡再填會另外加上去。";
@@ -2738,9 +2928,11 @@ function card(b) {
     c.addEventListener("focusout", () => setTimeout(() => { if (c.isConnected && S.model) c._tell(); }, 0));
   }
   if (b.tblNo !== undefined) c.dataset.tbl = b.tblNo;
-  c.dataset.txt = ci([b.title, b.cont, b.ctxName, b.find || b.text].filter(Boolean).join(" "));   // 搜尋用：連寫在別處的題目名稱一起找（相容字先換掉）
+  c.dataset.txt = ci([b.title, b.cont, b.ctxName, b.rowCtx, b.colCtx, b.find || b.text].filter(Boolean).join(" "));   // 搜尋用：連寫在別處的題目名稱一起找（相容字先換掉）
   if (b.title) c.appendChild(mk("div", "qt", b.title));                 // 這一題的名稱寫在別的格子裡（例：左格是項目名稱、右格是選項）
   if (b.cont) c.appendChild(mk("div", "qc", "↳ 接上一行：" + b.cont));     // 這一行是上一題選項的延續
+  if (b.rowCtx) c.appendChild(mk("div", "qc", (b.rowHead ? "這一列開頭：" : "這一列：") + b.rowCtx));   // 表格裡這一列左邊那一格寫的名稱；「開頭」＝最左邊那格是個方框項目，只講位置
+  if (b.colCtx) c.appendChild(mk("div", "qc", "這一欄：" + b.colCtx));     // 這張表第一列（表頭）寫的欄名
   c.appendChild(mk("div", "q", b.text.replace(/\s{3,}/g, "  ")));
   // 排版用的空格不放到畫面上（舊草稿裡若已經填了字，照樣顯示讓你處理）
   // 同一張卡片還有別的空白格時（例：對應原則＋使用理由），卡片照常顯示，只把空的使用理由那一格收起來
